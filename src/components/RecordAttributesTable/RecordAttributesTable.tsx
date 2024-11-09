@@ -183,7 +183,7 @@ const AttributeRow = (props: AttributeRowProps) => {
     }
 
     const finishEditing = () => {
-        handleUpdateRecord();
+        handleUpdateRecord(k, v.value);
         setEditMode(false);
     }
 
@@ -437,7 +437,7 @@ const SubattributeRow = (props: SubattributeRowProps) => {
     }
 
     const finishEditing = () => {
-        handleUpdateRecord();
+        handleUpdateRecord(k, v.value);
         setEditMode(false);
     }
 

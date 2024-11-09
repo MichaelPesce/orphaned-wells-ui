@@ -109,7 +109,7 @@ export interface RecordAttributesTableProps {
     fullscreen: string | null;
     displayKeyIndex: number;
     displayKeySubattributeIndex: number | null;
-    handleUpdateRecord: () => void;
+    handleUpdateRecord: DocumentContainerProps["handleUpdateRecord"];
     locked?: boolean;
 }
 
@@ -184,7 +184,7 @@ export interface DocumentContainerProps {
     imageFiles: string[];
     attributesList: any[];
     handleChangeValue: handleChangeValueSignature;
-    handleUpdateRecord: () => void;
+    handleUpdateRecord: (key: string, value: string) => void;
     locked?: boolean;
 }
 

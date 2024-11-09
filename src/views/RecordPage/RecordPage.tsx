@@ -105,7 +105,8 @@ const Record = () => {
         );
     }
 
-    const handleUpdateRecord = () => {
+    const handleUpdateRecord = (key: string, value: string) => {
+        console.log("updating record with key: "+key+ ", value: "+value)
         if (locked) return
         callAPI(
             updateRecord,
