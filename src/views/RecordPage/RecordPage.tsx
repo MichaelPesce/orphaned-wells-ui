@@ -119,7 +119,8 @@ const Record = () => {
     const handleSuccessfulAttributeUpdate = (data: any) => {
         let tempRecordData = { ...recordData } as RecordData;
         tempRecordData["attributesList"] = data["attributesList"]
-        tempRecordData["review_status"] = data["review_status"]
+        if (data["review_status"]) tempRecordData["review_status"] = data["review_status"]
+        
         setRecordData(tempRecordData);
     }
 

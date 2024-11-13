@@ -128,6 +128,7 @@ const AttributeRow = (props: AttributeRowProps) => {
     const [ editMode, setEditMode ] = useState(false);
     const [ openSubtable, setOpenSubtable ] = useState(false);
     const [ isSelected, setIsSelected ] = useState(false);
+    const [ lastSavedValue, setLastSavedValue ] = useState(v.value)
 
     useEffect(() => {
         if (idx === displayKeyIndex && (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined)) setIsSelected(true);
@@ -151,7 +152,18 @@ const AttributeRow = (props: AttributeRowProps) => {
 
     useKeyDown("Escape", () => {
         if (isSelected) {
-            if (editMode) finishEditing();
+            if (editMode) {
+                // reset to last saved value
+                if (v.value !== lastSavedValue) {
+                    let fakeEvent = {
+                        target: {
+                            value: lastSavedValue
+                        }
+                    } as React.ChangeEvent<HTMLInputElement>
+                    handleChangeValue(fakeEvent, idx)
+                }
+                setEditMode(false);
+            }
         }
     }, undefined, undefined, undefined);
 
@@ -183,7 +195,10 @@ const AttributeRow = (props: AttributeRowProps) => {
     }
 
     const finishEditing = () => {
-        handleUpdateRecord(k, v.value);
+        if (v.value !== lastSavedValue) {
+            handleUpdateRecord(k, v.value);
+            setLastSavedValue(v.value)
+        }
         setEditMode(false);
     }
 
@@ -380,6 +395,7 @@ const SubattributeRow = (props: SubattributeRowProps) => {
 
     const [ editMode, setEditMode ] = useState(false);
     const [ isSelected, setIsSelected ] = useState(false);
+    const [ lastSavedValue, setLastSavedValue ] = useState(v.value)
 
     useEffect(() => {
         if (displayKeyIndex === topLevelIdx && idx === displayKeySubattributeIndex) {
@@ -399,7 +415,18 @@ const SubattributeRow = (props: SubattributeRowProps) => {
 
     useKeyDown("Escape", () => {
         if (isSelected) {
-            if (editMode) finishEditing();
+            if (editMode) {
+                // reset to last saved value
+                if (v.value !== lastSavedValue) {
+                    let fakeEvent = {
+                        target: {
+                            value: lastSavedValue
+                        }
+                    } as React.ChangeEvent<HTMLInputElement>
+                    handleUpdateValue(fakeEvent)
+                }
+                setEditMode(false);
+            }
         }
     }, undefined, undefined, undefined);
 
@@ -437,7 +464,10 @@ const SubattributeRow = (props: SubattributeRowProps) => {
     }
 
     const finishEditing = () => {
-        handleUpdateRecord(k, v.value);
+        if (v.value !== lastSavedValue) {
+            handleUpdateRecord(k, v.value);
+            setLastSavedValue(v.value)
+        }
         setEditMode(false);
     }
 

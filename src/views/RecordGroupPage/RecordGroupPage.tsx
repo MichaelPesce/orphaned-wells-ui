@@ -66,7 +66,7 @@ const RecordGroupPage = () => {
         formData.append('file', file, file.name);
         callAPI(
             uploadDocument,
-            [formData, recordGroup._id],
+            [formData, recordGroup._id, false],
             handleSuccessfulDocumentUpload,
             (e: Error) => { console.error('error on file upload: ', e); }
         );

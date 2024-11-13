@@ -16,6 +16,7 @@ import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LastPageIcon from '@mui/icons-material/LastPage';
+import PublishedWithChangesOutlinedIcon from '@mui/icons-material/PublishedWithChangesOutlined';
 import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES } from '../../assets/util';
 import { styles } from '../../assets/styles';
 import Notes from '../Notes/Notes';
@@ -200,9 +201,9 @@ const RecordsTable = (props: RecordsTableProps) => {
   const tableCell = (row: RecordData, key: string) => {
     if (key === "name") return <TableCell key={key}>{row.name}</TableCell>
     if (key === "dateCreated") return <TableCell key={key} align="right">{formatDate(row.dateCreated)}</TableCell>
-    if (key === "API_NUMBER") return <TableCell key={key} align="right">{row.status === "digitized" ? getAPINumber(row) : null}</TableCell>
-    if (key === "confidence_median") return <TableCell key={key} align="right">{row.status === "digitized" && calculateAverageConfidence(row.attributesList)}</TableCell>
-    if (key === "confidence_lowest") return <TableCell key={key} align="right">{row.status === "digitized" && calculateLowestConfidence(row.attributesList)}</TableCell>
+    if (key === "API_NUMBER") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "reprocessed") ? getAPINumber(row) : null}</TableCell>
+    if (key === "confidence_median") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "reprocessed") && calculateAverageConfidence(row.attributesList)}</TableCell>
+    if (key === "confidence_lowest") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "reprocessed") && calculateLowestConfidence(row.attributesList)}</TableCell>
     if (key === "notes") return (
       <TableCell key={key} align="right">
           <IconButton sx={(row.notes === "" || !row.notes) ? {} : { color: "#F2DB6F" }} onClick={(e) => handleClickNotes(e, row)}>
@@ -221,6 +222,10 @@ const RecordsTable = (props: RecordsTableProps) => {
             row.status === "digitized" ? 
             <IconButton>
               <CheckCircleOutlineIcon sx={{ color: "green" }} />
+            </IconButton> :
+            row.status === "reprocessed" ? 
+            <IconButton>
+              <PublishedWithChangesOutlinedIcon sx={{ color: "green" }} />
             </IconButton> :
             row.status === "error" ? 
             <IconButton>
