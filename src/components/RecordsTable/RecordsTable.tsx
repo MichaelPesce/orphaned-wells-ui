@@ -39,7 +39,6 @@ const RecordsTable = (props: RecordsTableProps) => {
 
   const [ showNotes, setShowNotes ] = useState(false);
   const [ notesRecordId, setNotesRecordId ] = useState<string>();
-  const [ notes, setNotes ] = useState<RecordNote[]>();
   const [ openColumnSelect, setOpenColumnSelect ] = useState(false);
   const [records, setRecords] = useState<any[]>([]);
   const [recordCount, setRecordCount] = useState(0);
@@ -81,7 +80,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   };
 
   const handleClickRecord = (record_id: string) => {
-    navigate("/record/" + record_id);
+    navigate("/record/" + record_id, {state: {filterBy: filterBy, sortBy: sortBy, sortAscending: sortAscending}});
   }
 
   const handleApplyFilters = (appliedFilters: any) => {
@@ -120,13 +119,11 @@ const RecordsTable = (props: RecordsTableProps) => {
     event.stopPropagation();
     setShowNotes(true);
     setNotesRecordId(row._id);
-    setNotes(row.record_notes);
   }
 
   const handleCloseNotesModal = (record_id?: string, newNotes?: RecordNote[]) => {
     setShowNotes(false);
     setNotesRecordId(undefined);
-    setNotes(undefined);
     if (record_id) {
       const rowIdx = records.findIndex(r => r._id === record_id);
       if (rowIdx > -1) {

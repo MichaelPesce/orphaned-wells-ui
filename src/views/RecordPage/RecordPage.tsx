@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
-import { useParams, useNavigate, redirect } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getRecordData, updateRecord, deleteRecord, cleanRecords } from '../../services/app.service';
 import { callAPI, useKeyDown } from '../../util';
 import Subheader from '../../components/Subheader/Subheader';
@@ -26,6 +26,7 @@ const Record = () => {
     const [locked, setLocked] = useState(false)
     const params = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const { userPermissions, userEmail } = useUserContext();
 
     const styles = {
@@ -53,6 +54,7 @@ const Record = () => {
     }
 
     useEffect(() => {
+        console.log(location.state)
         callAPI(
             getRecordData,
             [params.id],

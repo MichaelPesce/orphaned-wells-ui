@@ -125,9 +125,18 @@ export const checkProcessorStatus = (rg_id: string)  => {
     });
 };
 
-export const getRecordData = (record_id: string) => {
+// export const getRecordData = (record_id: string) => {
+//     return fetch(BACKEND_URL + '/get_record/' + record_id, {
+//         mode: 'cors',
+//         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+//     });
+// };
+
+export const getRecordData = (record_id: string, data: any = {}) => {
     return fetch(BACKEND_URL + '/get_record/' + record_id, {
+        method: 'POST',
         mode: 'cors',
+        body: JSON.stringify(data),
         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
     });
 };
