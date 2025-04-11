@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getRecordData, updateRecord, deleteRecord, cleanRecords } from '../../services/app.service';
-import { callAPI, useKeyDown } from '../../util';
+import { callAPI, useKeyDown, convertFiltersToMongoFormat } from '../../util';
 import Subheader from '../../components/Subheader/Subheader';
 import Bottombar from '../../components/BottomBar/BottomBar';
 import DocumentContainer from '../../components/DocumentContainer/DocumentContainer';
@@ -54,10 +54,19 @@ const Record = () => {
     }
 
     useEffect(() => {
-        console.log(location.state)
+        let body = {}
+        if (location.state) {
+            body = {
+                sort: [location.state?.sortBy, location.state?.sortAscending],
+                filter: convertFiltersToMongoFormat(location.state?.filterBy),
+                id: location.state?.id,
+                level: location.state?.level
+            };
+        }
+        
         callAPI(
             getRecordData,
-            [params.id],
+            [params.id, body],
             handleSuccessfulFetchRecord,
             handleFailedFetchRecord,
         )
@@ -230,7 +239,7 @@ const Record = () => {
         if (record_data?._id) {
             let newUrl = "/record/" + record_data._id;
             if (record_data._id == recordData._id) window.location.reload()
-            else navigate(newUrl)
+            else navigate(newUrl, {state: location.state})
         } else {
             console.error("error redirecting")
         }

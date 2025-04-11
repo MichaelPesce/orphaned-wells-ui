@@ -80,7 +80,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   };
 
   const handleClickRecord = (record_id: string) => {
-    navigate("/record/" + record_id, {state: {filterBy: filterBy, sortBy: sortBy, sortAscending: sortAscending}});
+    navigate("/record/" + record_id, {state: {filterBy: filterBy, sortBy: sortBy, sortAscending: sortAscending, id: params.id, level: location}});
   }
 
   const handleApplyFilters = (appliedFilters: any) => {
