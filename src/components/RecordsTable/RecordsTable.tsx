@@ -44,12 +44,6 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
-  // const [sortBy, setSortBy] = useState(
-  //   JSON.parse(localStorage.getItem("sort") || '["dateCreated",1]')[0]
-  // );
-  // const [sortAscending, setSortAscending] = useState(
-  //   JSON.parse(localStorage.getItem("sort") || '["dateCreated",1]')[1]
-  // );
   const [filterBy, setFilterBy] = useState<any[]>(
     JSON.parse(localStorage.getItem("appliedFilters") || '{}')[params.id || ""] || []
   );
