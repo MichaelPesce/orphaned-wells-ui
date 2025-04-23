@@ -25,7 +25,7 @@ import { RecordData, RecordsTableProps, RecordNote } from '../../types';
 import { getRecords } from '../../services/app.service';
 import ColumnSelectDialog from '../ColumnSelectDialog/ColumnSelectDialog';
 
-const SORTABLE_COLUMNS = ["name", "dateCreated", "status", "review_status", "api_number"]
+const SORTABLE_COLUMNS = ["name", "dateCreated", "api_number"]
 
 const RecordsTable = (props: RecordsTableProps) => {
   let navigate = useNavigate();
