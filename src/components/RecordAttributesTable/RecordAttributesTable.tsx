@@ -54,6 +54,7 @@ const AttributesTable = (props: AttributesTableProps) => {
                 </TableHead>
                 <TableBody ref={ref}>
                     {attributesList.map((v: Attribute, idx: number) => (
+                        v &&
                         <AttributeRow 
                             key={`${v.key} ${idx}`}
                             k={v.key}
