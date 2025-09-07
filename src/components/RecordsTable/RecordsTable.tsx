@@ -98,7 +98,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     let confidences: number[] = [];
     try {
       for (let attr of attributes) {
-        if (attr.confidence) confidences.push(attr.confidence);
+        if (attr?.confidence) confidences.push(attr?.confidence);
       }
       return formatConfidence(average(confidences));
     } catch (e) {
@@ -109,7 +109,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   const calculateLowestConfidence = (attributes: Array<{ confidence?: number }>) => {
     let lowestConfidence = 1;
     for (let attr of attributes) {
-      if (attr.confidence && attr.confidence < lowestConfidence) {
+      if (attr?.confidence && attr?.confidence < lowestConfidence) {
         lowestConfidence = attr.confidence;
       }
     }
