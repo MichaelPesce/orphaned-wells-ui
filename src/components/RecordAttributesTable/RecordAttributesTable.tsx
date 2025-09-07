@@ -277,6 +277,12 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         return false
     }
 
+    const showOCRRawValue = () => {
+        if (v.user_added) return false
+        else if (v.edited || v.cleaned) return true
+        return false
+    }
+
     const handleClickShowActions = (event: MouseEvent<HTMLElement>) => {
         event.stopPropagation();
         setShowActions(!showActions);
@@ -392,7 +398,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                                     </Typography>
                                 }
                                 {
-                                    (v.cleaned || v.cleaning_error) && (!v.user_added) &&
+                                    showOCRRawValue() &&
                                     <Typography noWrap component={'p'} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
                                         OCR Raw Value: {v.raw_text}
                                     </Typography>
