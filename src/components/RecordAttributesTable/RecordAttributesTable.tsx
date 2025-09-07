@@ -771,9 +771,8 @@ const SubattributeRow = React.memo((props: SubattributeRowProps) => {
     }
 
     const showEditedValue = () => {
-        if (v.cleaned && v.edited && v.lastUpdated && v.last_cleaned) {
-            // only show if it's been cleaned since last update
-            if ((v.lastUpdated/1000) < v.last_cleaned) return true
+        if (v.edited && v.uncleaned_value) {
+            return true
         }
         return false
     }
