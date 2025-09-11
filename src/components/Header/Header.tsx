@@ -20,11 +20,11 @@ const Header = (props: any) => {
   const [teams, setTeams] = useState<string[]>([])
 
   useEffect(() => {
-    if (window.location.hash.includes("project")) {
+    if (window.location.href.includes("project")) {
       setTabValue(0);
-    } else if (window.location.hash.includes("records")) {
+    } else if (window.location.href.includes("records")) {
       setTabValue(1);
-    } else if (window.location.hash.includes("users")) {
+    } else if (window.location.href.includes("users")) {
       setTabValue(2);
     } else {
       setTabValue(0);
