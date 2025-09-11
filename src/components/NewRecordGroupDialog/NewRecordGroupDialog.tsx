@@ -203,7 +203,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
                                         </p>
                                         <Box sx={styles.processorImageBox} onClick={() => handleSelectProcessor(processorData)}>
                                             <Tooltip title={processorData.documentType}>
-                                                <img id={`processor_${idx}`} src={`./img/${processorData['Processor Name']}.png`} style={getImageStyle(processorData['Processor ID'])} />
+                                                <img id={`processor_${idx}`} src={`${process.env.PUBLIC_URL}/img/${processorData['Processor Name']}.png`} style={getImageStyle(processorData['Processor ID'])} />
                                             </Tooltip>
                                         </Box>
                                     </Grid>

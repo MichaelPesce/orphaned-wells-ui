@@ -72,7 +72,7 @@ const Header = (props: any) => {
   return (
     <div id="Header">
       <div className="titlebar">
-        <img onClick={handleNavigateHome} style={styles.logo} src="./img/OGRRE_logo.svg" alt="Logo"></img>
+        <img onClick={handleNavigateHome} style={styles.logo} src={`${process.env.PUBLIC_URL}/img/OGRRE_logo.svg`} alt="Logo"></img>
         <div id="titlebar-name" style={{ cursor: 'pointer' }} onClick={handleNavigateHome}>
           OGRRE
         </div>
