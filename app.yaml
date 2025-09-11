@@ -6,6 +6,13 @@ handlers:
   static_files: build/index.html
   upload: build/index.html
   expiration: 1s
-- url: /(.*)
-  static_files: build/\1
-  upload: build/(.*)
+# - url: /(.*)
+#   static_files: build/\1
+#   upload: build/(.*)
+
+# Catch-all: send all other requests to index.html
+- url: /.*
+  static_files: build/index.html
+  upload: build/index.html
+  secure: always
+  expiration: "1s"
