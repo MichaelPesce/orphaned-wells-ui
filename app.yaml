@@ -2,10 +2,16 @@ runtime: python310
 runtime_config:
   python_version: 3.10
 handlers:
-- url: /
-  static_files: build/index.html
-  upload: build/index.html
-  expiration: 1s
-- url: /(.*)
-  static_files: build/\1
-  upload: build/(.*)
+  # Serve static files (JS, CSS, images, fonts, etc.)
+  - url: /(.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|map|json))
+    static_files: build/\1
+    upload: build/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|map|json)
+    secure: always
+    expiration: "7d"
+
+  # Catch-all: send all other requests to index.html
+  - url: /.*
+    static_files: build/index.html
+    upload: build/index.html
+    secure: always
+    expiration: "1s"

@@ -60,7 +60,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
     <div className="App">
-          {!window.location.hash.includes("login") && 
+          {!window.location.href.includes("login") && 
             <Header/>
           }
           

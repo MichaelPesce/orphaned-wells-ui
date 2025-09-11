@@ -153,7 +153,7 @@ describe('End to end testing', () => {
 
   it('tests edit field, review status updates, mark as unreviewed', () => {
     // click on record
-    cy.visit('/#/record/665647e58294448787521760');
+    cy.visit('/record/665647e58294448787521760');
     cy.wait(2000)
     cy.screenshot('navigated to record cypress test record')
 
@@ -200,7 +200,7 @@ describe('End to end testing', () => {
   })
 
   it('tests export data', () => {
-    cy.visit('/#/record_group/6656476a448c4d1812645c07');
+    cy.visit('/record_group/6656476a448c4d1812645c07');
     cy.wait(1000)
     cy.screenshot('navigated to project test list')
 
