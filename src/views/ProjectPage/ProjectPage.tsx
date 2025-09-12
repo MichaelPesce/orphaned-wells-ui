@@ -74,7 +74,7 @@ const Project = () => {
         setRecordGroups(data.record_groups);
         setProjectData(data.project)
         setProjectName(data.project.name)
-        // setLoading(false);
+        setLoading(false);
     };
 
     const handleError = (e: Error) => {

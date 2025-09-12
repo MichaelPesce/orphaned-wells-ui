@@ -1,33 +1,37 @@
-import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css'
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Skeleton } from "@mui/material";
 
 export default function TableLoading() {
 
 return (
   <Box
       style={{
-        height: "120px",
-        width: "100%",
-        display: "flex",
-        justifyContent: "center",
-        backgroundColor: "white",
+        width: "90%",
+        margin: "0 auto",
+        textAlign: "center",
       }}
-      id="empty-table"
+      id="table-loading"
     >
-      <Box
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-        }}
-      >
-        <SkeletonTheme baseColor="#202020" highlightColor="#444">
-            <p>
-            <Skeleton count={3.5} />
-            </p>
-        </SkeletonTheme>
-      </Box>
+        <Typography variant='h1'>
+            <Skeleton />
+        </Typography>
+        <Typography variant='h3'>
+            <Skeleton />
+        </Typography>
+        <Typography variant='h3'>
+            <Skeleton />
+        </Typography>
+        <Typography variant='h3'>
+            <Skeleton />
+        </Typography>
+        <Typography variant='h3'>
+            <Skeleton />
+        </Typography>
+        <Typography variant='h3'>
+            <Skeleton />
+        </Typography>
+        <Typography variant='h3'>
+            <Skeleton />
+        </Typography>
     </Box>
-);
+    );
 }
