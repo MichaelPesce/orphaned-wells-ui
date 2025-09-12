@@ -205,7 +205,10 @@ const Project = () => {
                                 loading ? <TableLoading/> :
                                 record_groups.length ?
                                 <RecordGroupsTable record_groups={record_groups} sortRecordGroups={sortRecordGroups} /> :
-                                <EmptyTable/>
+                                <EmptyTable 
+                                    title="No record groups found." 
+                                    message="Please create a new record group or contact a team lead to get started."
+                                />
                             )
                                 
                             :
@@ -221,7 +224,6 @@ const Project = () => {
                         
                     </div>
                 :
-                    // <h1>Unable to connect to backend. Please make sure that backend server is up and running.</h1>
                     <EmptyTable/>
                 }
                 <NewRecordGroupDialog 
