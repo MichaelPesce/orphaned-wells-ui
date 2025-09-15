@@ -15,22 +15,13 @@ return (
             <Skeleton />
         </Typography>
         <Typography variant='h3'>
-            <Skeleton />
+            <Skeleton height={100}/>
         </Typography>
         <Typography variant='h3'>
-            <Skeleton />
+            <Skeleton height={100}/>
         </Typography>
         <Typography variant='h3'>
-            <Skeleton />
-        </Typography>
-        <Typography variant='h3'>
-            <Skeleton />
-        </Typography>
-        <Typography variant='h3'>
-            <Skeleton />
-        </Typography>
-        <Typography variant='h3'>
-            <Skeleton />
+            <Skeleton height={100}/>
         </Typography>
     </Box>
     );
