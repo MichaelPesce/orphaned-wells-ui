@@ -15,10 +15,11 @@ export default function EmptyTable(props: EmptyTableProps) {
 
   return (
     <Box
-      style={{
+      sx={{
         width: "100%",
         display: "flex",
         justifyContent: "center",
+        paddingTop: 2,
       }}
       id="empty-table"
     >

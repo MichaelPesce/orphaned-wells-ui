@@ -12,8 +12,6 @@ import { useUserContext } from '../../usercontext';
 import { getRecordGroups, updateProject, deleteProject } from '../../services/app.service';
 import { callAPI, DEFAULT_FILTER_OPTIONS } from '../../util';
 import { ProjectData } from '../../types';
-import EmptyTable from '../../components/EmptyTable/EmptyTable';
-import TableLoading from '../../components/TableLoading/TableLoading';
 
 const Project = () => {
     let params = useParams();
@@ -202,12 +200,10 @@ const Project = () => {
                         <ProjectTabs options={tabs} value={currentTab} setValue={setCurrentTab}/>
                         {
                             tabs[currentTab] === "Record Groups" ? (
-                                loading ? <TableLoading/> :
-                                record_groups.length ?
-                                <RecordGroupsTable record_groups={record_groups} sortRecordGroups={sortRecordGroups} /> :
-                                <EmptyTable 
-                                    title="No record groups found." 
-                                    message="Please create a new record group or contact a team lead to get started."
+                                <RecordGroupsTable
+                                    record_groups={record_groups}
+                                    sortRecordGroups={sortRecordGroups}
+                                    loading={loading}
                                 />
                             )
                                 
@@ -224,7 +220,7 @@ const Project = () => {
                         
                     </div>
                 :
-                    <EmptyTable/>
+                    null
                 }
                 <NewRecordGroupDialog 
                     open={showNewRecordGroupDialog} 

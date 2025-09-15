@@ -24,6 +24,8 @@ import TableFilters from '../TableFilters/TableFilters';
 import { RecordData, RecordsTableProps, RecordNote } from '../../types';
 import { getRecords } from '../../services/app.service';
 import ColumnSelectDialog from '../ColumnSelectDialog/ColumnSelectDialog';
+import EmptyTable from '../EmptyTable/EmptyTable';
+import TableLoading from '../TableLoading/TableLoading';
 
 const SORTABLE_COLUMNS = ["name", "dateCreated", "status", "review_status", "api_number"]
 
@@ -34,12 +36,12 @@ const RecordsTable = (props: RecordsTableProps) => {
     params,
     filter_options,
     handleUpdate,
-    recordGroups
+    recordGroups,
   } = props;
-
+  const [loading, setLoading] = useState(true);
   const [ showNotes, setShowNotes ] = useState(false);
   const [ notesRecordId, setNotesRecordId ] = useState<string>();
-  const [ notes, setNotes ] = useState<RecordNote[]>();
+  // const [ notes, setNotes ] = useState<RecordNote[]>();
   const [ openColumnSelect, setOpenColumnSelect ] = useState(false);
   const [records, setRecords] = useState<any[]>([]);
   const [recordCount, setRecordCount] = useState(0);
@@ -53,6 +55,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   const table_columns = TABLE_ATTRIBUTES[location]
 
   useEffect(() => {
+    setLoading(true)
     loadData();
   }, [params.id, pageSize, currentPage, sortBy, sortAscending, filterBy]);
 
@@ -71,14 +74,20 @@ const RecordsTable = (props: RecordsTableProps) => {
         getRecords,
         args,
         handleSuccess,
-        (e: Error) => { console.error('error getting record group data: ', e); }
+        handleAPIError,
     );
   };
 
   const handleSuccess = (data: { records: any[], record_count: number }) => {
-      setRecords(data.records);
-      setRecordCount(data.record_count);
+    setLoading(false)
+    setRecords(data.records);
+    setRecordCount(data.record_count);
   };
+
+  const handleAPIError = (e: Error) => {
+    setLoading(false)
+    console.error('error getting record group data: ', e);
+  }
 
   const handleClickRecord = (record_id: string) => {
     navigate("/record/" + record_id);
@@ -120,13 +129,13 @@ const RecordsTable = (props: RecordsTableProps) => {
     event.stopPropagation();
     setShowNotes(true);
     setNotesRecordId(row._id);
-    setNotes(row.record_notes);
+    // setNotes(row.record_notes);
   }
 
   const handleCloseNotesModal = (record_id?: string, newNotes?: RecordNote[]) => {
     setShowNotes(false);
     setNotesRecordId(undefined);
-    setNotes(undefined);
+    // setNotes(undefined);
     if (record_id) {
       const rowIdx = records.findIndex(r => r._id === record_id);
       if (rowIdx > -1) {
@@ -283,54 +292,54 @@ const RecordsTable = (props: RecordsTableProps) => {
   }
 
   return (
-    <TableContainer component={Paper}>
-      <Box sx={styles.topSection}>
-        <Grid container>
-          <Grid item sx={styles.topSectionLeft} xs={6}>
-            <TableFilters applyFilters={handleApplyFilters} appliedFilters={filterBy} filter_options={filter_options} />
-            <Button onClick={() => setOpenColumnSelect(true)} startIcon={<IosShareIcon />}>
-              Export
-            </Button>
+    <React.Fragment>
+      <TableContainer component={Paper}>
+        <Box sx={styles.topSection}>
+          <Grid container>
+            <Grid item sx={styles.topSectionLeft} xs={6}>
+              <TableFilters applyFilters={handleApplyFilters} appliedFilters={filterBy} filter_options={filter_options} />
+              <Button onClick={() => setOpenColumnSelect(true)} startIcon={<IosShareIcon />}>
+                Export
+              </Button>
+            </Grid>
+            <Grid item sx={styles.topSectionRight} xs={6}>
+              
+            </Grid>
           </Grid>
-          <Grid item sx={styles.topSectionRight} xs={6}>
-            
-          </Grid>
-        </Grid>
-      </Box>
-      <Table sx={{ minWidth: 650, marginTop: 1 }} aria-label="records table" size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell></TableCell>
-            {
-              table_columns.displayNames.map((attribute, idx) => (
-                <TableCell sx={styles.headerCell} key={idx} align={idx > 0 ? "right" : "left"}>
-                  <p style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx])}>
-                    {table_columns.keyNames[idx] === sortBy &&
-                      <IconButton>
-                        {
-                          sortAscending === 1 ? 
-                            <KeyboardArrowUpIcon /> :
-                          sortAscending === -1 &&
-                            <KeyboardArrowDownIcon />
-                        }
-                      </IconButton>
-                    }
-                    {attribute}
-                  </p>
-                </TableCell>
-              ))
-            }
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {records.map((row, idx) => (
-            <Fragment key={idx}>
-              {tableRow(row, idx)}
-            </Fragment>
-          ))}
-        </TableBody>
-        
-          {pageSize && 
+        </Box>
+        <Table sx={{ minWidth: 650, marginTop: 1 }} aria-label="records table" size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell></TableCell>
+              {
+                table_columns.displayNames.map((attribute, idx) => (
+                  <TableCell sx={styles.headerCell} key={idx} align={idx > 0 ? "right" : "left"}>
+                    <p style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx])}>
+                      {table_columns.keyNames[idx] === sortBy &&
+                        <IconButton>
+                          {
+                            sortAscending === 1 ? 
+                              <KeyboardArrowUpIcon /> :
+                            sortAscending === -1 &&
+                              <KeyboardArrowDownIcon />
+                          }
+                        </IconButton>
+                      }
+                      {attribute}
+                    </p>
+                  </TableCell>
+                ))
+              }
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {records.map((row, idx) => (
+              <Fragment key={idx}>
+                {tableRow(row, idx)}
+              </Fragment>
+            ))}
+          </TableBody>
+          {pageSize && records?.length ?
             <TableFooter>
               <TableRow>
                 <TablePagination
@@ -352,25 +361,31 @@ const RecordsTable = (props: RecordsTableProps) => {
                   ActionsComponent={TablePaginationActions}
                 />
               </TableRow>
-            </TableFooter>
+            </TableFooter> : null
           }
-      </Table>
-      <RecordNotesDialog
-          record_id={notesRecordId}
-          open={showNotes}
-          onClose={handleCloseNotesModal}
-      />
-      <ColumnSelectDialog
-          open={openColumnSelect}
-          onClose={() => setOpenColumnSelect(false)}
-          location={location}
-          handleUpdate={handleUpdate}
-          _id={params.id}
-          appliedFilters={filterBy}
-          sortBy={sortBy}
-          sortAscending={sortAscending}
-      />
-    </TableContainer>
+        </Table>
+        <RecordNotesDialog
+            record_id={notesRecordId}
+            open={showNotes}
+            onClose={handleCloseNotesModal}
+        />
+        <ColumnSelectDialog
+            open={openColumnSelect}
+            onClose={() => setOpenColumnSelect(false)}
+            location={location}
+            handleUpdate={handleUpdate}
+            _id={params.id}
+            appliedFilters={filterBy}
+            sortBy={sortBy}
+            sortAscending={sortAscending}
+        />
+      </TableContainer>
+      {
+        loading ? <TableLoading/> :
+        !records?.length ? <EmptyTable/> :
+        null
+      }
+    </React.Fragment>
   );
 }
 
