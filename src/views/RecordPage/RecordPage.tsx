@@ -154,8 +154,8 @@ const Record = () => {
         setErrorMsg(errorMessage);
     }, [])
 
-    const insertField = React.useCallback((k: string, topLevelIndex: number, isSubattribute?: boolean, subIndex?: number, parentAttribute?: string) => {
-        if (isSubattribute && subIndex !== undefined) {
+    const insertField = React.useCallback((k: string, topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null, parentAttribute?: string) => {
+        if (isSubattribute && subIndex !== undefined && subIndex !== null) {
             const newSubIndex = subIndex + 1;
             const newSubField = {
                 "key": k,
@@ -251,7 +251,7 @@ const Record = () => {
         
     }, [])
 
-    const deleteField = React.useCallback((topLevelIndex: number, isSubattribute?: boolean, subIndex?: number) => {
+    const deleteField = React.useCallback((topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => {
         if (isSubattribute) {
             setRecordData(tempRecordData => {
                 const newAttributesList = tempRecordData.attributesList.map((attribute, idx) => {

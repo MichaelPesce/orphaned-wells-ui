@@ -321,7 +321,7 @@ export const DocumentContainerStyles = {
       
   },
   outerBox: {
-      paddingBottom: "45px"
+      paddingBottom: "65px"
   },
   errorAlert: {
     backgroundColor: '#FFECED',

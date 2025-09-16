@@ -169,10 +169,10 @@ export interface RecordAttributesTableProps {
     showRawValues?: boolean;
     recordSchema: RecordSchema;
     forceEditMode: number[];
-    insertField: (k: string, topLevelIndex: number, isSubattribute: boolean, subIndex?: number, parentAttribute?: string) => void;
+    insertField: (k: string, topLevelIndex: number, isSubattribute: boolean, subIndex?: number | null, parentAttribute?: string) => void;
     handleSuccessfulAttributeUpdate: (data: any) => void;
     showError: (errorMessage: string) => void;
-    deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number) => void;
+    deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => void;
     reviewStatus: string;
 }
 
@@ -262,10 +262,10 @@ export interface DocumentContainerProps {
     locked?: boolean;
     recordSchema: RecordSchema;
     forceEditMode: number[];
-    insertField: (k: string, topLevelIndex: number, isSubattribute: boolean, subIndex?: number, parentAttribute?: string) => void;
+    insertField: (k: string, topLevelIndex: number, isSubattribute: boolean, subIndex?: number | null, parentAttribute?: string) => void;
     handleSuccessfulAttributeUpdate: (data: any) => void;
     showError: (errorMessage: string) => void;
-    deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number) => void;
+    deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => void;
     reviewStatus: string;
 }
 
@@ -315,7 +315,7 @@ export interface handleChangeValueSignature {
         event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, 
         index: number, 
         isSubattribute?: boolean, 
-        subIndex?: number
+        subIndex?: number | null,
     ): void;
 }
 

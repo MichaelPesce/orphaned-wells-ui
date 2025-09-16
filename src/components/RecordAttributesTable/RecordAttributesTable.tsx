@@ -176,6 +176,8 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     } = childProps;
     const isSubattribute = (topLevelIdx && topLevelIdx > -1) ? true : false;
     const schemaKey = isSubattribute ? `${topLevelKey}::${k}` : k;
+    const primaryIndex = isSubattribute ? topLevelIdx : idx;
+    const subIndex = isSubattribute ? idx : null;
     
     const [ editMode, setEditMode ] = useState(false);
     const [ openSubtable, setOpenSubtable ] = useState(true);
@@ -223,36 +225,31 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     const handleClickInside = (e: React.MouseEvent<HTMLTableRowElement>) => {
         if (v.subattributes) setOpenSubtable(!openSubtable)
         e.stopPropagation();
-        if (isSubattribute) handleClickField(k, v.normalized_vertices, topLevelIdx, true, idx);
-        else handleClickField(k, v.normalized_vertices, idx, false, null);
+        handleClickField(k, v.normalized_vertices, primaryIndex, isSubattribute, subIndex);
     }
 
     //TODO: update all the below functions
 
     const handleSuccess = (resp: any) => {
         let newV;
-        let data;
-        // TODO: need a better, definite way to test: isSubattribute?
-        if (isSubattribute) {
+        if (isSubattribute)
             newV = resp?.[`attributesList.${topLevelIdx}.subattributes.${idx}`];
-            data = {
-                isSubattribute: isSubattribute,
-                topLevelIndex: topLevelIdx,
-                subIndex: idx,
-                v: newV,
-            }
-        } else {
+        else
             newV = resp?.["attributesList."+idx];
-            data = {
-                isSubattribute: isSubattribute,
-                topLevelIndex: idx,
-                subIndex: null,
-                v: newV,
-                review_status: resp?.review_status,
-            }
+        const data: {
+            isSubattribute: boolean;
+            topLevelIndex: number;
+            subIndex: number | null;
+            v: any;
+            review_status?: string;
+          } = {
+            isSubattribute: isSubattribute,
+            topLevelIndex: primaryIndex,
+            subIndex: subIndex,
+            v: newV,
         }
+        if (resp?.review_status) data.review_status = resp?.review_status;
         handleSuccessfulAttributeUpdate(data)
-
     }
 
     const handleFailedUpdate = (data: any, response_status?: number) => {
@@ -267,15 +264,15 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         if (locked) return
         const body: {
             data: { key: string; idx: number; v: any, review_status?: string
-            isSubattribute?: boolean, subIndex?: number };
+            isSubattribute?: boolean, subIndex?: number | null};
             type: string;
             fieldToClean: any;
-          } = { data: { key: k, idx: isSubattribute ? topLevelIdx : idx, v: v, review_status: reviewStatus, isSubattribute: isSubattribute, subIndex: isSubattribute ? idx : undefined}, type: "attribute", fieldToClean: null }
+          } = { data: { key: k, idx: primaryIndex, v: v, review_status: reviewStatus, isSubattribute: isSubattribute, subIndex: subIndex}, type: "attribute", fieldToClean: null }
         if (cleanFields) {
             const fieldToClean = {
-                topLevelIndex: isSubattribute ? topLevelIdx : idx,
+                topLevelIndex: primaryIndex,
                 isSubattribute: isSubattribute,
-                subIndex: isSubattribute ? idx : null,
+                subIndex: subIndex,
             }
             body['fieldToClean'] = fieldToClean;
         }
@@ -309,8 +306,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                 }
                 setEditMode(false);
             }
-            if (isSubattribute) handleClickField(k, v.normalized_vertices, topLevelIdx, true, idx);
-            else handleClickField(k, v.normalized_vertices, idx, false, null);
+            handleClickField(k, v.normalized_vertices, primaryIndex, isSubattribute, subIndex)
         }
     }, undefined, undefined, undefined);
 
@@ -380,16 +376,14 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         setShowActions(false);
         setMenuAnchor(null);
         handleClickOutside();
-        if (isSubattribute) insertField(k, topLevelIdx, isSubattribute, idx, topLevelKey);
-        else insertField(k, idx, isSubattribute);
+        insertField(k, primaryIndex, isSubattribute, subIndex, topLevelKey);
     }
 
     const handleClickDeleteField = () => {
         setShowActions(false);
         setMenuAnchor(null);
         handleClickOutside();
-        if (isSubattribute) deleteField(topLevelIdx, isSubattribute, idx);
-        else deleteField(idx, isSubattribute);
+        deleteField(primaryIndex, isSubattribute, subIndex);
     }
 
     const handleClickAddChildField = (childField: string) => {
@@ -405,10 +399,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
     const handleUpdateValue = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (locked) return;
-        if (isSubattribute) 
-            handleChangeValue(event, topLevelIdx, true, idx);
-        else
-            handleChangeValue(event, idx)
+        handleChangeValue(event, primaryIndex, isSubattribute, subIndex);
     }
 
     return (
@@ -620,376 +611,5 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     </>
     )
 })
-
-// interface SubattributesTableProps extends RecordAttributesTableProps {
-//     attributesList: Attribute[];
-//     open: boolean;
-//     topLevelIdx: number;
-//     topLevelKey: string;
-//     record_id?: string;
-//     handleClickOutside: () => void;
-// }
-
-// const SubattributesTable = (props: SubattributesTableProps) => {
-//     const { 
-//         attributesList,
-//         open,
-//         topLevelKey,
-//         ...childProps
-//     } = props;
-
-//     const {
-//         showRawValues,
-//     } = childProps;
-
-//     return (
-//         <TableRow>
-//             <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
-//             <Collapse in={open} timeout="auto" unmountOnExit>
-//                 <Box sx={{ margin: 1 }}>
-//                 <Typography variant="h6" gutterBottom component="div">
-//                     {topLevelKey} Properties
-//                 </Typography>
-//                 <Table size="small" aria-label="purchases" sx={styles.subattributesTable}>
-//                     <TableHead>
-//                     <TableRow>
-//                         <TableCell sx={styles.headerRow}>Field</TableCell>
-//                         <TableCell sx={styles.headerRow}>Value</TableCell>
-//                         {showRawValues &&
-//                             <TableCell sx={styles.headerRow}>Raw Value</TableCell>
-//                         }
-//                         <TableCell sx={styles.headerRow}>Confidence</TableCell>
-//                         <TableCell sx={styles.headerRow}></TableCell>
-//                     </TableRow>
-//                     </TableHead>
-//                     <TableBody>
-//                     {attributesList.map((v: Attribute, idx: number) => (
-//                         <SubattributeRow 
-//                             key={`${v.key} ${idx}`}
-//                             k={v.key}
-//                             v={v}
-//                             idx={idx}
-//                             topLevelKey={topLevelKey}
-//                             {...childProps}
-//                         />
-//                     ))}
-//                     </TableBody>
-//                 </Table>
-//                 </Box>
-//             </Collapse>
-//             </TableCell>
-//         </TableRow>
-//     )
-// }
-
-// interface SubattributeRowProps extends RecordAttributesTableProps {
-//     k: string;
-//     v: Attribute;
-//     topLevelIdx: number;
-//     idx: number;
-//     topLevelKey: string;
-//     record_id?: string;
-//     handleClickOutside: () => void;
-// }
-
-// const SubattributeRow = React.memo((props: SubattributeRowProps) => {
-//     const { 
-//         k, 
-//         v,
-//         handleClickField,
-//         handleChangeValue,
-//         topLevelIdx,
-//         displayKeyIndex,
-//         displayKeySubattributeIndex,
-//         idx,
-//         locked,
-//         showRawValues,
-//         recordSchema,
-//         topLevelKey,
-//         showError,
-//         handleSuccessfulAttributeUpdate,
-//         record_id,
-//         insertField,
-//         deleteField,
-//         forceEditMode,
-//         reviewStatus,
-//         handleClickOutside
-//     } = props;
-
-//     const [ editMode, setEditMode ] = useState(false);
-//     const [ isSelected, setIsSelected ] = useState(false);
-//     const [ lastSavedValue, setLastSavedValue ] = useState(v.value)
-//     const [ menuAnchor, setMenuAnchor ] = useState<null | HTMLElement>(null);
-//     const [showActions, setShowActions] = useState(false);
-
-//     const schemaKey = `${topLevelKey}::${k}`
-//     const allowMultiple = recordSchema[schemaKey]?.occurrence?.toLowerCase().includes('multiple');
-
-//     //TODO: make sure everything below makes it into attributerow
-//     const handleSuccess = (resp: any) => {
-//         const newV = resp?.[`attributesList.${topLevelIdx}.subattributes.${idx}`];
-//         const data: any = {
-//             isSubattribute: true,
-//             topLevelIndex: topLevelIdx,
-//             subIndex: idx,
-//             v: newV,
-//         }
-//         handleSuccessfulAttributeUpdate(data)
-//     }
-
-//     const handleFailedUpdate = (data: any, response_status?: number) => {
-//         if (response_status === 403) {
-//             showError(`${data}.`);
-//         } else {
-//             console.error(`error updating attribute ${k}: ${data}`);
-//         }
-//     }
-
-//     const handleClickShowActions = (event: MouseEvent<HTMLElement>) => {
-//         event.stopPropagation();
-//         setShowActions(!showActions);
-//         setMenuAnchor(event.currentTarget);
-//     }
-
-//     const handleUpdateRecord = (cleanFields: boolean = true) => {
-//         if (locked) return
-//         const body: {
-//             data: { key: string; idx: number; v: any, review_status?: string, isSubattribute?: boolean, subIndex?: number };
-//             type: string;
-//             fieldToClean: any;
-//           } = { data: { key: k, idx: topLevelIdx, v: v, review_status: reviewStatus, isSubattribute: true, subIndex: idx}, type: "attribute", fieldToClean: null }
-//         if (cleanFields) {
-//             const fieldToClean = {
-//                 topLevelIndex: topLevelIdx,
-//                 isSubattribute: true,
-//                 subIndex: idx
-//             }
-//             body['fieldToClean'] = fieldToClean
-//         }
-//         callAPI(
-//             updateRecord,
-//             [record_id, body],
-//             handleSuccess,
-//             handleFailedUpdate
-//         );
-//     }
-
-//     useEffect(() => {
-//         if (forceEditMode[0] === topLevelIdx && forceEditMode[1] === idx) {
-//             makeEditable();
-//             handleClickField(k, v.normalized_vertices, topLevelIdx, true, idx);
-//         } else if (forceEditMode[0] !== -1) {
-//             finishEditing();
-//             setIsSelected(false);
-//         }
-//     }, [forceEditMode]);
-
-//     useEffect(() => {
-//         if (displayKeyIndex === topLevelIdx && idx === displayKeySubattributeIndex) {
-//             setIsSelected(true);
-//         } else {
-//             setIsSelected(false);
-//             if (editMode) finishEditing();
-//         }
-//     }, [displayKeyIndex, topLevelIdx, displayKeySubattributeIndex]);
-
-//     useKeyDown("Enter", () => {
-//         if (isSelected) {
-//             if (editMode) finishEditing();
-//             else makeEditable();
-//         }
-//     }, undefined, undefined, undefined, true);
-
-//     useKeyDown("Escape", () => {
-//         if (isSelected) {
-//             if (editMode) {
-//                 // reset to last saved value
-//                 if (v.value !== lastSavedValue) {
-//                     let fakeEvent = {
-//                         target: {
-//                             value: lastSavedValue
-//                         }
-//                     } as React.ChangeEvent<HTMLInputElement>
-//                     handleUpdateValue(fakeEvent)
-//                 }
-//                 setEditMode(false);
-//             }
-//             handleClickField(k, v.normalized_vertices, topLevelIdx, true, idx);
-//         }
-//     }, undefined, undefined, undefined);
-
-//     const handleClickInside = (e: React.MouseEvent<HTMLTableRowElement>) => {
-//         e.stopPropagation();
-//         handleClickField(k, v.normalized_vertices, topLevelIdx, true, idx);
-//     }
-
-//     const handleDoubleClick = () => {
-//         makeEditable()
-//     }
-
-//     const handleKeyDown = (e: React.KeyboardEvent<HTMLTableCellElement>) => {
-//         if (e.key === "ArrowLeft") {
-//             e.stopPropagation();
-//         }
-//         else if (e.key === "ArrowRight") {
-//             e.stopPropagation();
-//         }
-//     }
-
-//     const handleUpdateValue = (event: React.ChangeEvent<HTMLInputElement>) => {
-//         if (locked) return
-//         handleChangeValue(event, topLevelIdx, true, idx);
-//     }
-
-//     const handleClickEditIcon = (e: React.MouseEvent<HTMLButtonElement>) => {
-//         e.stopPropagation();
-//         handleDoubleClick();
-//     }
-
-//     const makeEditable = () => {
-//         if (locked) return
-//         setEditMode(true);
-//     }
-
-//     const finishEditing = () => {
-//         if (v.value !== lastSavedValue) {
-//             handleUpdateRecord();
-//             setLastSavedValue(v.value)
-//         }
-//         setEditMode(false);
-//     }
-
-//     const showAutocleanDisclaimer = () => {
-//         // last updated is in milliseconds, last_cleaned is in seconds
-//         if (v.cleaned && v.value !== null && v.lastUpdated && v.last_cleaned) {
-//             const difference = Math.abs((v.lastUpdated / 1000) - v.last_cleaned);
-//             if (difference <= 2) return true
-//         }
-//         return false
-//     }
-
-//     const handleClickInsertField = () => {
-//         setShowActions(false);
-//         setMenuAnchor(null);
-//         handleClickOutside();
-//         insertField(k, topLevelIdx, true, idx, topLevelKey);
-//     }
-
-//     const handleClickDeleteField = () => {
-//         setShowActions(false);
-//         setMenuAnchor(null);
-//         handleClickOutside();
-//         deleteField(topLevelIdx, true, idx);
-//     }
-
-//     return (
-//         <TableRow 
-//             key={k} 
-//             id={`${topLevelIdx}::${idx}`} 
-//             sx={isSelected ? {backgroundColor: "#EDEDED"} : {}}
-//             onClick={handleClickInside}
-//         >
-//             <TableCell sx={styles.fieldKey}>
-//                 <span style={isSelected ? {fontWeight:"bold"} : {}}>
-//                     {k}
-//                 </span>
-//             </TableCell>
-//             <TableCell onKeyDown={handleKeyDown} sx={v.cleaning_error ? {backgroundColor: '#FECDD3'} : {}}>
-//                 <Stack direction='column'>
-//                     <span style={v.cleaning_error ? styles.errorSpan : {}}>
-//                     {editMode ? 
-//                         <TextField 
-//                             onClick={(e) => e.stopPropagation()}
-//                             autoFocus
-//                             name={k}
-//                             size="small" 
-//                             defaultValue={v.value} 
-//                             onChange={handleUpdateValue} 
-//                             onFocus={(event) => event.target.select()}
-//                             sx={v.cleaning_error ? styles.errorTextField: {}}
-//                         />
-//                         :
-//                         <p>
-//                             {formatAttributeValue(v.value)}&nbsp;
-//                             {isSelected && !locked &&
-//                                 <IconButton sx={styles.rowIconButton} onClick={handleClickEditIcon}>
-//                                     <EditIcon sx={styles.rowIcon}/>
-//                                 </IconButton>
-//                             }
-//                         </p>
-//                     }
-//                     </span>
-//                     {
-//                         v.cleaning_error && (
-//                             <Typography noWrap component={'p'} sx={styles.errorText}>
-//                                 Error during cleaning 
-//                                 <Tooltip title={v.cleaning_error} onClick={(e) => e.stopPropagation()}>
-//                                     <IconButton sx={styles.errorInfoIcon}>
-//                                         <InfoIcon fontSize='inherit' color='inherit'/>
-//                                     </IconButton>
-//                                 </Tooltip>
-                                
-//                             </Typography>
-//                         )
-//                     }
-//                     {
-//                         (isSelected && !showRawValues) &&(
-//                             <span>
-//                                 {
-//                                     showAutocleanDisclaimer() &&
-//                                     <Typography noWrap component={'p'} sx={styles.ocrRawText}>
-//                                         Edited value was auto-cleaned 
-//                                         <Tooltip title={`Only ${recordSchema[schemaKey]?.database_data_type} types are allowed for this field.`} onClick={(e) => e.stopPropagation()}>
-//                                             <IconButton sx={styles.infoIcon}>
-//                                                 <InfoIcon fontSize='inherit' color='inherit'/>
-//                                             </IconButton>
-//                                         </Tooltip>
-//                                     </Typography>
-//                                 }
-//                                 {
-//                                     showEditedValue(v) &&
-//                                     <Typography noWrap component={'p'} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
-//                                         Edited value: {v.uncleaned_value}
-//                                     </Typography>
-//                                 }
-//                                 {
-//                                     showOCRRawValue(v) &&
-//                                     <Typography noWrap component={'p'} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
-//                                         OCR Raw Value: {v.raw_text}
-//                                     </Typography>
-//                                 }
-//                             </span>
-//                         )
-//                     }
-//                 </Stack>
-//             </TableCell>
-//             {showRawValues &&
-//                 <TableCell>
-//                     <span>
-//                         {v.raw_text}&nbsp;
-//                     </span>
-//                 </TableCell>
-//             }
-//             <TableCell>{formatConfidence(v.confidence)}</TableCell>
-//             <TableCell>{allowMultiple ? (
-//                 <IconButton size='small' onClick={handleClickShowActions}>
-//                     <MoreVertIcon/>
-//                 </IconButton>
-//             ) : null}</TableCell> 
-//             <Menu
-//                 id="actions"
-//                 anchorEl={menuAnchor}
-//                 open={showActions}
-//                 onClose={() => setShowActions(false)}
-//                 onClick={(e) => e.stopPropagation()}
-//             >
-//                 <MenuItem onClick={handleClickInsertField}>Add another '{k}'</MenuItem>
-//                 {v.user_added && 
-//                     <MenuItem onClick={handleClickDeleteField}>Delete this '{k}'</MenuItem>
-//                 }
-//             </Menu>
-//         </TableRow>
-//     )
-// })
 
 export default AttributesTable;
