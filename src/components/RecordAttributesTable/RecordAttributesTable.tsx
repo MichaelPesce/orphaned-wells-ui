@@ -21,6 +21,20 @@ interface AttributesTableProps extends RecordAttributesTableProps {
     forceOpenSubtable: number | null;
 }
 
+function showEditedValue(v: Attribute){
+    if (v.edited && v.uncleaned_value) {
+        return true
+    }
+    return false
+}
+
+function showOCRRawValue(v: Attribute) {
+    if (v.user_added) return false
+    else if (v.edited || v.cleaned) return true
+    return false
+}
+
+
 const AttributesTable = (props: AttributesTableProps) => {
     const { 
         attributesList,
@@ -271,19 +285,6 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         return false
     }
 
-    const showEditedValue = () => {
-        if (v.edited && v.uncleaned_value) {
-            return true
-        }
-        return false
-    }
-
-    const showOCRRawValue = () => {
-        if (v.user_added) return false
-        else if (v.edited || v.cleaned) return true
-        return false
-    }
-
     const handleClickShowActions = (event: MouseEvent<HTMLElement>) => {
         event.stopPropagation();
         setShowActions(!showActions);
@@ -393,13 +394,13 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                                     </Typography>
                                 }
                                 {
-                                    showEditedValue() &&
+                                    showEditedValue(v) &&
                                     <Typography noWrap component={'p'} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
                                         Edited value: {v.uncleaned_value}
                                     </Typography>
                                 }
                                 {
-                                    showOCRRawValue() &&
+                                    showOCRRawValue(v) &&
                                     <Typography noWrap component={'p'} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
                                         OCR Raw Value: {v.raw_text}
                                     </Typography>
@@ -771,13 +772,6 @@ const SubattributeRow = React.memo((props: SubattributeRowProps) => {
         return false
     }
 
-    const showEditedValue = () => {
-        if (v.edited && v.uncleaned_value) {
-            return true
-        }
-        return false
-    }
-
     const handleClickInsertField = () => {
         setShowActions(false);
         setMenuAnchor(null);
@@ -857,13 +851,13 @@ const SubattributeRow = React.memo((props: SubattributeRowProps) => {
                                     </Typography>
                                 }
                                 {
-                                    showEditedValue() &&
+                                    showEditedValue(v) &&
                                     <Typography noWrap component={'p'} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
                                         Edited value: {v.uncleaned_value}
                                     </Typography>
                                 }
                                 {
-                                    (v.cleaned || v.cleaning_error) &&
+                                    showOCRRawValue(v) &&
                                     <Typography noWrap component={'p'} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
                                         OCR Raw Value: {v.raw_text}
                                     </Typography>

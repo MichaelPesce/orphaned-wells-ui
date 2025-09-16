@@ -27,10 +27,14 @@ const Project = () => {
     const [currentTab, setCurrentTab] = useState(0)
     const [errorMsg, setErrorMsg] = useState<string | null>("")
     const [filters, setFilters] = useState({...DEFAULT_FILTER_OPTIONS})
+    const [loading, setLoading] = useState(true);
     const tabs = ["Record Groups", "All Records"]
 
     useEffect(() => {
-        if (tabs[currentTab] === "Record Groups") callAPI(getRecordGroups, [params.id], handleFetchedRecordGroups, handleError);
+        if (tabs[currentTab] === "Record Groups") {
+            setLoading(true);
+            callAPI(getRecordGroups, [params.id], handleFetchedRecordGroups, handleError);
+        }
         else if (tabs[currentTab] === "All Records") {
             if (projectData.record_groups) {
                 
@@ -68,10 +72,12 @@ const Project = () => {
         setRecordGroups(data.record_groups);
         setProjectData(data.project)
         setProjectName(data.project.name)
+        setLoading(false);
     };
 
     const handleError = (e: Error) => {
         console.error(e);
+        setLoading(false);
         setUnableToConnect(true);
     };
 
@@ -193,8 +199,14 @@ const Project = () => {
                     <div>
                         <ProjectTabs options={tabs} value={currentTab} setValue={setCurrentTab}/>
                         {
-                            tabs[currentTab] === "Record Groups" ? 
-                                <RecordGroupsTable record_groups={record_groups} sortRecordGroups={sortRecordGroups} />
+                            tabs[currentTab] === "Record Groups" ? (
+                                <RecordGroupsTable
+                                    record_groups={record_groups}
+                                    sortRecordGroups={sortRecordGroups}
+                                    loading={loading}
+                                />
+                            )
+                                
                             :
                             tabs[currentTab] === "All Records" &&
                                 <RecordsTable
@@ -208,7 +220,7 @@ const Project = () => {
                         
                     </div>
                 :
-                    <h1>Unable to connect to backend. Please make sure that backend server is up and running.</h1>
+                    null
                 }
                 <NewRecordGroupDialog 
                     open={showNewRecordGroupDialog} 
