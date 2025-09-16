@@ -77,6 +77,13 @@ export const ImageCropper = (props: ImageCropperProps) => {
     }, [fullscreen]);
 
     useEffect(() => {
+        if (updateFieldLocationID) {
+            setCrop(undefined);
+        }
+    }, [updateFieldLocationID]);
+
+
+    useEffect(() => {
         updateDisplay()
     }, [displayPoints, highlightedImageIdxIndex, zoomOnToken]);
 

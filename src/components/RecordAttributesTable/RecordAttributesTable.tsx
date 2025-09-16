@@ -413,7 +413,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         setUpdateFieldLocationID(fieldID);
         setMenuAnchor(null);
         setShowActions(false);
-        handleClickOutside();
+        // handleClickOutside();
     }
 
     return (
