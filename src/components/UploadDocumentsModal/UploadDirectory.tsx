@@ -40,22 +40,22 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
     },[uploadedFiles])
 
     useEffect(() => {
-        if (isNaN(amountToUpload) || amountToUpload <=0 || amountToUpload > MAX_UPLOAD_AMT) {
+        if (isNaN(amountToUpload) || amountToUpload <=0) {
             setDisabled(true)
             setFilesToUpload([])
-        } else {
-            if (duplicateFiles !== undefined) {
-                setDisabled(false)
-                let tempFilesToUpload = []
-                for (let file of directoryFiles) {
-                    if (!preventDuplicates || !duplicateFiles.includes(file.name.split('.')[0])) {
-                        tempFilesToUpload.push(file)
-                    }
-                    if (tempFilesToUpload.length >= amountToUpload) break
+            return
+        } 
+        if (duplicateFiles !== undefined) {
+            if(amountToUpload > MAX_UPLOAD_AMT) setDisabled(true)
+            else setDisabled(false)
+            let tempFilesToUpload = []
+            for (let file of directoryFiles) {
+                if (!preventDuplicates || !duplicateFiles.includes(file.name.split('.')[0])) {
+                    tempFilesToUpload.push(file)
                 }
-                setFilesToUpload(tempFilesToUpload)
+                if (tempFilesToUpload.length >= amountToUpload) break
             }
-            
+            setFilesToUpload(tempFilesToUpload)
         }
     },[amountToUpload, duplicateFiles, preventDuplicates])
 
