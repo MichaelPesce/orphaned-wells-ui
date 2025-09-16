@@ -8,7 +8,7 @@ import Bottombar from '../../components/BottomBar/BottomBar';
 import DocumentContainer from '../../components/DocumentContainer/DocumentContainer';
 import PopupModal from '../../components/PopupModal/PopupModal';
 import ErrorBar from '../../components/ErrorBar/ErrorBar';
-import { RecordData, handleChangeValueSignature, PreviousPages, SubheaderActions, RecordSchema, Attribute } from '../../types';
+import { RecordData, handleChangeValueSignature, PreviousPages, SubheaderActions, RecordSchema, Attribute, FieldID } from '../../types';
 import { useUserContext } from '../../usercontext';
 
 const Record = () => {
@@ -279,6 +279,57 @@ const Record = () => {
         }
     }, [])
 
+    const updateFieldCoordinates = React.useCallback((fieldId: FieldID, new_coordinates: number[][]) => {
+        if (locked) return true;
+        let rightNow = Date.now();
+        // TODO: need to update backend as well
+        if (!fieldId.isSubattribute) {
+            setRecordData(tempRecordData => {
+                const newRecordData = {
+                    ...tempRecordData,
+                    attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
+                        fieldId.primaryIndex === idx ? { 
+                            ...tempAttribute,
+                            lastUpdated: rightNow,
+                            lastUpdatedBy: userEmail,
+                            edited: true,
+                            normalized_vertices: new_coordinates,
+                            original_vertices: tempAttribute.normalized_vertices,
+                        } : tempAttribute
+                    )
+                }
+                handleUpdateRecord(newRecordData);
+                return newRecordData;
+            })
+        } else {
+            setRecordData(tempRecordData => {
+                const newRecordData = {
+                    ...tempRecordData,
+                    attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
+                        fieldId.primaryIndex === idx ? { 
+                            ...tempAttribute,
+                            subattributes: tempAttribute.subattributes.map((tempSubattribute: Attribute, subidx: number) => {
+                                if (fieldId.subIndex === subidx) {
+                                    return {
+                                        ...tempSubattribute,
+                                        lastUpdated: rightNow,
+                                        lastUpdatedBy: userEmail,
+                                        edited: true,
+                                        normalized_vertices: new_coordinates,
+                                        original_vertices: tempAttribute.normalized_vertices,
+                                    }
+                                } else return tempSubattribute
+                                }
+                            )
+                        } : tempAttribute
+                    )
+                }
+                handleUpdateRecord(newRecordData);
+                return newRecordData;
+            })
+        }
+    }, [])
+
     const handleChangeAttribute = (newAttribute: Attribute, topLevelIndex: number, reviewStatus: string, isSubattribute?: boolean, subIndex?: number) => {
         if (locked) return true
         // const rightNow = Date.now();
@@ -519,6 +570,7 @@ const Record = () => {
                     handleSuccessfulAttributeUpdate={handleSuccessfulAttributeUpdate}
                     showError={showError}
                     reviewStatus={recordData.review_status || ''}
+                    updateFieldCoordinates={updateFieldCoordinates}
                 />
             </Box>
             <Bottombar

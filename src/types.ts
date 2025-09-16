@@ -156,6 +156,13 @@ export interface SubheaderActions {
     [key: string]: () => void;
 }
 
+export interface FieldID {
+    key: string;
+    primaryIndex: number;
+    subIndex?: number | null;
+    isSubattribute?: boolean;
+}
+
 /*
 props interfaces
 */
@@ -174,6 +181,7 @@ export interface RecordAttributesTableProps {
     showError: (errorMessage: string) => void;
     deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => void;
     reviewStatus: string;
+    setUpdateFieldLocationID: (v?: FieldID) => void;
 }
 
 export interface RecordsTableProps {
@@ -267,6 +275,7 @@ export interface DocumentContainerProps {
     showError: (errorMessage: string) => void;
     deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => void;
     reviewStatus: string;
+    updateFieldCoordinates: updateFieldCoordinatesSignature;
 }
 
 export interface ColumnSelectDialogProps {
@@ -306,6 +315,18 @@ export interface RecordNotesDialogProps {
     onClose: (record_id?: string, newNotes?: RecordNote[], submitted?: boolean) => void;
 }
 
+export interface ImageCropperProps {
+    image: string;
+    displayPoints: number[][] | null;
+    disabled: boolean;
+    fullscreen: string | null;
+    imageIdx: number;
+    highlightedImageIdxIndex: number;
+    zoomOnToken?: boolean;
+    updateFieldLocationID?: FieldID;
+    setUpdateFieldLocationID: (v?: FieldID) => void;
+    updateFieldCoordinates: updateFieldCoordinatesSignature;
+}
 
 /*
 functions
@@ -326,5 +347,12 @@ export interface handleClickFieldSignature {
         index: number, 
         isSubattribute: boolean, 
         subattributeIdx: number | null
+    ): void;
+}
+
+export interface updateFieldCoordinatesSignature {
+    (
+        fieldId: FieldID,
+        new_coordinates: number[][],
     ): void;
 }

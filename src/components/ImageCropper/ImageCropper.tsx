@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ReactCrop, { Crop } from 'react-image-crop';
 import { findCenter } from '../../util';
+import { ImageCropperProps } from '../../types';
 
 const DRAG_HANDLES: string[] = [
     "ReactCrop__drag-handle ord-nw",
@@ -12,16 +13,6 @@ const DRAG_HANDLES: string[] = [
     "ReactCrop__drag-handle ord-sw",
     "ReactCrop__drag-handle ord-w",
 ];
-
-interface ImageCropperProps {
-    image: string;
-    displayPoints: number[][] | null;
-    disabled: boolean;
-    fullscreen: string | null;
-    imageIdx: number;
-    highlightedImageIdxIndex: number;
-    zoomOnToken?: boolean;
-}
 
 const converDisplayPointsToCrop = (dp: number[][]): Crop => {
     const crop_x = dp[0][0] - 0.5;
@@ -38,19 +29,25 @@ const converDisplayPointsToCrop = (dp: number[][]): Crop => {
     return newCrop;
 }
 
-const converCropToDisplayPoints = (c: Crop): number[][] => {
+const converCropToDisplayPoints = (c: Crop, divideBy100: boolean = true): number[][] => {
     const dp0: number[] = [c.x + 0.5, c.y + 0.5];
     const dp1: number[] = [dp0[0] + c.width - 1, dp0[1]];
     const dp2: number[] = [dp1[0], dp1[1] + c.height - 1];
     const dp3: number[] = [dp0[0], dp2[1]];
-
-    return [dp0, dp1, dp2, dp3];
+    const dps = [dp0, dp1, dp2, dp3];
+    if (divideBy100) {
+        dps.forEach((dp) => {
+            dp[0] = dp[0] / 100;
+            dp[1] = dp[1] / 100;
+        })
+    }
+    return dps;
 }
 
 const ZOOM_SCALE = 2
 
 export const ImageCropper = (props: ImageCropperProps) => {
-    const { image, displayPoints, disabled, fullscreen, imageIdx, highlightedImageIdxIndex, zoomOnToken } = props;
+    const { image, displayPoints, disabled, fullscreen, imageIdx, highlightedImageIdxIndex, zoomOnToken, updateFieldLocationID, setUpdateFieldLocationID, updateFieldCoordinates } = props;
     const [crop, setCrop] = useState<Crop | undefined>(undefined);
     const [ transformScale, setTransformScale ] = useState(1) // 1 = normal size
     const [ transformOrigin, setTransformOrigin ] = useState([50,50]) // [0,0] = top left ; [100,100] = bottom right
@@ -138,6 +135,11 @@ export const ImageCropper = (props: ImageCropperProps) => {
 
     const handleFinishDragging = (pxc: Crop, c: Crop) => {
         const new_displayPoints = converCropToDisplayPoints(c);
+        if (updateFieldLocationID && new_displayPoints && c.height && c.width) {
+            updateFieldCoordinates(updateFieldLocationID, new_displayPoints);
+            setUpdateFieldLocationID(undefined);
+            setCrop(undefined);
+        }
     }
 
     const removeDragHandles = () => {
@@ -150,7 +152,7 @@ export const ImageCropper = (props: ImageCropperProps) => {
     };
 
     return (
-        <ReactCrop crop={crop} onChange={c => handleSetCrop(c)} onComplete={(pxc, c) => handleFinishDragging(pxc, c)} locked={disabled}>
+        <ReactCrop crop={crop} onChange={c => handleSetCrop(c)} onComplete={(pxc, c) => handleFinishDragging(pxc, c)} locked={!updateFieldLocationID}>
             <img src={image} alt="well document" style={styles.image}/>
         </ReactCrop>
     );

@@ -173,6 +173,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         record_id,
         showError,
         deleteField,
+        setUpdateFieldLocationID,
     } = childProps;
     const isSubattribute = (topLevelIdx && topLevelIdx > -1) ? true : false;
     const schemaKey = isSubattribute ? `${topLevelKey}::${k}` : k;
@@ -402,6 +403,19 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         handleChangeValue(event, primaryIndex, isSubattribute, subIndex);
     }
 
+    const handleClickUpdateFieldLocation = () => {
+        const fieldID = {
+            key: k,
+            primaryIndex,
+            subIndex,
+            isSubattribute
+        };
+        setUpdateFieldLocationID(fieldID);
+        setMenuAnchor(null);
+        setShowActions(false);
+        handleClickOutside();
+    }
+
     return (
     <>
         <TableRow id={`${k}::${idx}`} sx={(isSelected && !isParent) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
@@ -565,11 +579,11 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     </p>
                 }
             </TableCell>
-            <TableCell>{(allowMultiple || isParent) ? (
+            <TableCell>
                 <IconButton size='small' onClick={handleClickShowActions}>
                     <MoreVertIcon/>
                 </IconButton>
-            ) : null}</TableCell> 
+            </TableCell> 
             <Menu
                 id="actions"
                 anchorEl={menuAnchor}
@@ -590,6 +604,9 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                         </MenuItem>
                     ))
                 }
+                <MenuItem onClick={handleClickUpdateFieldLocation}>
+                    Update field location
+                </MenuItem>
                 {v.user_added && 
                     <MenuItem onClick={handleClickDeleteField}>Delete this '{k}'</MenuItem>
                 }
