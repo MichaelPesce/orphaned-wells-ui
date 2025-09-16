@@ -23,6 +23,30 @@ interface ImageCropperProps {
     zoomOnToken?: boolean;
 }
 
+const converDisplayPointsToCrop = (dp: number[][]): Crop => {
+    const crop_x = dp[0][0] - 0.5;
+    const crop_y = dp[0][1] - 0.5;
+    const crop_width = dp[1][0] - dp[0][0] + 1;
+    const crop_height = dp[2][1] - dp[1][1] + 1;
+    const newCrop: Crop = {
+        unit: "%",
+        x: crop_x,
+        y: crop_y,
+        width: crop_width,
+        height: crop_height
+    };
+    return newCrop;
+}
+
+const converCropToDisplayPoints = (c: Crop): number[][] => {
+    const dp0: number[] = [c.x + 0.5, c.y + 0.5];
+    const dp1: number[] = [dp0[0] + c.width - 1, dp0[1]];
+    const dp2: number[] = [dp1[0], dp1[1] + c.height - 1];
+    const dp3: number[] = [dp0[0], dp2[1]];
+
+    return [dp0, dp1, dp2, dp3];
+}
+
 const ZOOM_SCALE = 2
 
 export const ImageCropper = (props: ImageCropperProps) => {
@@ -89,17 +113,7 @@ export const ImageCropper = (props: ImageCropperProps) => {
                 setTransformOrigin(center); // place focus of zoom on center of token
                 setTranslate([50-center[0], 50-center[1]]); // place token in center of image
             } else {
-                let crop_x = displayPoints[0][0] - 0.5;
-                let crop_y = displayPoints[0][1] - 0.5;
-                let crop_width = displayPoints[1][0] - displayPoints[0][0] + 1;
-                let crop_height = displayPoints[2][1] - displayPoints[1][1] + 1;
-                let newCrop: Crop = {
-                    unit: "%",
-                    x: crop_x,
-                    y: crop_y,
-                    width: crop_width,
-                    height: crop_height
-                };
+                const newCrop = converDisplayPointsToCrop(displayPoints);
                 setCrop(newCrop);
                 setTimeout(() => {
                     removeDragHandles();
@@ -122,6 +136,10 @@ export const ImageCropper = (props: ImageCropperProps) => {
         setCrop(c);
     };
 
+    const handleFinishDragging = (pxc: Crop, c: Crop) => {
+        const new_displayPoints = converCropToDisplayPoints(c);
+    }
+
     const removeDragHandles = () => {
         for (let dragHandleClass of DRAG_HANDLES) {
             let dragHandle = Array.from(document.getElementsByClassName(dragHandleClass) as HTMLCollectionOf<HTMLElement>);
@@ -132,7 +150,7 @@ export const ImageCropper = (props: ImageCropperProps) => {
     };
 
     return (
-        <ReactCrop crop={crop} onChange={c => handleSetCrop(c)} locked={disabled}>
+        <ReactCrop crop={crop} onChange={c => handleSetCrop(c)} onComplete={(pxc, c) => handleFinishDragging(pxc, c)} locked={disabled}>
             <img src={image} alt="well document" style={styles.image}/>
         </ReactCrop>
     );

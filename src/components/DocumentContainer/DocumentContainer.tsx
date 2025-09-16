@@ -407,7 +407,7 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
                                             displayPoints={displayPoints}
                                             disabled
                                             fullscreen={fullscreen}
-                                            zoomOnToken={zoomOnToken}
+                                            zoomOnToken={false}
                                         />
                                     </div>
                                 ))
