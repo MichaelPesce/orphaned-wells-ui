@@ -102,61 +102,62 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
         setDisplayKeyIndex(-1);
     }, [params.id]);
 
-    const getNextField = (direction: string = "down") => {
+    const getNextField = (direction: string = "down", currentIndex: number = displayKeyIndex, currentSubindex: number | null = displayKeySubattributeIndex) => {
         let nextIndex: number;
         let nextSubindex: number | null;
         let isSubattribute: boolean;
         let nextKey: string;
         let nextCoordinates: any;
+        let parentKey: string;
 
         if (direction === "down"){
-            if (displayKeyIndex === -1) {
+            if (currentIndex === -1) {
                 nextIndex = 0;
                 nextSubindex = null;
             } 
-            else if (attributesList[displayKeyIndex].subattributes) {
-                if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
+            else if (attributesList[currentIndex].subattributes) {
+                if (currentSubindex === null || currentSubindex === undefined) {
                     nextSubindex = 0;
-                    nextIndex = displayKeyIndex;
-                } else if (displayKeySubattributeIndex === attributesList[displayKeyIndex].subattributes.length - 1) {
+                    nextIndex = currentIndex;
+                } else if (currentSubindex === attributesList[currentIndex].subattributes.length - 1) {
                     nextSubindex = null;
-                    nextIndex = displayKeyIndex === attributesList.length - 1 ? 0 : displayKeyIndex + 1;
+                    nextIndex = currentIndex === attributesList.length - 1 ? 0 : currentIndex + 1;
                 } else { 
-                    nextSubindex = displayKeySubattributeIndex + 1;
-                    nextIndex = displayKeyIndex;
+                    nextSubindex = currentSubindex + 1;
+                    nextIndex = currentIndex;
                 }
             }
-            else if (displayKeyIndex === attributesList.length - 1)  {
+            else if (currentIndex === attributesList.length - 1)  {
                 nextIndex = 0;
                 nextSubindex = null;
             }
             else {
-                nextIndex = displayKeyIndex + 1;
+                nextIndex = currentIndex + 1;
                 nextSubindex = null;
             }
         } else { // if (direction === "up") 
-            if (displayKeyIndex === -1) {
+            if (currentIndex === -1) {
                 nextIndex = attributesList.length - 1;
                 nextSubindex = null;
             } 
-            else if (attributesList[displayKeyIndex].subattributes) {
-                if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
-                    nextSubindex = attributesList[displayKeyIndex].subattributes.length - 1;
-                    nextIndex = displayKeyIndex;
-                } else if (displayKeySubattributeIndex === 0) {
+            else if (attributesList[currentIndex].subattributes) {
+                if (currentSubindex === null || currentSubindex === undefined) {
+                    nextSubindex = attributesList[currentIndex].subattributes.length - 1;
+                    nextIndex = currentIndex;
+                } else if (currentSubindex === 0) {
                     nextSubindex = null;
-                    nextIndex = displayKeyIndex === 0 ? attributesList.length - 1 : displayKeyIndex - 1;
+                    nextIndex = currentIndex === 0 ? attributesList.length - 1 : currentIndex - 1;
                 } else { 
-                    nextSubindex = displayKeySubattributeIndex - 1;
-                    nextIndex = displayKeyIndex;
+                    nextSubindex = currentSubindex - 1;
+                    nextIndex = currentIndex;
                 }
             }
-            else if (displayKeyIndex === 0)  {
+            else if (currentIndex === 0)  {
                 nextIndex = attributesList.length - 1;
                 nextSubindex = null;
             }
             else {
-                nextIndex = displayKeyIndex - 1;
+                nextIndex = currentIndex - 1;
                 nextSubindex = null;
             }
         }
@@ -175,23 +176,24 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                 attributesList[nextIndex].user_provided_coordinates ||
                 attributesList[nextIndex].normalized_vertices;
         }
+        parentKey = attributesList[nextIndex].key;
         const tempFieldID: FieldID = {
             key: nextKey,
             primaryIndex: nextIndex,
             isSubattribute: isSubattribute,
             subIndex: nextSubindex,
+            parentKey,
         }
         return [tempFieldID, nextCoordinates]
     }
 
-    const proceedToNextField = (nextField: FieldID, vertices: number[][]) => {
+    const proceedToNextField = (nextField: FieldID) => {
         const { key, isSubattribute, primaryIndex, subIndex } = nextField;
-        handleClickField(nextField, vertices);
         let elementId: string;
 
         if (isSubattribute) {
             setForceOpenSubtable(primaryIndex);
-            elementId = `${primaryIndex}::${subIndex}`;
+            elementId = `${key}::${primaryIndex}::${subIndex}`;
         } 
         else elementId = `${key}::${primaryIndex}`;
         let element = document.getElementById(elementId);
@@ -204,7 +206,8 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                     element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
                 }, waitTime);
             }
-            else scrollIntoView(element, containerElement);
+            else 
+            scrollIntoView(element, containerElement);
         } else {
             waitTime = 250;
             setTimeout(function() {
@@ -215,13 +218,27 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
     }
 
     const tabCallback = () => {
-        const [tempFieldID, tempVertices] = getNextField("down");
-        proceedToNextField(tempFieldID, tempVertices);
+        const [nextField, vertices] = getNextField("down");
+        handleClickField(nextField, vertices);
+        let nextScrollToField = {...nextField}
+        let i = 0; // add this as a safe catch incase we messed up this while logic
+        while (nextScrollToField.isSubattribute && i<100) {
+            [nextScrollToField] = getNextField("down", nextScrollToField.primaryIndex, nextScrollToField.subIndex);
+            i+=1;
+        } 
+        proceedToNextField(nextScrollToField);
     }
 
     const shiftTabCallback = () => {
-        const [tempFieldID, tempVertices] = getNextField("up");
-        proceedToNextField(tempFieldID, tempVertices);
+        const [nextField, vertices] = getNextField("up");
+        handleClickField(nextField, vertices);
+        let nextScrollToField = {...nextField}
+        let i = 0; // add this as a safe catch incase we messed up this while logic
+        while (nextScrollToField.isSubattribute && i<100) {
+            [nextScrollToField] = getNextField("down", nextScrollToField.primaryIndex, nextScrollToField.subIndex);
+            i+=1;
+        }
+        proceedToNextField(nextScrollToField);
     }
 
     useKeyDown("Tab", tabCallback, shiftTabCallback);
