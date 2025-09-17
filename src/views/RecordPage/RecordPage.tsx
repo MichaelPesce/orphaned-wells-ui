@@ -8,7 +8,7 @@ import Bottombar from '../../components/BottomBar/BottomBar';
 import DocumentContainer from '../../components/DocumentContainer/DocumentContainer';
 import PopupModal from '../../components/PopupModal/PopupModal';
 import ErrorBar from '../../components/ErrorBar/ErrorBar';
-import { RecordData, handleChangeValueSignature, PreviousPages, SubheaderActions, RecordSchema, Attribute, FieldID } from '../../types';
+import { RecordData, handleChangeValueSignature, PreviousPages, SubheaderActions, RecordSchema, Attribute, FieldID, insertFieldSignature } from '../../types';
 import { useUserContext } from '../../usercontext';
 
 const Record = () => {
@@ -160,8 +160,11 @@ const Record = () => {
         setErrorMsg(errorMessage);
     }, [])
 
-    const insertField = React.useCallback((k: string, topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null, parentAttribute?: string) => {
-        if (isSubattribute && subIndex !== undefined && subIndex !== null) {
+    const insertField: insertFieldSignature = React.useCallback((k, fieldID, parentAttribute) => {
+        const primaryIndex = fieldID.primaryIndex;
+        const isSubattribute = fieldID.isSubattribute;
+        const subIndex = fieldID.subIndex || 0;
+        if (isSubattribute) {
             const newSubIndex = subIndex + 1;
             const newSubField = {
                 "key": k,
@@ -181,7 +184,7 @@ const Record = () => {
             }
             setRecordData(tempRecordData => {
                 const newAttributesList = tempRecordData.attributesList.map((attribute, i) => {
-                    if (i !== topLevelIndex) return attribute;
+                    if (i !== primaryIndex) return attribute;
 
                     const currentSubattributes = attribute.subattributes;
                     if (!attribute.subattributes) {
@@ -211,13 +214,13 @@ const Record = () => {
                 return newRecordData;
             })
             setTimeout(() => {
-                setForceEditMode([topLevelIndex, newSubIndex]);
+                setForceEditMode([primaryIndex, newSubIndex]);
                 setTimeout(() => {
                     setForceEditMode([-1, -1]);
                 }, 0)
             }, 0)
         } else {
-            const newIndex = topLevelIndex+1;
+            const newIndex = primaryIndex+1;
             const newField = {
                 "key": k,
                 "ai_confidence": null,

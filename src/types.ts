@@ -176,7 +176,7 @@ export interface RecordAttributesTableProps {
     showRawValues?: boolean;
     recordSchema: RecordSchema;
     forceEditMode: number[];
-    insertField: (k: string, topLevelIndex: number, isSubattribute: boolean, subIndex?: number | null, parentAttribute?: string) => void;
+    insertField: insertFieldSignature;
     handleSuccessfulAttributeUpdate: (data: any) => void;
     showError: (errorMessage: string) => void;
     deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => void;
@@ -270,7 +270,7 @@ export interface DocumentContainerProps {
     locked?: boolean;
     recordSchema: RecordSchema;
     forceEditMode: number[];
-    insertField: (k: string, topLevelIndex: number, isSubattribute: boolean, subIndex?: number | null, parentAttribute?: string) => void;
+    insertField: insertFieldSignature;
     handleSuccessfulAttributeUpdate: (data: any) => void;
     showError: (errorMessage: string) => void;
     deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => void;
@@ -352,5 +352,13 @@ export interface updateFieldCoordinatesSignature {
     (
         fieldId: FieldID,
         new_coordinates: number[][],
+    ): void;
+}
+
+export interface insertFieldSignature {
+    (
+        k: string,
+        fieldID: FieldID,
+        parentAttribute?: string
     ): void;
 }
