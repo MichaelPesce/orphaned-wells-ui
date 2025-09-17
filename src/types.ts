@@ -162,6 +162,7 @@ export interface FieldID {
     primaryIndex: number;
     subIndex?: number | null;
     isSubattribute?: boolean;
+    parentKey?: string;
 }
 
 /*
