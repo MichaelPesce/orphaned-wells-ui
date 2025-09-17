@@ -160,7 +160,8 @@ const Record = () => {
         setErrorMsg(errorMessage);
     }, [])
 
-    const insertField: insertFieldSignature = React.useCallback((k, fieldID, parentAttribute) => {
+    const insertField: insertFieldSignature = React.useCallback((fieldID, parentAttribute) => {
+        const k = fieldID.key;
         const primaryIndex = fieldID.primaryIndex;
         const isSubattribute = fieldID.isSubattribute;
         const subIndex = fieldID.subIndex || 0;

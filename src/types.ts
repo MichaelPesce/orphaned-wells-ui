@@ -357,7 +357,6 @@ export interface updateFieldCoordinatesSignature {
 
 export interface insertFieldSignature {
     (
-        k: string,
         fieldID: FieldID,
         parentAttribute?: string
     ): void;

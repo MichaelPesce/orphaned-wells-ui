@@ -382,7 +382,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         setShowActions(false);
         setMenuAnchor(null);
         handleClickOutside();
-        insertField(k, fieldId, topLevelKey);
+        insertField(fieldId, topLevelKey);
     }
 
     const handleClickDeleteField = () => {
@@ -406,7 +406,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             isSubattribute: true,
             subIndex: subIdx,
         }
-        insertField(childKey, childId, k);
+        insertField(childId, k);
     }
 
     const handleUpdateValue = (event: React.ChangeEvent<HTMLInputElement>) => {
