@@ -266,11 +266,23 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
         setSelected(tempSelected);
     };
 
+    const selectAll = () => {
+        if (selected.length < columns.length) setSelected([...columns])
+        else setSelected([])
+    }
+
     return (
         <Box sx={{ display: 'flex' }}>
             <FormControl sx={{ m: 3 }} component="fieldset" variant="standard" required disabled={disabled}>
-
                 <FormLabel component="legend">Select attributes to export</FormLabel>
+                <FormGroup row>
+                    <FormControlLabel
+                        control={
+                            <Checkbox checked={selected.length === columns.length} indeterminate={selected.length < columns.length && selected.length > 0} onChange={selectAll}/>
+                        }
+                        label={<b>Select All</b>}
+                    />
+                </FormGroup>
                 <FormGroup row>
                     <Grid container>
                         {columns.map((column: string, colIdx: number) => (

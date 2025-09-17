@@ -240,8 +240,6 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         handleClickField(fieldId, coordinates);
     }
 
-    //TODO: update all the below functions
-
     const handleSuccess = (resp: any) => {
         let newV;
         if (isSubattribute)
@@ -452,7 +450,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     </IconButton>
                 }
             </TableCell>
-            { // TODO: add styling to parent attribute if subattributes have errors
+            {
                 isParent ? 
                 <TableCell></TableCell> 
                 :
