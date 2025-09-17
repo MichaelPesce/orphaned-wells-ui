@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, FormLabel, FormControl, IconButton, FormGroup, FormControlLabel, Grid } from '@mui/material';
+import { Box, FormLabel, FormControl, IconButton, FormGroup, FormControlLabel, Grid, Tooltip } from '@mui/material';
 import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox, Stack } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -224,7 +224,7 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
     };
 
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box >
             <FormControl sx={{ mx: 3 }} component="fieldset" variant="standard" required disabled={disabled}>
                 <FormLabel component="legend" id="export-type-label">Export Format</FormLabel>
                 
@@ -271,8 +271,19 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
         else setSelected([])
     }
 
+    const getSubfieldTooltipText = (name: string) => {
+        const splitName = name?.split("::")
+        if (splitName?.length === 2) {
+            const parentName = splitName[0]
+            const childName = splitName[1]
+            const text = `${childName} from table ${parentName}`;
+            return text;
+        }
+        return null;
+    }
+
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box >
             <FormControl sx={{ m: 3 }} component="fieldset" variant="standard" required disabled={disabled}>
                 <FormLabel component="legend">Select attributes to export</FormLabel>
                 <FormGroup row>
@@ -284,14 +295,23 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                     />
                 </FormGroup>
                 <FormGroup row>
-                    <Grid container>
+                    <Grid container columnSpacing={3}>
                         {columns.map((column: string, colIdx: number) => (
-                            <Grid key={`${colIdx}_${column}`} item xs={6}>
+                            <Grid
+                                key={`${colIdx}_${column}`}
+                                item
+                                xs={6}
+                                sx={{overflowX: "hidden"}}
+                            >
                                 <FormControlLabel
                                     control={
                                         <Checkbox checked={selected.includes(column)} onChange={handleChange} name={column} />
                                     }
-                                    label={column}
+                                    label={
+                                        <Tooltip title={column?.includes("::") ? getSubfieldTooltipText(column) : null}>
+                                            <span>{column}</span>
+                                        </Tooltip>
+                                    }
                                 />
                             </Grid>
                         ))}
