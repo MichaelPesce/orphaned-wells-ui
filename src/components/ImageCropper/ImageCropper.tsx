@@ -145,7 +145,9 @@ export const ImageCropper = (props: ImageCropperProps) => {
         if (updateFieldLocationID && new_displayPoints && c.height && c.width) {
             updateFieldCoordinates(updateFieldLocationID, new_displayPoints);
             setUpdateFieldLocationID(undefined);
-            setCrop(undefined);
+            // setTimeout(() => {
+            //     setCrop(c);
+            // }, 0);
         }
     }
 
