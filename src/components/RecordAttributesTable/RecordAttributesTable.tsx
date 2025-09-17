@@ -56,7 +56,11 @@ const AttributesTable = (props: AttributesTableProps) => {
     } = childProps;
 
     const handleClickOutside = () => {
-        handleClickField('', null, -1, false, null);
+        const emptyField: FieldID = {
+            key: '',
+            primaryIndex: -1
+        }
+        handleClickField(emptyField, null);
     }
     const ref = useOutsideClick(handleClickOutside);
     const params = useParams<{ id: string }>();
@@ -232,7 +236,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     const handleClickInside = (e: React.MouseEvent<HTMLTableRowElement>) => {
         if (v.subattributes) setOpenSubtable(!openSubtable)
         e.stopPropagation();
-        handleClickField(k, v.normalized_vertices, primaryIndex, isSubattribute, subIndex);
+        handleClickField(fieldId, v.normalized_vertices);
     }
 
     //TODO: update all the below functions
@@ -314,7 +318,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                 }
                 setEditMode(false);
             }
-            handleClickField(k, v.normalized_vertices, primaryIndex, isSubattribute, subIndex)
+            handleClickField(fieldId, v.normalized_vertices)
         }
     }, undefined, undefined, undefined);
 
@@ -325,10 +329,10 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     useEffect(() => {
         if (forceEditMode[0] === idx && forceEditMode[1] === -1 && !isSubattribute) {
             makeEditable();
-            handleClickField(k, v.normalized_vertices, idx, false, null);
+            handleClickField(fieldId, v.normalized_vertices);
         } else if (forceEditMode[0] === topLevelIdx && forceEditMode[1] === idx && isSubattribute) {
             makeEditable();
-            handleClickField(k, v.normalized_vertices, topLevelIdx, true, idx);
+            handleClickField(fieldId, v.normalized_vertices);
         } else if (forceEditMode[0] !== -1) {
             setIsSelected(false);
             setEditMode(false);

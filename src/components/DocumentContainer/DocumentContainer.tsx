@@ -145,7 +145,13 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
             tempKey = attributesList[tempIndex].key;
             tempVertices = attributesList[tempIndex].normalized_vertices;
         }
-        handleClickField(tempKey, tempVertices, tempIndex, isSubattribute, tempSubIndex);
+        const tempFieldID: FieldID = {
+            key: tempKey,
+            primaryIndex: tempIndex,
+            isSubattribute: isSubattribute,
+            subIndex: tempSubIndex,
+        }
+        handleClickField(tempFieldID, tempVertices);
         let elementId: string;
 
         if (isSubattribute) {
@@ -214,7 +220,13 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
             tempKey = attributesList[tempIndex].key;
             tempVertices = attributesList[tempIndex].normalized_vertices;
         }
-        handleClickField(tempKey, tempVertices, tempIndex, isSubattribute, tempSubIndex);
+        const tempFieldID: FieldID = {
+            key: tempKey,
+            primaryIndex: tempIndex,
+            isSubattribute: isSubattribute,
+            subIndex: tempSubIndex,
+        }
+        handleClickField(tempFieldID, tempVertices);
         let elementId: string;
 
         if (isSubattribute) {
@@ -246,14 +258,15 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
     useKeyDown("ArrowUp", shiftTabCallback);
     useKeyDown("ArrowDown", tabCallback);
 
-    const handleClickField = React.useCallback((key: string, normalized_vertices: number[][] | null, primaryIndex: number, isSubattribute: boolean, subattributeIdx: number | null) => {
-        if (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subattributeIdx === displayKeySubattributeIndex)) {
+    const handleClickField = React.useCallback((fieldID: FieldID, normalized_vertices: number[][] | null) => {
+        const { key, primaryIndex, subIndex = 0, isSubattribute } = fieldID;
+        if (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex)) {
             setDisplayPoints(null);
             setDisplayKeyIndex(-1);
         }
         else {
             setDisplayKeyIndex(primaryIndex);
-            setDisplayKeySubattributeIndex(subattributeIdx);
+            setDisplayKeySubattributeIndex(subIndex);
             if (normalized_vertices !== null && normalized_vertices !== undefined) {
                 const percentage_vertices: number[][] = [];
                 for (let each of normalized_vertices) {
@@ -262,7 +275,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                 let page = 0;
                 try {
                     let attr = attributesList[primaryIndex];
-                    if (isSubattribute) attr = attr.subattributes[subattributeIdx as number];
+                    if (isSubattribute) attr = attr.subattributes[subIndex as number];
                     if (attr.page !== undefined) page = attr.page;
                 } catch (e) {
                     console.log("error getting page");

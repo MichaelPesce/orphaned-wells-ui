@@ -340,11 +340,8 @@ export interface handleChangeValueSignature {
 
 export interface handleClickFieldSignature {
     (
-        key: string, 
-        vertices: number[][] | null, 
-        index: number, 
-        isSubattribute: boolean, 
-        subattributeIdx: number | null
+        fieldID: FieldID, 
+        vertices: number[][] | null,
     ): void;
 }
 
