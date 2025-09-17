@@ -255,7 +255,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                 setDisplayPoints(null);
             }
         }
-    }, [imageFiles])
+    }, [imageFiles, displayKeyIndex, displayKeySubattributeIndex])
     
 
     const handleSetFullscreen = (item: string) => {
