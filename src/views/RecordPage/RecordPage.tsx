@@ -139,7 +139,13 @@ const Record = () => {
 
     const handleSuccessfulAttributeUpdate = React.useCallback((data: any) => {
         const { isSubattribute, topLevelIndex, subIndex, v, review_status } = data;
-        handleChangeAttribute(v, topLevelIndex, review_status, isSubattribute, subIndex)
+        const fieldId: FieldID = {
+            key: v.k,
+            primaryIndex: topLevelIndex,
+            subIndex: subIndex,
+            isSubattribute: isSubattribute,
+        }
+        handleChangeAttribute(v, fieldId, review_status)
     }, [])
 
     const handleFailedUpdate = (data: any, response_status?: number) => {
@@ -331,10 +337,8 @@ const Record = () => {
         }
     }, [])
 
-    const handleChangeAttribute = (newAttribute: Attribute, topLevelIndex: number, reviewStatus: string, isSubattribute?: boolean, subIndex?: number) => {
+    const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string) => {
         if (locked) return true
-        // const rightNow = Date.now();
-
         const newValue = newAttribute.value;
         const newNormalizedValue = newAttribute.normalized_value;
         const new_uncleaned_value = newAttribute.uncleaned_value;
@@ -346,12 +350,16 @@ const Record = () => {
         const new_last_cleaned = newAttribute.last_cleaned;
         const topLevelAttribute = newAttribute.topLevelAttribute;
 
+        const primaryIndex = fieldID.primaryIndex;
+        const isSubattribute = fieldID.isSubattribute;
+        const subIndex = fieldID.subIndex;
+
         if (!isSubattribute) {
             setRecordData(tempRecordData => ({
                 ...tempRecordData,
                 review_status: reviewStatus || tempRecordData.review_status,
                 attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-                    topLevelIndex === idx ? { 
+                    primaryIndex === idx ? { 
                         ...tempAttribute, 
                         value: newValue,
                         normalized_value: newNormalizedValue,
@@ -371,7 +379,7 @@ const Record = () => {
                 ...tempRecordData,
                 review_status: reviewStatus || tempRecordData.review_status,
                 attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-                    topLevelIndex === idx ? { 
+                    primaryIndex === idx ? { 
                         ...tempAttribute,
                         subattributes: tempAttribute.subattributes.map((tempSubattribute: Attribute, subidx: number) => {
                             if (subIndex === subidx) {
