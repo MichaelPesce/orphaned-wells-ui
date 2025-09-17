@@ -5,7 +5,7 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { ImageCropper } from '../ImageCropper/ImageCropper';
-import { useKeyDown } from '../../util';
+import { useKeyDown, scrollIntoView, scrollToAttribute } from '../../util';
 import AttributesTable from '../RecordAttributesTable/RecordAttributesTable';
 import { DocumentContainerProps, FieldID } from '../../types';
 import { DocumentContainerStyles as styles } from '../../styles';
@@ -103,38 +103,65 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
         setDisplayKeyIndex(-1);
     }, [params.id]);
 
-    const tabCallback = () => {
+    const getNextField = (direction: string = "down") => {
         let tempIndex: number;
         let tempSubIndex: number | null;
         let isSubattribute: boolean;
         let tempKey: string;
         let tempVertices: any;
 
-        if (displayKeyIndex === -1) {
-            console.log("display index was null")
-            tempIndex = 0;
-            tempSubIndex = null;
-        } 
-        else if (attributesList[displayKeyIndex].subattributes) {
-            if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
-                tempSubIndex = 0;
-                tempIndex = displayKeyIndex;
-            } else if (displayKeySubattributeIndex === attributesList[displayKeyIndex].subattributes.length - 1) {
+        if (direction === "down"){
+            if (displayKeyIndex === -1) {
+                tempIndex = 0;
                 tempSubIndex = null;
-                tempIndex = displayKeyIndex === attributesList.length - 1 ? 0 : displayKeyIndex + 1;
-            } else { 
-                tempSubIndex = displayKeySubattributeIndex + 1;
-                tempIndex = displayKeyIndex;
+            } 
+            else if (attributesList[displayKeyIndex].subattributes) {
+                if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
+                    tempSubIndex = 0;
+                    tempIndex = displayKeyIndex;
+                } else if (displayKeySubattributeIndex === attributesList[displayKeyIndex].subattributes.length - 1) {
+                    tempSubIndex = null;
+                    tempIndex = displayKeyIndex === attributesList.length - 1 ? 0 : displayKeyIndex + 1;
+                } else { 
+                    tempSubIndex = displayKeySubattributeIndex + 1;
+                    tempIndex = displayKeyIndex;
+                }
+            }
+            else if (displayKeyIndex === attributesList.length - 1)  {
+                tempIndex = 0;
+                tempSubIndex = null;
+            }
+            else {
+                tempIndex = displayKeyIndex + 1;
+                tempSubIndex = null;
+            }
+        } else { // if (direction === "up") 
+            if (displayKeyIndex === -1) {
+                tempIndex = attributesList.length - 1;
+                tempSubIndex = null;
+            } 
+            else if (attributesList[displayKeyIndex].subattributes) {
+                if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
+                    tempSubIndex = attributesList[displayKeyIndex].subattributes.length - 1;
+                    tempIndex = displayKeyIndex;
+                } else if (displayKeySubattributeIndex === 0) {
+                    tempSubIndex = null;
+                    tempIndex = displayKeyIndex === 0 ? attributesList.length - 1 : displayKeyIndex - 1;
+                } else { 
+                    tempSubIndex = displayKeySubattributeIndex - 1;
+                    tempIndex = displayKeyIndex;
+                }
+            }
+            else if (displayKeyIndex === 0)  {
+                tempIndex = attributesList.length - 1;
+                tempSubIndex = null;
+            }
+            else {
+                tempIndex = displayKeyIndex - 1;
+                tempSubIndex = null;
             }
         }
-        else if (displayKeyIndex === attributesList.length - 1)  {
-            tempIndex = 0;
-            tempSubIndex = null;
-        }
-        else {
-            tempIndex = displayKeyIndex + 1;
-            tempSubIndex = null;
-        }
+
 
         if (tempSubIndex !== null && tempSubIndex !== undefined) {
             isSubattribute = true;
@@ -151,14 +178,19 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
             isSubattribute: isSubattribute,
             subIndex: tempSubIndex,
         }
-        handleClickField(tempFieldID, tempVertices);
+        return [tempFieldID, tempVertices]
+    }
+
+    const proceedToNextField = (nextField: FieldID, vertices: number[][]) => {
+        const { key, isSubattribute, primaryIndex, subIndex } = nextField;
+        handleClickField(nextField, vertices);
         let elementId: string;
 
         if (isSubattribute) {
-            setForceOpenSubtable(tempIndex);
-            elementId = `${tempIndex}::${tempSubIndex}`;
+            setForceOpenSubtable(primaryIndex);
+            elementId = `${primaryIndex}::${subIndex}`;
         } 
-        else elementId = `${tempKey}::${tempIndex}`;
+        else elementId = `${key}::${primaryIndex}`;
         let element = document.getElementById(elementId);
         let waitTime = 0;
         let containerElement = document.getElementById("table-container");
@@ -179,79 +211,14 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
         }
     }
 
+    const tabCallback = () => {
+        const [tempFieldID, tempVertices] = getNextField("down");
+        proceedToNextField(tempFieldID, tempVertices);
+    }
+
     const shiftTabCallback = () => {
-        let tempIndex: number;
-        let tempSubIndex: number | null;
-        let isSubattribute: boolean;
-        let tempKey: string;
-        let tempVertices: any;
-
-        if (displayKeyIndex === -1) {
-            tempIndex = attributesList.length - 1;
-            tempSubIndex = null;
-        } 
-        else if (attributesList[displayKeyIndex].subattributes) {
-            if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
-                tempSubIndex = attributesList[displayKeyIndex].subattributes.length - 1;
-                tempIndex = displayKeyIndex;
-            } else if (displayKeySubattributeIndex === 0) {
-                tempSubIndex = null;
-                tempIndex = displayKeyIndex === 0 ? attributesList.length - 1 : displayKeyIndex - 1;
-            } else { 
-                tempSubIndex = displayKeySubattributeIndex - 1;
-                tempIndex = displayKeyIndex;
-            }
-        }
-        else if (displayKeyIndex === 0)  {
-            tempIndex = attributesList.length - 1;
-            tempSubIndex = null;
-        }
-        else {
-            tempIndex = displayKeyIndex - 1;
-            tempSubIndex = null;
-        }
-
-        if (tempSubIndex !== null && tempSubIndex !== undefined) {
-            isSubattribute = true;
-            tempKey = attributesList[tempIndex].subattributes[tempSubIndex].key;
-            tempVertices = attributesList[tempIndex].subattributes[tempSubIndex].normalized_vertices;
-        } else {
-            isSubattribute = false;
-            tempKey = attributesList[tempIndex].key;
-            tempVertices = attributesList[tempIndex].normalized_vertices;
-        }
-        const tempFieldID: FieldID = {
-            key: tempKey,
-            primaryIndex: tempIndex,
-            isSubattribute: isSubattribute,
-            subIndex: tempSubIndex,
-        }
-        handleClickField(tempFieldID, tempVertices);
-        let elementId: string;
-
-        if (isSubattribute) {
-            setForceOpenSubtable(tempIndex);
-            elementId = `${tempIndex}::${tempSubIndex}`;
-        } 
-        else elementId = `${tempKey}::${tempIndex}`;
-        let element = document.getElementById(elementId);
-        let waitTime = 0;
-        let containerElement = document.getElementById("table-container");
-        if (element) {
-            if (isSubattribute) {
-                setTimeout(function() {
-                    if (element)
-                    element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-                }, waitTime);
-            }
-            else scrollIntoView(element, containerElement);
-        } else {
-            waitTime = 250;
-            setTimeout(function() {
-                element = document.getElementById(elementId);
-                if (element) element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-            }, waitTime);
-        }
+        const [tempFieldID, tempVertices] = getNextField("up");
+        proceedToNextField(tempFieldID, tempVertices);
     }
 
     useKeyDown("Tab", tabCallback, shiftTabCallback);
@@ -283,51 +250,13 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                 }
                 const scrollTop = (normalized_vertices[2][1] / imageFiles.length) + (page / imageFiles.length);
                 setDisplayPoints(percentage_vertices);
-                scrollToAttribute("image-box", "image-div", scrollTop);
+                scrollToAttribute("image-box", "image-div", scrollTop, imageFiles);
             } else {
                 setDisplayPoints(null);
             }
         }
     }, [imageFiles])
-
-    const scrollToAttribute = (boxId: string, heightId: string, top: number) => {
-        try{
-            const imageContainerId = boxId;
-            const imageContainerElement = document.getElementById(imageContainerId);
-            const imageElement = document.getElementById(heightId);
-            const scrollAmount = top * imageElement!.clientHeight * imageFiles.length - 100;
-            if (imageContainerElement) {
-                imageContainerElement.scrollTo({
-                    top: scrollAmount,
-                    behavior: "smooth",
-                });
-            }
-        } catch(e) {
-            // this likely only occurs when table is in fullscreen mode and image is note displayed
-            console.error('failed to scroll')
-        }
-        
-    }
-
-    function scrollIntoView(element: HTMLElement | null, container: HTMLElement | null) {
-        if (element && container) {
-            const containerTop = container.scrollTop;
-            const containerBottom = containerTop + container.clientHeight; 
-            const elemTop = element.offsetTop;
-            const elemBottom = elemTop + element.clientHeight;
-            if (elemTop < containerTop) {
-                container.scrollTo({
-                    top: elemTop,
-                    behavior: "smooth",
-                });
-            } else if (elemBottom > containerBottom) {
-                container.scrollTo({
-                    top: elemBottom - container.clientHeight,
-                    behavior: "smooth",
-                });
-            }
-        }
-    }
+    
 
     const handleSetFullscreen = (item: string) => {
         if (fullscreen === item)  {
