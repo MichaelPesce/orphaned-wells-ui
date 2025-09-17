@@ -405,7 +405,10 @@ const Record = () => {
         }
     }
 
-    const handleChangeValue: handleChangeValueSignature = React.useCallback((event, topLevelIndex, isSubattribute, subIndex) => {
+    const handleChangeValue: handleChangeValueSignature = React.useCallback((event, fieldId) => {
+        const primaryIndex = fieldId.primaryIndex;
+        const isSubattribute = fieldId.isSubattribute;
+        const subIndex = fieldId.subIndex;
         if (locked) return true
         let value = event.target.value;
         let rightNow = Date.now();
@@ -415,7 +418,7 @@ const Record = () => {
                 lastUpdated: rightNow,
                 lastUpdatedBy: userEmail,
                 attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-                    topLevelIndex === idx ? { 
+                    primaryIndex === idx ? { 
                         ...tempAttribute, 
                         value: value,
                         edited: true,
@@ -430,7 +433,7 @@ const Record = () => {
                 lastUpdated: rightNow,
                 lastUpdatedBy: userEmail,
                 attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-                    topLevelIndex === idx ? { 
+                    primaryIndex === idx ? { 
                         ...tempAttribute, 
                         edited: true,
                         lastUpdated: rightNow,

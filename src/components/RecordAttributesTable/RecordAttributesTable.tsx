@@ -10,7 +10,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import InfoIcon from '@mui/icons-material/Info';
 import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { Attribute, RecordAttributesTableProps } from '../../types';
+import { Attribute, RecordAttributesTableProps, FieldID } from '../../types';
 import { styles } from '../../styles';
 
 
@@ -179,6 +179,12 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     const schemaKey = isSubattribute ? `${topLevelKey}::${k}` : k;
     const primaryIndex = isSubattribute ? topLevelIdx : idx;
     const subIndex = isSubattribute ? idx : null;
+    const fieldId: FieldID = {
+        key: k,
+        primaryIndex: primaryIndex,
+        isSubattribute: isSubattribute,
+        subIndex: subIndex,
+    }
     
     const [ editMode, setEditMode ] = useState(false);
     const [ openSubtable, setOpenSubtable ] = useState(true);
@@ -302,8 +308,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                             value: lastSavedValue
                         }
                     } as React.ChangeEvent<HTMLInputElement>
-                    if (isSubattribute) handleUpdateValue(fakeEvent)
-                    else handleChangeValue(fakeEvent, idx)
+                    handleChangeValue(fakeEvent, fieldId)
                 }
                 setEditMode(false);
             }
@@ -400,7 +405,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
     const handleUpdateValue = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (locked) return;
-        handleChangeValue(event, primaryIndex, isSubattribute, subIndex);
+        handleChangeValue(event, fieldId);
     }
 
     const handleClickUpdateFieldLocation = () => {

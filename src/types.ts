@@ -334,9 +334,7 @@ functions
 export interface handleChangeValueSignature {
     (
         event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, 
-        index: number, 
-        isSubattribute?: boolean, 
-        subIndex?: number | null,
+        fieldId: FieldID,
     ): void;
 }
 
