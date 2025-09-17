@@ -599,7 +599,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             </TableCell>
             <TableCell>
                 <IconButton size='small' onClick={handleClickShowActions}>
-                    <MoreVertIcon/>
+                    <MoreVertIcon sx={{fontSize: "18px"}}/>
                 </IconButton>
             </TableCell> 
             <Menu
