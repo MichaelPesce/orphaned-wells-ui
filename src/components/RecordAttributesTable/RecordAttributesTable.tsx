@@ -185,11 +185,13 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     const primaryIndex = isSubattribute ? topLevelIdx : idx;
     const subIndex = isSubattribute ? idx : null;
     const coordinates = v.user_provided_coordinates || v.normalized_vertices;
+    const tableId = isSubattribute ? `${k}::${primaryIndex}::${idx}` : `${k}::${idx}`
     const fieldId: FieldID = {
         key: k,
         primaryIndex: primaryIndex,
         isSubattribute: isSubattribute,
         subIndex: subIndex,
+        parentKey: topLevelKey,
     }
     
     const [ editMode, setEditMode ] = useState(false);
@@ -482,7 +484,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
     return (
     <>
-        <TableRow id={`${k}::${idx}`} sx={(isSelected && !isParent) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
+        <TableRow id={tableId} sx={(isSelected && !isParent) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
             <TableCell sx={styles.fieldKey}>
                 <span>
                     {k}
