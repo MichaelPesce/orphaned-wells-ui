@@ -309,9 +309,7 @@ const Record = () => {
                             lastUpdated: rightNow,
                             lastUpdatedBy: userEmail,
                             edited: true,
-                            normalized_vertices: new_coordinates,
-                            // for original verticies, these are undefined by default. if they have a value, or are null, that means that we have already updated them
-                            original_vertices: tempAttribute.original_vertices === undefined ? tempAttribute.normalized_vertices : tempAttribute.original_vertices,
+                            user_provided_coordinates: new_coordinates,
                         } : tempAttribute
                     )
                 }
@@ -332,8 +330,7 @@ const Record = () => {
                                         lastUpdated: rightNow,
                                         lastUpdatedBy: userEmail,
                                         edited: true,
-                                        normalized_vertices: new_coordinates,
-                                        original_vertices: tempAttribute.normalized_vertices,
+                                        user_provided_coordinates: new_coordinates,
                                     }
                                 } else return tempSubattribute
                                 }

@@ -89,6 +89,7 @@ export interface Attribute {
     last_cleaned?: number; // timestamp in seconds
     user_added?: boolean;
     topLevelAttribute?: string;
+    user_provided_coordinates?: number[][];
 }
 
 export interface Processor {

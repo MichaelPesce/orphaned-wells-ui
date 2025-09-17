@@ -183,6 +183,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     const schemaKey = isSubattribute ? `${topLevelKey}::${k}` : k;
     const primaryIndex = isSubattribute ? topLevelIdx : idx;
     const subIndex = isSubattribute ? idx : null;
+    const coordinates = v.user_provided_coordinates || v.normalized_vertices;
     const fieldId: FieldID = {
         key: k,
         primaryIndex: primaryIndex,
@@ -236,7 +237,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     const handleClickInside = (e: React.MouseEvent<HTMLTableRowElement>) => {
         if (v.subattributes) setOpenSubtable(!openSubtable)
         e.stopPropagation();
-        handleClickField(fieldId, v.normalized_vertices);
+        handleClickField(fieldId, coordinates);
     }
 
     //TODO: update all the below functions
@@ -318,7 +319,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                 }
                 setEditMode(false);
             }
-            handleClickField(fieldId, v.normalized_vertices)
+            handleClickField(fieldId, coordinates)
         }
     }, undefined, undefined, undefined);
 
@@ -329,10 +330,10 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     useEffect(() => {
         if (forceEditMode[0] === idx && forceEditMode[1] === -1 && !isSubattribute) {
             makeEditable();
-            handleClickField(fieldId, v.normalized_vertices);
+            handleClickField(fieldId, coordinates);
         } else if (forceEditMode[0] === topLevelIdx && forceEditMode[1] === idx && isSubattribute) {
             makeEditable();
-            handleClickField(fieldId, v.normalized_vertices);
+            handleClickField(fieldId, coordinates);
         } else if (forceEditMode[0] !== -1) {
             setIsSelected(false);
             setEditMode(false);

@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { Grid, Box, IconButton, Alert, Tooltip } from '@mui/material';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { ImageCropper } from '../ImageCropper/ImageCropper';
 import { useKeyDown, scrollIntoView, scrollToAttribute } from '../../util';
 import AttributesTable from '../RecordAttributesTable/RecordAttributesTable';
@@ -104,81 +103,85 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
     }, [params.id]);
 
     const getNextField = (direction: string = "down") => {
-        let tempIndex: number;
-        let tempSubIndex: number | null;
+        let nextIndex: number;
+        let nextSubindex: number | null;
         let isSubattribute: boolean;
-        let tempKey: string;
-        let tempVertices: any;
+        let nextKey: string;
+        let nextCoordinates: any;
 
         if (direction === "down"){
             if (displayKeyIndex === -1) {
-                tempIndex = 0;
-                tempSubIndex = null;
+                nextIndex = 0;
+                nextSubindex = null;
             } 
             else if (attributesList[displayKeyIndex].subattributes) {
                 if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
-                    tempSubIndex = 0;
-                    tempIndex = displayKeyIndex;
+                    nextSubindex = 0;
+                    nextIndex = displayKeyIndex;
                 } else if (displayKeySubattributeIndex === attributesList[displayKeyIndex].subattributes.length - 1) {
-                    tempSubIndex = null;
-                    tempIndex = displayKeyIndex === attributesList.length - 1 ? 0 : displayKeyIndex + 1;
+                    nextSubindex = null;
+                    nextIndex = displayKeyIndex === attributesList.length - 1 ? 0 : displayKeyIndex + 1;
                 } else { 
-                    tempSubIndex = displayKeySubattributeIndex + 1;
-                    tempIndex = displayKeyIndex;
+                    nextSubindex = displayKeySubattributeIndex + 1;
+                    nextIndex = displayKeyIndex;
                 }
             }
             else if (displayKeyIndex === attributesList.length - 1)  {
-                tempIndex = 0;
-                tempSubIndex = null;
+                nextIndex = 0;
+                nextSubindex = null;
             }
             else {
-                tempIndex = displayKeyIndex + 1;
-                tempSubIndex = null;
+                nextIndex = displayKeyIndex + 1;
+                nextSubindex = null;
             }
         } else { // if (direction === "up") 
             if (displayKeyIndex === -1) {
-                tempIndex = attributesList.length - 1;
-                tempSubIndex = null;
+                nextIndex = attributesList.length - 1;
+                nextSubindex = null;
             } 
             else if (attributesList[displayKeyIndex].subattributes) {
                 if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
-                    tempSubIndex = attributesList[displayKeyIndex].subattributes.length - 1;
-                    tempIndex = displayKeyIndex;
+                    nextSubindex = attributesList[displayKeyIndex].subattributes.length - 1;
+                    nextIndex = displayKeyIndex;
                 } else if (displayKeySubattributeIndex === 0) {
-                    tempSubIndex = null;
-                    tempIndex = displayKeyIndex === 0 ? attributesList.length - 1 : displayKeyIndex - 1;
+                    nextSubindex = null;
+                    nextIndex = displayKeyIndex === 0 ? attributesList.length - 1 : displayKeyIndex - 1;
                 } else { 
-                    tempSubIndex = displayKeySubattributeIndex - 1;
-                    tempIndex = displayKeyIndex;
+                    nextSubindex = displayKeySubattributeIndex - 1;
+                    nextIndex = displayKeyIndex;
                 }
             }
             else if (displayKeyIndex === 0)  {
-                tempIndex = attributesList.length - 1;
-                tempSubIndex = null;
+                nextIndex = attributesList.length - 1;
+                nextSubindex = null;
             }
             else {
-                tempIndex = displayKeyIndex - 1;
-                tempSubIndex = null;
+                nextIndex = displayKeyIndex - 1;
+                nextSubindex = null;
             }
         }
 
 
-        if (tempSubIndex !== null && tempSubIndex !== undefined) {
+        if (nextSubindex !== null && nextSubindex !== undefined) {
             isSubattribute = true;
-            tempKey = attributesList[tempIndex].subattributes[tempSubIndex].key;
-            tempVertices = attributesList[tempIndex].subattributes[tempSubIndex].normalized_vertices;
+            nextKey = attributesList[nextIndex].subattributes[nextSubindex].key;
+            nextCoordinates = 
+                attributesList[nextIndex].subattributes[nextSubindex].user_provided_coordinates ||
+                attributesList[nextIndex].subattributes[nextSubindex].normalized_vertices;
         } else {
             isSubattribute = false;
-            tempKey = attributesList[tempIndex].key;
-            tempVertices = attributesList[tempIndex].normalized_vertices;
+            nextKey = attributesList[nextIndex].key;
+            nextCoordinates = 
+                attributesList[nextIndex].user_provided_coordinates ||
+                attributesList[nextIndex].normalized_vertices;
         }
         const tempFieldID: FieldID = {
-            key: tempKey,
-            primaryIndex: tempIndex,
+            key: nextKey,
+            primaryIndex: nextIndex,
             isSubattribute: isSubattribute,
-            subIndex: tempSubIndex,
+            subIndex: nextSubindex,
         }
-        return [tempFieldID, tempVertices]
+        return [tempFieldID, nextCoordinates]
     }
 
     const proceedToNextField = (nextField: FieldID, vertices: number[][]) => {
@@ -225,18 +228,19 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
     useKeyDown("ArrowUp", shiftTabCallback);
     useKeyDown("ArrowDown", tabCallback);
 
-    const handleClickField = React.useCallback((fieldID: FieldID, normalized_vertices: number[][] | null) => {
+    const handleClickField = React.useCallback((fieldID: FieldID, coordinates: number[][] | null) => {
         const { key, primaryIndex, subIndex = 0, isSubattribute } = fieldID;
         if (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex)) {
             setDisplayPoints(null);
             setDisplayKeyIndex(-1);
+            setDisplayKeySubattributeIndex(null);
         }
         else {
             setDisplayKeyIndex(primaryIndex);
             setDisplayKeySubattributeIndex(subIndex);
-            if (normalized_vertices !== null && normalized_vertices !== undefined) {
+            if (coordinates !== null && coordinates !== undefined) {
                 const percentage_vertices: number[][] = [];
-                for (let each of normalized_vertices) {
+                for (let each of coordinates) {
                     percentage_vertices.push([each[0] * 100, each[1] * 100]);
                 }
                 let page = 0;
@@ -248,7 +252,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                     console.log("error getting page");
                     console.log(e);
                 }
-                const scrollTop = (normalized_vertices[2][1] / imageFiles.length) + (page / imageFiles.length);
+                const scrollTop = (coordinates[2][1] / imageFiles.length) + (page / imageFiles.length);
                 setDisplayPoints(percentage_vertices);
                 scrollToAttribute("image-box", "image-div", scrollTop, imageFiles);
             } else {
