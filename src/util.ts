@@ -390,11 +390,6 @@ export function scrollIntoView(element: HTMLElement | null, container: HTMLEleme
         const containerBottom = containerTop + container.clientHeight; 
         const elemTop = element.offsetTop;
         const elemBottom = elemTop + element.clientHeight;
-        console.log("scrollinto view")
-        console.log(elemTop)
-        console.log(containerTop)
-        console.log(elemBottom)
-        console.log(containerBottom)
         if (elemTop < containerTop) {
             container.scrollTo({
                 // add -45 to give ensure element comes fully into view

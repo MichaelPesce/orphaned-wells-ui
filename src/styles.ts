@@ -29,7 +29,8 @@ export const styles = {
   fieldsTable: {
     width: "100%",
     maxHeight: "70vh",
-    backgroundColor: "white"
+    backgroundColor: "white",
+    paddingBottom: "10px",
   },
   tableHead: {
       backgroundColor: "#EDF2FA",
