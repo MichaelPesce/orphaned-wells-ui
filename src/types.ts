@@ -179,7 +179,7 @@ export interface RecordAttributesTableProps {
     insertField: insertFieldSignature;
     handleSuccessfulAttributeUpdate: (data: any) => void;
     showError: (errorMessage: string) => void;
-    deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => void;
+    deleteField: deleteFieldSignature;
     reviewStatus: string;
     setUpdateFieldLocationID: (v?: FieldID) => void;
 }
@@ -273,7 +273,7 @@ export interface DocumentContainerProps {
     insertField: insertFieldSignature;
     handleSuccessfulAttributeUpdate: (data: any) => void;
     showError: (errorMessage: string) => void;
-    deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => void;
+    deleteField: deleteFieldSignature;
     reviewStatus: string;
     updateFieldCoordinates: updateFieldCoordinatesSignature;
 }
@@ -359,5 +359,11 @@ export interface insertFieldSignature {
     (
         fieldID: FieldID,
         parentAttribute?: string
+    ): void;
+}
+
+export interface deleteFieldSignature {
+    (
+        fieldID: FieldID,
     ): void;
 }

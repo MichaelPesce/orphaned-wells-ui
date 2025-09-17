@@ -8,7 +8,16 @@ import Bottombar from '../../components/BottomBar/BottomBar';
 import DocumentContainer from '../../components/DocumentContainer/DocumentContainer';
 import PopupModal from '../../components/PopupModal/PopupModal';
 import ErrorBar from '../../components/ErrorBar/ErrorBar';
-import { RecordData, handleChangeValueSignature, PreviousPages, SubheaderActions, RecordSchema, Attribute, FieldID, insertFieldSignature } from '../../types';
+import { 
+    RecordData,
+    handleChangeValueSignature,
+    insertFieldSignature,
+    deleteFieldSignature,
+    PreviousPages,
+    SubheaderActions,
+    RecordSchema,
+    Attribute,
+    FieldID } from '../../types';
 import { useUserContext } from '../../usercontext';
 
 const Record = () => {
@@ -138,13 +147,7 @@ const Record = () => {
     const handleSuccessfulDeletion = (data: any) => {}
 
     const handleSuccessfulAttributeUpdate = React.useCallback((data: any) => {
-        const { isSubattribute, topLevelIndex, subIndex, v, review_status } = data;
-        const fieldId: FieldID = {
-            key: v.k,
-            primaryIndex: topLevelIndex,
-            subIndex: subIndex,
-            isSubattribute: isSubattribute,
-        }
+        const { fieldId, v, review_status } = data;
         handleChangeAttribute(v, fieldId, review_status)
     }, [])
 
@@ -261,11 +264,14 @@ const Record = () => {
         
     }, [])
 
-    const deleteField = React.useCallback((topLevelIndex: number, isSubattribute?: boolean, subIndex?: number | null) => {
+    const deleteField: deleteFieldSignature = React.useCallback((fieldID: FieldID) => {
+        const primaryIndex = fieldID.primaryIndex;
+        const isSubattribute = fieldID.isSubattribute;
+        const subIndex = fieldID.subIndex || 0;
         if (isSubattribute) {
             setRecordData(tempRecordData => {
                 const newAttributesList = tempRecordData.attributesList.map((attribute, idx) => {
-                    if (idx !== topLevelIndex) return attribute;
+                    if (idx !== primaryIndex) return attribute;
                     else {
                         return {
                             ...attribute,
@@ -281,7 +287,7 @@ const Record = () => {
             setRecordData(tempRecordData => {
                 const newRecordData = {
                     ...tempRecordData,
-                    attributesList: tempRecordData.attributesList.filter((_, i) => i !== topLevelIndex),
+                    attributesList: tempRecordData.attributesList.filter((_, i) => i !== primaryIndex),
                 }
                 handleUpdateRecord(newRecordData);
                 return newRecordData;

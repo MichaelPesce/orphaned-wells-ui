@@ -243,16 +243,18 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             newV = resp?.[`attributesList.${topLevelIdx}.subattributes.${idx}`];
         else
             newV = resp?.["attributesList."+idx];
+        const fieldId: FieldID = {
+            key: k,
+            primaryIndex: primaryIndex,
+            subIndex: subIndex,
+            isSubattribute: isSubattribute,
+        }
         const data: {
-            isSubattribute: boolean;
-            topLevelIndex: number;
-            subIndex: number | null;
+            fieldId: FieldID,
             v: any;
             review_status?: string;
           } = {
-            isSubattribute: isSubattribute,
-            topLevelIndex: primaryIndex,
-            subIndex: subIndex,
+            fieldId,
             v: newV,
         }
         if (resp?.review_status) data.review_status = resp?.review_status;
@@ -389,7 +391,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         setShowActions(false);
         setMenuAnchor(null);
         handleClickOutside();
-        deleteField(primaryIndex, isSubattribute, subIndex);
+        deleteField(fieldId);
     }
 
     const handleClickAddChildField = (childField: string) => {
