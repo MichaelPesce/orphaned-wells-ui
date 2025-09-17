@@ -12,6 +12,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Attribute, RecordAttributesTableProps, FieldID } from '../../types';
 import { styles } from '../../styles';
+import { useUserContext } from '../../usercontext';
 
 
 const LOW_CONFIDENCE: number = 0.01;
@@ -198,6 +199,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     const [ menuAnchor, setMenuAnchor ] = useState<null | HTMLElement>(null);
     const [ showActions, setShowActions ] = useState(false);
     const [ childFields, setChildFields ] = useState<string[]>([]);
+    const { userPermissions } = useUserContext();
 
     const allowMultiple = recordSchema[schemaKey]?.occurrence?.toLowerCase().includes('multiple');
     const isParent = recordSchema[schemaKey]?.google_data_type?.toLowerCase() === 'parent';
@@ -432,6 +434,52 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         // handleClickOutside();
     }
 
+    const getRowOptionsIcon = () => {
+        const showUpdateCoordinatesOption = userPermissions?.includes("update_coordinates");
+        return (
+            <TableCell>
+                {
+                    (allowMultiple || isParent || showUpdateCoordinatesOption) && (
+                        <IconButton size='small' onClick={handleClickShowActions}>
+                            <MoreVertIcon sx={{fontSize: "18px"}}/>
+                        </IconButton>
+                    )
+                }
+                <Menu
+                    id="actions"
+                    anchorEl={menuAnchor}
+                    open={showActions}
+                    onClose={() => setShowActions(false)}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {allowMultiple && 
+                        <MenuItem onClick={handleClickInsertField}>Add another '{k}'</MenuItem>
+                    }
+                    {
+                        childFields.map((childField) => (
+                            <MenuItem 
+                                key={childField} 
+                                onClick={() => handleClickAddChildField(childField)}
+                            >
+                                Add child field '{childField.replace(`${k}::`, '')}'
+                            </MenuItem>
+                        ))
+                    }
+                    {
+                        showUpdateCoordinatesOption && (
+                            <MenuItem onClick={handleClickUpdateFieldLocation}>
+                                Update field location
+                            </MenuItem>
+                        )
+                    }
+                    {v.user_added && 
+                        <MenuItem onClick={handleClickDeleteField}>Delete this '{k}'</MenuItem>
+                    }
+                </Menu>
+            </TableCell> 
+        )
+    }
+
     return (
     <>
         <TableRow id={`${k}::${idx}`} sx={(isSelected && !isParent) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
@@ -595,38 +643,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     </p>
                 }
             </TableCell>
-            <TableCell>
-                <IconButton size='small' onClick={handleClickShowActions}>
-                    <MoreVertIcon sx={{fontSize: "18px"}}/>
-                </IconButton>
-            </TableCell> 
-            <Menu
-                id="actions"
-                anchorEl={menuAnchor}
-                open={showActions}
-                onClose={() => setShowActions(false)}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {allowMultiple && 
-                    <MenuItem onClick={handleClickInsertField}>Add another '{k}'</MenuItem>
-                }
-                {
-                    childFields.map((childField) => (
-                        <MenuItem 
-                            key={childField} 
-                            onClick={() => handleClickAddChildField(childField)}
-                        >
-                            Add child field '{childField.replace(`${k}::`, '')}'
-                        </MenuItem>
-                    ))
-                }
-                <MenuItem onClick={handleClickUpdateFieldLocation}>
-                    Update field location
-                </MenuItem>
-                {v.user_added && 
-                    <MenuItem onClick={handleClickDeleteField}>Delete this '{k}'</MenuItem>
-                }
-            </Menu>
+            {getRowOptionsIcon()}
         </TableRow>
         {
             v.subattributes &&

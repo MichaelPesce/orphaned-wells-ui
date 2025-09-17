@@ -161,7 +161,13 @@ export const ImageCropper = (props: ImageCropperProps) => {
     };
 
     return (
-        <ReactCrop crop={crop} onChange={c => handleSetCrop(c)} onComplete={(pxc, c) => handleFinishDragging(pxc, c)} locked={!updateFieldLocationID}>
+        <ReactCrop
+            crop={crop}
+            onChange={c => handleSetCrop(c)}
+            onComplete={(pxc, c) => handleFinishDragging(pxc, c)}
+            locked={!updateFieldLocationID}
+            disabled={!updateFieldLocationID}
+        >
             <img src={image} alt="well document" style={styles.image}/>
         </ReactCrop>
     );
