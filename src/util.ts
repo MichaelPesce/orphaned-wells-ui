@@ -384,6 +384,50 @@ export const convertFiltersToMongoFormat = (filters: FilterOption[]): object => 
   return filterBy;
 }
 
+export function scrollIntoView(element: HTMLElement | null, container: HTMLElement | null) {
+    if (element && container) {
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight; 
+        const elemTop = element.offsetTop;
+        const elemBottom = elemTop + element.clientHeight;
+        if (elemTop < containerTop) {
+            container.scrollTo({
+                // add -45 to give ensure element comes fully into view
+                top: elemTop - 45,
+                behavior: "smooth",
+            });
+        } else if (elemBottom > containerBottom) {
+            container.scrollTo({
+                // add +45 to give ensure element comes fully into view
+                top: elemBottom - container.clientHeight + 25,
+                behavior: "smooth",
+            });
+        }
+    }
+}
+
+export function coordinatesDecimalsToPercentage(coords: number[][]) {
+  return coords.map(coord => coord.map(value => value * 100));
+}
+
+export const scrollToAttribute = (boxId: string, heightId: string, top: number, imageFiles: any) => {
+    try{
+        const imageContainerId = boxId;
+        const imageContainerElement = document.getElementById(imageContainerId);
+        const imageElement = document.getElementById(heightId);
+        const scrollAmount = top * imageElement!.clientHeight * imageFiles.length - 100;
+        if (imageContainerElement) {
+            imageContainerElement.scrollTo({
+                top: scrollAmount,
+                behavior: "smooth",
+            });
+        }
+    } catch(e) {
+        // this likely only occurs when table is in fullscreen mode and image is note displayed
+        console.error('failed to scroll')
+    }
+}
+
 export const callAPI = async (
   apiFunc: (...args: any[]) => Promise<Response>, 
   apiParams: any[], 

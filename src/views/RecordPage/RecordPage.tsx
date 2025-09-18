@@ -8,7 +8,17 @@ import Bottombar from '../../components/BottomBar/BottomBar';
 import DocumentContainer from '../../components/DocumentContainer/DocumentContainer';
 import PopupModal from '../../components/PopupModal/PopupModal';
 import ErrorBar from '../../components/ErrorBar/ErrorBar';
-import { RecordData, handleChangeValueSignature, PreviousPages, SubheaderActions, RecordSchema, Attribute } from '../../types';
+import { 
+    RecordData,
+    handleChangeValueSignature,
+    insertFieldSignature,
+    deleteFieldSignature,
+    PreviousPages,
+    SubheaderActions,
+    RecordSchema,
+    Attribute,
+    updateFieldCoordinatesSignature,
+    FieldID } from '../../types';
 import { useUserContext } from '../../usercontext';
 
 const Record = () => {
@@ -138,8 +148,8 @@ const Record = () => {
     const handleSuccessfulDeletion = (data: any) => {}
 
     const handleSuccessfulAttributeUpdate = React.useCallback((data: any) => {
-        const { isSubattribute, topLevelIndex, subIndex, v, review_status } = data;
-        handleChangeAttribute(v, topLevelIndex, review_status, isSubattribute, subIndex)
+        const { fieldId, v, review_status } = data;
+        handleChangeAttribute(v, fieldId, review_status)
     }, [])
 
     const handleFailedUpdate = (data: any, response_status?: number) => {
@@ -154,8 +164,12 @@ const Record = () => {
         setErrorMsg(errorMessage);
     }, [])
 
-    const insertField = React.useCallback((k: string, topLevelIndex: number, isSubattribute?: boolean, subIndex?: number, parentAttribute?: string) => {
-        if (isSubattribute && subIndex !== undefined) {
+    const insertField: insertFieldSignature = React.useCallback((fieldID, parentAttribute) => {
+        const k = fieldID.key;
+        const primaryIndex = fieldID.primaryIndex;
+        const isSubattribute = fieldID.isSubattribute;
+        const subIndex = fieldID.subIndex || 0;
+        if (isSubattribute) {
             const newSubIndex = subIndex + 1;
             const newSubField = {
                 "key": k,
@@ -175,7 +189,7 @@ const Record = () => {
             }
             setRecordData(tempRecordData => {
                 const newAttributesList = tempRecordData.attributesList.map((attribute, i) => {
-                    if (i !== topLevelIndex) return attribute;
+                    if (i !== primaryIndex) return attribute;
 
                     const currentSubattributes = attribute.subattributes;
                     if (!attribute.subattributes) {
@@ -205,13 +219,13 @@ const Record = () => {
                 return newRecordData;
             })
             setTimeout(() => {
-                setForceEditMode([topLevelIndex, newSubIndex]);
+                setForceEditMode([primaryIndex, newSubIndex]);
                 setTimeout(() => {
                     setForceEditMode([-1, -1]);
                 }, 0)
             }, 0)
         } else {
-            const newIndex = topLevelIndex+1;
+            const newIndex = primaryIndex+1;
             const newField = {
                 "key": k,
                 "ai_confidence": null,
@@ -251,11 +265,14 @@ const Record = () => {
         
     }, [])
 
-    const deleteField = React.useCallback((topLevelIndex: number, isSubattribute?: boolean, subIndex?: number) => {
+    const deleteField: deleteFieldSignature = React.useCallback((fieldID: FieldID) => {
+        const primaryIndex = fieldID.primaryIndex;
+        const isSubattribute = fieldID.isSubattribute;
+        const subIndex = fieldID.subIndex || 0;
         if (isSubattribute) {
             setRecordData(tempRecordData => {
                 const newAttributesList = tempRecordData.attributesList.map((attribute, idx) => {
-                    if (idx !== topLevelIndex) return attribute;
+                    if (idx !== primaryIndex) return attribute;
                     else {
                         return {
                             ...attribute,
@@ -271,7 +288,7 @@ const Record = () => {
             setRecordData(tempRecordData => {
                 const newRecordData = {
                     ...tempRecordData,
-                    attributesList: tempRecordData.attributesList.filter((_, i) => i !== topLevelIndex),
+                    attributesList: tempRecordData.attributesList.filter((_, i) => i !== primaryIndex),
                 }
                 handleUpdateRecord(newRecordData);
                 return newRecordData;
@@ -279,10 +296,59 @@ const Record = () => {
         }
     }, [])
 
-    const handleChangeAttribute = (newAttribute: Attribute, topLevelIndex: number, reviewStatus: string, isSubattribute?: boolean, subIndex?: number) => {
-        if (locked) return true
-        // const rightNow = Date.now();
+    const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldId, new_coordinates, pageNumber) => {
+        if (locked) return true;
+        let rightNow = Date.now();
+        // TODO: need to update backend as well
+        if (!fieldId.isSubattribute) {
+            setRecordData(tempRecordData => {
+                const newRecordData = {
+                    ...tempRecordData,
+                    attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
+                        fieldId.primaryIndex === idx ? { 
+                            ...tempAttribute,
+                            lastUpdated: rightNow,
+                            lastUpdatedBy: userEmail,
+                            edited: true,
+                            user_provided_coordinates: new_coordinates,
+                            page: pageNumber,
+                        } : tempAttribute
+                    )
+                }
+                handleUpdateRecord(newRecordData);
+                return newRecordData;
+            })
+        } else {
+            setRecordData(tempRecordData => {
+                const newRecordData = {
+                    ...tempRecordData,
+                    attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
+                        fieldId.primaryIndex === idx ? { 
+                            ...tempAttribute,
+                            subattributes: tempAttribute.subattributes.map((tempSubattribute: Attribute, subidx: number) => {
+                                if (fieldId.subIndex === subidx) {
+                                    return {
+                                        ...tempSubattribute,
+                                        lastUpdated: rightNow,
+                                        lastUpdatedBy: userEmail,
+                                        edited: true,
+                                        user_provided_coordinates: new_coordinates,
+                                        page: pageNumber,
+                                    }
+                                } else return tempSubattribute
+                                }
+                            )
+                        } : tempAttribute
+                    )
+                }
+                handleUpdateRecord(newRecordData);
+                return newRecordData;
+            })
+        }
+    }, [])
 
+    const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string) => {
+        if (locked) return true
         const newValue = newAttribute.value;
         const newNormalizedValue = newAttribute.normalized_value;
         const new_uncleaned_value = newAttribute.uncleaned_value;
@@ -294,12 +360,16 @@ const Record = () => {
         const new_last_cleaned = newAttribute.last_cleaned;
         const topLevelAttribute = newAttribute.topLevelAttribute;
 
+        const primaryIndex = fieldID.primaryIndex;
+        const isSubattribute = fieldID.isSubattribute;
+        const subIndex = fieldID.subIndex;
+
         if (!isSubattribute) {
             setRecordData(tempRecordData => ({
                 ...tempRecordData,
                 review_status: reviewStatus || tempRecordData.review_status,
                 attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-                    topLevelIndex === idx ? { 
+                    primaryIndex === idx ? { 
                         ...tempAttribute, 
                         value: newValue,
                         normalized_value: newNormalizedValue,
@@ -319,7 +389,7 @@ const Record = () => {
                 ...tempRecordData,
                 review_status: reviewStatus || tempRecordData.review_status,
                 attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-                    topLevelIndex === idx ? { 
+                    primaryIndex === idx ? { 
                         ...tempAttribute,
                         subattributes: tempAttribute.subattributes.map((tempSubattribute: Attribute, subidx: number) => {
                             if (subIndex === subidx) {
@@ -345,7 +415,10 @@ const Record = () => {
         }
     }
 
-    const handleChangeValue: handleChangeValueSignature = React.useCallback((event, topLevelIndex, isSubattribute, subIndex) => {
+    const handleChangeValue: handleChangeValueSignature = React.useCallback((event, fieldId) => {
+        const primaryIndex = fieldId.primaryIndex;
+        const isSubattribute = fieldId.isSubattribute;
+        const subIndex = fieldId.subIndex;
         if (locked) return true
         let value = event.target.value;
         let rightNow = Date.now();
@@ -355,7 +428,7 @@ const Record = () => {
                 lastUpdated: rightNow,
                 lastUpdatedBy: userEmail,
                 attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-                    topLevelIndex === idx ? { 
+                    primaryIndex === idx ? { 
                         ...tempAttribute, 
                         value: value,
                         edited: true,
@@ -370,7 +443,7 @@ const Record = () => {
                 lastUpdated: rightNow,
                 lastUpdatedBy: userEmail,
                 attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-                    topLevelIndex === idx ? { 
+                    primaryIndex === idx ? { 
                         ...tempAttribute, 
                         edited: true,
                         lastUpdated: rightNow,
@@ -519,6 +592,7 @@ const Record = () => {
                     handleSuccessfulAttributeUpdate={handleSuccessfulAttributeUpdate}
                     showError={showError}
                     reviewStatus={recordData.review_status || ''}
+                    updateFieldCoordinates={updateFieldCoordinates}
                 />
             </Box>
             <Bottombar

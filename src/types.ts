@@ -89,6 +89,7 @@ export interface Attribute {
     last_cleaned?: number; // timestamp in seconds
     user_added?: boolean;
     topLevelAttribute?: string;
+    user_provided_coordinates?: number[][];
 }
 
 export interface Processor {
@@ -156,6 +157,14 @@ export interface SubheaderActions {
     [key: string]: () => void;
 }
 
+export interface FieldID {
+    key: string;
+    primaryIndex: number;
+    subIndex?: number | null;
+    isSubattribute?: boolean;
+    parentKey?: string;
+}
+
 /*
 props interfaces
 */
@@ -169,11 +178,12 @@ export interface RecordAttributesTableProps {
     showRawValues?: boolean;
     recordSchema: RecordSchema;
     forceEditMode: number[];
-    insertField: (k: string, topLevelIndex: number, isSubattribute: boolean, subIndex?: number, parentAttribute?: string) => void;
+    insertField: insertFieldSignature;
     handleSuccessfulAttributeUpdate: (data: any) => void;
     showError: (errorMessage: string) => void;
-    deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number) => void;
+    deleteField: deleteFieldSignature;
     reviewStatus: string;
+    setUpdateFieldLocationID: (v?: FieldID) => void;
 }
 
 export interface RecordsTableProps {
@@ -262,11 +272,12 @@ export interface DocumentContainerProps {
     locked?: boolean;
     recordSchema: RecordSchema;
     forceEditMode: number[];
-    insertField: (k: string, topLevelIndex: number, isSubattribute: boolean, subIndex?: number, parentAttribute?: string) => void;
+    insertField: insertFieldSignature;
     handleSuccessfulAttributeUpdate: (data: any) => void;
     showError: (errorMessage: string) => void;
-    deleteField: (topLevelIndex: number, isSubattribute?: boolean, subIndex?: number) => void;
+    deleteField: deleteFieldSignature;
     reviewStatus: string;
+    updateFieldCoordinates: updateFieldCoordinatesSignature;
 }
 
 export interface ColumnSelectDialogProps {
@@ -306,6 +317,18 @@ export interface RecordNotesDialogProps {
     onClose: (record_id?: string, newNotes?: RecordNote[], submitted?: boolean) => void;
 }
 
+export interface ImageCropperProps {
+    image: string;
+    displayPoints: number[][] | null;
+    disabled: boolean;
+    fullscreen: string | null;
+    imageIdx: number;
+    highlightedImageIdxIndex: number;
+    zoomOnToken?: boolean;
+    updateFieldLocationID?: FieldID;
+    setUpdateFieldLocationID: (v?: FieldID) => void;
+    handleUpdateFieldCoordinates: updateFieldCoordinatesSignature;
+}
 
 /*
 functions
@@ -313,18 +336,34 @@ functions
 export interface handleChangeValueSignature {
     (
         event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, 
-        index: number, 
-        isSubattribute?: boolean, 
-        subIndex?: number
+        fieldId: FieldID,
     ): void;
 }
 
 export interface handleClickFieldSignature {
     (
-        key: string, 
-        vertices: number[][] | null, 
-        index: number, 
-        isSubattribute: boolean, 
-        subattributeIdx: number | null
+        fieldID: FieldID, 
+        vertices: number[][] | null,
+    ): void;
+}
+
+export interface updateFieldCoordinatesSignature {
+    (
+        fieldId: FieldID,
+        new_coordinates: number[][],
+        pageNumber: number,
+    ): void;
+}
+
+export interface insertFieldSignature {
+    (
+        fieldID: FieldID,
+        parentAttribute?: string
+    ): void;
+}
+
+export interface deleteFieldSignature {
+    (
+        fieldID: FieldID,
     ): void;
 }

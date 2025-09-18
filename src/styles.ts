@@ -29,7 +29,8 @@ export const styles = {
   fieldsTable: {
     width: "100%",
     maxHeight: "70vh",
-    backgroundColor: "white"
+    backgroundColor: "white",
+    paddingBottom: "10px",
   },
   tableHead: {
       backgroundColor: "#EDF2FA",
@@ -321,7 +322,7 @@ export const DocumentContainerStyles = {
       
   },
   outerBox: {
-      paddingBottom: "45px"
+      paddingBottom: "65px"
   },
   errorAlert: {
     backgroundColor: '#FFECED',

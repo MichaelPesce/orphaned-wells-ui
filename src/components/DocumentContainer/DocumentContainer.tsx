@@ -3,15 +3,14 @@ import { useParams } from "react-router-dom";
 import { Grid, Box, IconButton, Alert, Tooltip } from '@mui/material';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import { ImageCropper } from '../ImageCropper/ImageCropper';
-import { useKeyDown } from '../../util';
+import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage } from '../../util';
 import AttributesTable from '../RecordAttributesTable/RecordAttributesTable';
-import { DocumentContainerProps } from '../../types';
+import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID } from '../../types';
 import { DocumentContainerStyles as styles } from '../../styles';
 import Switch from '@mui/material/Switch';
 
-const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps }: DocumentContainerProps) => {
+const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates, ...attributeTableProps }: DocumentContainerProps) => {
 
     const [imgIndex, setImgIndex] = useState(0);
     const [displayPoints, setDisplayPoints] = useState<number[][] | null>(null);
@@ -27,6 +26,7 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
     const [ autoCleanFields, setAutoCleanFields ] = useState(true)
     const [ hasErrors, setHasErrors ] = useState(false)
     const [ zoomOnToken, setZoomOnToken ] = useState(JSON.parse(localStorage.getItem('zoomOnToken') || 'false'))
+    const [updateFieldLocationID, setUpdateFieldLocationID] = useState<FieldID>()
 
     const imageDivStyle = {
         width: width,
@@ -70,17 +70,18 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
     },[attributesList])
 
     useEffect(() => {
+        let newImgIdx;
         if (displayKeyIndex !== -1 && displayKeySubattributeIndex !== null) {
-            const newImgIdx = attributesList[displayKeyIndex].subattributes[displayKeySubattributeIndex].page;
-            if (newImgIdx !== undefined && newImgIdx !== null) setImgIndex(newImgIdx);
+            newImgIdx = attributesList[displayKeyIndex].subattributes[displayKeySubattributeIndex].page;
         } 
         else if (displayKeyIndex !== -1) {
-            const newImgIdx = attributesList[displayKeyIndex].page;
-            if (newImgIdx !== undefined && newImgIdx !== null) setImgIndex(newImgIdx);
+            newImgIdx = attributesList[displayKeyIndex].page;
         }
         else {
-            setImgIndex(0);
+            newImgIdx = 0;
         }
+        if (newImgIdx === null || newImgIdx === undefined) newImgIdx = 0;
+        setImgIndex(newImgIdx);
         
     }, [displayKeyIndex, displayKeySubattributeIndex]);
 
@@ -102,56 +103,100 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
         setDisplayKeyIndex(-1);
     }, [params.id]);
 
-    const tabCallback = () => {
-        let tempIndex: number;
-        let tempSubIndex: number | null;
+    const getNextField = (direction: string = "down", currentIndex: number = displayKeyIndex, currentSubindex: number | null = displayKeySubattributeIndex) => {
+        let nextIndex: number;
+        let nextSubindex: number | null;
         let isSubattribute: boolean;
-        let tempKey: string;
-        let tempVertices: any;
+        let nextKey: string;
+        let nextCoordinates: any;
+        let parentKey: string;
 
-        if (displayKeyIndex === -1) {
-            console.log("display index was null")
-            tempIndex = 0;
-            tempSubIndex = null;
-        } 
-        else if (attributesList[displayKeyIndex].subattributes) {
-            if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
-                tempSubIndex = 0;
-                tempIndex = displayKeyIndex;
-            } else if (displayKeySubattributeIndex === attributesList[displayKeyIndex].subattributes.length - 1) {
-                tempSubIndex = null;
-                tempIndex = displayKeyIndex === attributesList.length - 1 ? 0 : displayKeyIndex + 1;
-            } else { 
-                tempSubIndex = displayKeySubattributeIndex + 1;
-                tempIndex = displayKeyIndex;
+        if (direction === "down"){
+            if (currentIndex === -1) {
+                nextIndex = 0;
+                nextSubindex = null;
+            } 
+            else if (attributesList[currentIndex].subattributes) {
+                if (currentSubindex === null || currentSubindex === undefined) {
+                    nextSubindex = 0;
+                    nextIndex = currentIndex;
+                } else if (currentSubindex === attributesList[currentIndex].subattributes.length - 1) {
+                    nextSubindex = null;
+                    nextIndex = currentIndex === attributesList.length - 1 ? 0 : currentIndex + 1;
+                } else { 
+                    nextSubindex = currentSubindex + 1;
+                    nextIndex = currentIndex;
+                }
+            }
+            else if (currentIndex === attributesList.length - 1)  {
+                nextIndex = 0;
+                nextSubindex = null;
+            }
+            else {
+                nextIndex = currentIndex + 1;
+                nextSubindex = null;
+            }
+        } else { // if (direction === "up") 
+            if (currentIndex === -1) {
+                nextIndex = attributesList.length - 1;
+                nextSubindex = null;
+            } 
+            else if (attributesList[currentIndex].subattributes) {
+                if (currentSubindex === null || currentSubindex === undefined) {
+                    nextSubindex = attributesList[currentIndex].subattributes.length - 1;
+                    nextIndex = currentIndex;
+                } else if (currentSubindex === 0) {
+                    nextSubindex = null;
+                    nextIndex = currentIndex === 0 ? attributesList.length - 1 : currentIndex - 1;
+                } else { 
+                    nextSubindex = currentSubindex - 1;
+                    nextIndex = currentIndex;
+                }
+            }
+            else if (currentIndex === 0)  {
+                nextIndex = attributesList.length - 1;
+                nextSubindex = null;
+            }
+            else {
+                nextIndex = currentIndex - 1;
+                nextSubindex = null;
             }
         }
-        else if (displayKeyIndex === attributesList.length - 1)  {
-            tempIndex = 0;
-            tempSubIndex = null;
-        }
-        else {
-            tempIndex = displayKeyIndex + 1;
-            tempSubIndex = null;
-        }
 
-        if (tempSubIndex !== null && tempSubIndex !== undefined) {
+
+        if (nextSubindex !== null && nextSubindex !== undefined) {
             isSubattribute = true;
-            tempKey = attributesList[tempIndex].subattributes[tempSubIndex].key;
-            tempVertices = attributesList[tempIndex].subattributes[tempSubIndex].normalized_vertices;
+            nextKey = attributesList[nextIndex].subattributes[nextSubindex].key;
+            nextCoordinates = 
+                attributesList[nextIndex].subattributes[nextSubindex].user_provided_coordinates ||
+                attributesList[nextIndex].subattributes[nextSubindex].normalized_vertices;
         } else {
             isSubattribute = false;
-            tempKey = attributesList[tempIndex].key;
-            tempVertices = attributesList[tempIndex].normalized_vertices;
+            nextKey = attributesList[nextIndex].key;
+            nextCoordinates = 
+                attributesList[nextIndex].user_provided_coordinates ||
+                attributesList[nextIndex].normalized_vertices;
         }
-        handleClickField(tempKey, tempVertices, tempIndex, isSubattribute, tempSubIndex);
+        parentKey = attributesList[nextIndex].key;
+        const tempFieldID: FieldID = {
+            key: nextKey,
+            primaryIndex: nextIndex,
+            isSubattribute: isSubattribute,
+            subIndex: nextSubindex,
+            parentKey,
+        }
+        return [tempFieldID, nextCoordinates]
+    }
+
+    const proceedToNextField = (nextField: FieldID) => {
+        const { key, isSubattribute, primaryIndex, subIndex } = nextField;
         let elementId: string;
 
         if (isSubattribute) {
-            setForceOpenSubtable(tempIndex);
-            elementId = `${tempIndex}::${tempSubIndex}`;
+            setForceOpenSubtable(primaryIndex);
+            elementId = `${key}::${primaryIndex}::${subIndex}`;
         } 
-        else elementId = `${tempKey}::${tempIndex}`;
+        else elementId = `${key}::${primaryIndex}`;
         let element = document.getElementById(elementId);
         let waitTime = 0;
         let containerElement = document.getElementById("table-container");
@@ -162,7 +207,8 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
                     element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
                 }, waitTime);
             }
-            else scrollIntoView(element, containerElement);
+            else 
+            scrollIntoView(element, containerElement);
         } else {
             waitTime = 250;
             setTimeout(function() {
@@ -172,148 +218,67 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
         }
     }
 
+    const tabCallback = () => {
+        const [nextField, vertices] = getNextField("down");
+        handleClickField(nextField, vertices);
+        let nextScrollToField = {...nextField}
+        let i = 0; // add this as a safe catch incase we messed up this while logic
+        while (nextScrollToField.isSubattribute && i<100) {
+            [nextScrollToField] = getNextField("down", nextScrollToField.primaryIndex, nextScrollToField.subIndex);
+            i+=1;
+        } 
+        proceedToNextField(nextScrollToField);
+    }
+
     const shiftTabCallback = () => {
-        let tempIndex: number;
-        let tempSubIndex: number | null;
-        let isSubattribute: boolean;
-        let tempKey: string;
-        let tempVertices: any;
-
-        if (displayKeyIndex === -1) {
-            tempIndex = attributesList.length - 1;
-            tempSubIndex = null;
-        } 
-        else if (attributesList[displayKeyIndex].subattributes) {
-            if (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined) {
-                tempSubIndex = attributesList[displayKeyIndex].subattributes.length - 1;
-                tempIndex = displayKeyIndex;
-            } else if (displayKeySubattributeIndex === 0) {
-                tempSubIndex = null;
-                tempIndex = displayKeyIndex === 0 ? attributesList.length - 1 : displayKeyIndex - 1;
-            } else { 
-                tempSubIndex = displayKeySubattributeIndex - 1;
-                tempIndex = displayKeyIndex;
-            }
+        const [nextField, vertices] = getNextField("up");
+        handleClickField(nextField, vertices);
+        let nextScrollToField = {...nextField}
+        let i = 0; // add this as a safe catch incase we messed up this while logic
+        while (nextScrollToField.isSubattribute && i<100) {
+            [nextScrollToField] = getNextField("down", nextScrollToField.primaryIndex, nextScrollToField.subIndex);
+            i+=1;
         }
-        else if (displayKeyIndex === 0)  {
-            tempIndex = attributesList.length - 1;
-            tempSubIndex = null;
-        }
-        else {
-            tempIndex = displayKeyIndex - 1;
-            tempSubIndex = null;
-        }
-
-        if (tempSubIndex !== null && tempSubIndex !== undefined) {
-            isSubattribute = true;
-            tempKey = attributesList[tempIndex].subattributes[tempSubIndex].key;
-            tempVertices = attributesList[tempIndex].subattributes[tempSubIndex].normalized_vertices;
-        } else {
-            isSubattribute = false;
-            tempKey = attributesList[tempIndex].key;
-            tempVertices = attributesList[tempIndex].normalized_vertices;
-        }
-        handleClickField(tempKey, tempVertices, tempIndex, isSubattribute, tempSubIndex);
-        let elementId: string;
-
-        if (isSubattribute) {
-            setForceOpenSubtable(tempIndex);
-            elementId = `${tempIndex}::${tempSubIndex}`;
-        } 
-        else elementId = `${tempKey}::${tempIndex}`;
-        let element = document.getElementById(elementId);
-        let waitTime = 0;
-        let containerElement = document.getElementById("table-container");
-        if (element) {
-            if (isSubattribute) {
-                setTimeout(function() {
-                    if (element)
-                    element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-                }, waitTime);
-            }
-            else scrollIntoView(element, containerElement);
-        } else {
-            waitTime = 250;
-            setTimeout(function() {
-                element = document.getElementById(elementId);
-                if (element) element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-            }, waitTime);
-        }
+        proceedToNextField(nextScrollToField);
     }
 
     useKeyDown("Tab", tabCallback, shiftTabCallback);
     useKeyDown("ArrowUp", shiftTabCallback);
     useKeyDown("ArrowDown", tabCallback);
 
-    const handleClickField = React.useCallback((key: string, normalized_vertices: number[][] | null, primaryIndex: number, isSubattribute: boolean, subattributeIdx: number | null) => {
-        if (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subattributeIdx === displayKeySubattributeIndex)) {
+    const handleClickField = React.useCallback((fieldID: FieldID, coordinates: number[][] | null) => {
+        const { key, primaryIndex, subIndex = 0, isSubattribute } = fieldID;
+        if (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex)) {
             setDisplayPoints(null);
             setDisplayKeyIndex(-1);
+            setDisplayKeySubattributeIndex(null);
         }
         else {
             setDisplayKeyIndex(primaryIndex);
-            setDisplayKeySubattributeIndex(subattributeIdx);
-            if (normalized_vertices !== null && normalized_vertices !== undefined) {
+            setDisplayKeySubattributeIndex(subIndex);
+            if (coordinates !== null && coordinates !== undefined) {
                 const percentage_vertices: number[][] = [];
-                for (let each of normalized_vertices) {
+                for (let each of coordinates) {
                     percentage_vertices.push([each[0] * 100, each[1] * 100]);
                 }
                 let page = 0;
                 try {
                     let attr = attributesList[primaryIndex];
-                    if (isSubattribute) attr = attr.subattributes[subattributeIdx as number];
+                    if (isSubattribute) attr = attr.subattributes[subIndex as number];
                     if (attr.page !== undefined) page = attr.page;
                 } catch (e) {
                     console.log("error getting page");
                     console.log(e);
                 }
-                const scrollTop = (normalized_vertices[2][1] / imageFiles.length) + (page / imageFiles.length);
+                const scrollTop = (coordinates[2][1] / imageFiles.length) + (page / imageFiles.length);
                 setDisplayPoints(percentage_vertices);
-                scrollToAttribute("image-box", "image-div", scrollTop);
+                scrollToAttribute("image-box", "image-div", scrollTop, imageFiles);
             } else {
                 setDisplayPoints(null);
             }
         }
-    }, [imageFiles])
-
-    const scrollToAttribute = (boxId: string, heightId: string, top: number) => {
-        try{
-            const imageContainerId = boxId;
-            const imageContainerElement = document.getElementById(imageContainerId);
-            const imageElement = document.getElementById(heightId);
-            const scrollAmount = top * imageElement!.clientHeight * imageFiles.length - 100;
-            if (imageContainerElement) {
-                imageContainerElement.scrollTo({
-                    top: scrollAmount,
-                    behavior: "smooth",
-                });
-            }
-        } catch(e) {
-            // this likely only occurs when table is in fullscreen mode and image is note displayed
-            console.error('failed to scroll')
-        }
-        
-    }
-
-    function scrollIntoView(element: HTMLElement | null, container: HTMLElement | null) {
-        if (element && container) {
-            const containerTop = container.scrollTop;
-            const containerBottom = containerTop + container.clientHeight; 
-            const elemTop = element.offsetTop;
-            const elemBottom = elemTop + element.clientHeight;
-            if (elemTop < containerTop) {
-                container.scrollTo({
-                    top: elemTop,
-                    behavior: "smooth",
-                });
-            } else if (elemBottom > containerBottom) {
-                container.scrollTo({
-                    top: elemBottom - container.clientHeight,
-                    behavior: "smooth",
-                });
-            }
-        }
-    }
+    }, [imageFiles, displayKeyIndex, displayKeySubattributeIndex])
+    
 
     const handleSetFullscreen = (item: string) => {
         if (fullscreen === item)  {
@@ -331,6 +296,15 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
         event.stopPropagation();
         setZoomOnToken(!zoomOnToken);
         localStorage.setItem('zoomOnToken', JSON.stringify(!zoomOnToken))
+    }
+
+    const handleUpdateFieldCoordinates: updateFieldCoordinatesSignature = (fieldId, new_coordinates, pageNumber) => {
+        updateFieldCoordinates(fieldId, new_coordinates, pageNumber);
+        setTimeout(() => {
+            setDisplayKeyIndex(fieldId.primaryIndex);
+            setDisplayKeySubattributeIndex(fieldId.subIndex || null);
+            setDisplayPoints(coordinatesDecimalsToPercentage(new_coordinates));
+        }, 0)
     }
 
     return (
@@ -372,6 +346,7 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
                                     displayKeyIndex={displayKeyIndex}
                                     displayKeySubattributeIndex={displayKeySubattributeIndex}
                                     showRawValues={showRawValues}
+                                    setUpdateFieldLocationID={setUpdateFieldLocationID}
                                     {...attributeTableProps}
                                 />
                             }
@@ -383,11 +358,11 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
                     <Grid item xs={gridWidths[0]}>
                         <Box sx={styles.gridContainer}>
                             <Box sx={styles.containerActions.right}>
-                                <Tooltip title='Zoom in on highlighted fields'>
+                                {/* <Tooltip title='Zoom in on highlighted fields'>
                                     <IconButton id='zoom-toggle-button' onClick={handleToggleZoom} sx={zoomOnToken ? styles.zoomToggleActive : {}}>
                                         <ZoomInIcon/> 
                                     </IconButton>
-                                </Tooltip>
+                                </Tooltip> */}
                                 
                                 <IconButton id='fullscreen-image-button' onClick={() => handleSetFullscreen("image")}>
                                     { 
@@ -407,7 +382,10 @@ const DocumentContainer = ({ imageFiles, attributesList, ...attributeTableProps 
                                             displayPoints={displayPoints}
                                             disabled
                                             fullscreen={fullscreen}
-                                            zoomOnToken={zoomOnToken}
+                                            zoomOnToken={false}
+                                            updateFieldLocationID={updateFieldLocationID}
+                                            setUpdateFieldLocationID={setUpdateFieldLocationID}
+                                            handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
                                         />
                                     </div>
                                 ))
