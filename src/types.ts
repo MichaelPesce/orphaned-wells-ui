@@ -327,7 +327,7 @@ export interface ImageCropperProps {
     zoomOnToken?: boolean;
     updateFieldLocationID?: FieldID;
     setUpdateFieldLocationID: (v?: FieldID) => void;
-    updateFieldCoordinates: updateFieldCoordinatesSignature;
+    handleUpdateFieldCoordinates: updateFieldCoordinatesSignature;
 }
 
 /*
@@ -351,6 +351,7 @@ export interface updateFieldCoordinatesSignature {
     (
         fieldId: FieldID,
         new_coordinates: number[][],
+        pageNumber: number,
     ): void;
 }
 

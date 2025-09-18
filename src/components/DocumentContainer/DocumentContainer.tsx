@@ -4,9 +4,9 @@ import { Grid, Box, IconButton, Alert, Tooltip } from '@mui/material';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import { ImageCropper } from '../ImageCropper/ImageCropper';
-import { useKeyDown, scrollIntoView, scrollToAttribute } from '../../util';
+import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage } from '../../util';
 import AttributesTable from '../RecordAttributesTable/RecordAttributesTable';
-import { DocumentContainerProps, FieldID } from '../../types';
+import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID } from '../../types';
 import { DocumentContainerStyles as styles } from '../../styles';
 import Switch from '@mui/material/Switch';
 
@@ -70,17 +70,17 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
     },[attributesList])
 
     useEffect(() => {
+        let newImgIdx;
         if (displayKeyIndex !== -1 && displayKeySubattributeIndex !== null) {
-            const newImgIdx = attributesList[displayKeyIndex].subattributes[displayKeySubattributeIndex].page;
-            if (newImgIdx !== undefined && newImgIdx !== null) setImgIndex(newImgIdx);
+            newImgIdx = attributesList[displayKeyIndex].subattributes[displayKeySubattributeIndex].page;
         } 
         else if (displayKeyIndex !== -1) {
-            const newImgIdx = attributesList[displayKeyIndex].page;
-            if (newImgIdx !== undefined && newImgIdx !== null) setImgIndex(newImgIdx);
+            newImgIdx = attributesList[displayKeyIndex].page;
         }
         else {
-            setImgIndex(0);
+            newImgIdx = 0;
         }
+        setImgIndex(newImgIdx);
         
     }, [displayKeyIndex, displayKeySubattributeIndex]);
 
@@ -297,6 +297,15 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
         localStorage.setItem('zoomOnToken', JSON.stringify(!zoomOnToken))
     }
 
+    const handleUpdateFieldCoordinates: updateFieldCoordinatesSignature = (fieldId, new_coordinates, pageNumber) => {
+        updateFieldCoordinates(fieldId, new_coordinates, pageNumber);
+        setTimeout(() => {
+            setDisplayKeyIndex(fieldId.primaryIndex);
+            setDisplayKeySubattributeIndex(fieldId.subIndex || null);
+            setDisplayPoints(coordinatesDecimalsToPercentage(new_coordinates));
+        }, 0)
+    }
+
     return (
         <Box style={styles.outerBox}>
             {
@@ -375,7 +384,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                                             zoomOnToken={false}
                                             updateFieldLocationID={updateFieldLocationID}
                                             setUpdateFieldLocationID={setUpdateFieldLocationID}
-                                            updateFieldCoordinates={updateFieldCoordinates}
+                                            handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
                                         />
                                     </div>
                                 ))

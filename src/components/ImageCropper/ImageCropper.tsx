@@ -47,7 +47,7 @@ const converCropToDisplayPoints = (c: Crop, divideBy100: boolean = true): number
 const ZOOM_SCALE = 2
 
 export const ImageCropper = (props: ImageCropperProps) => {
-    const { image, displayPoints, disabled, fullscreen, imageIdx, highlightedImageIdxIndex, zoomOnToken, updateFieldLocationID, setUpdateFieldLocationID, updateFieldCoordinates } = props;
+    const { image, displayPoints, disabled, fullscreen, imageIdx, highlightedImageIdxIndex, zoomOnToken, updateFieldLocationID, setUpdateFieldLocationID, handleUpdateFieldCoordinates } = props;
     const [crop, setCrop] = useState<Crop | undefined>(undefined);
     const [ transformScale, setTransformScale ] = useState(1) // 1 = normal size
     const [ transformOrigin, setTransformOrigin ] = useState([50,50]) // [0,0] = top left ; [100,100] = bottom right
@@ -143,7 +143,7 @@ export const ImageCropper = (props: ImageCropperProps) => {
     const handleFinishDragging = (pxc: Crop, c: Crop) => {
         const new_displayPoints = converCropToDisplayPoints(c);
         if (updateFieldLocationID && new_displayPoints && c.height && c.width) {
-            updateFieldCoordinates(updateFieldLocationID, new_displayPoints);
+            handleUpdateFieldCoordinates(updateFieldLocationID, new_displayPoints, imageIdx);
             setUpdateFieldLocationID(undefined);
             // setTimeout(() => {
             //     setCrop(c);

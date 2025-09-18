@@ -17,6 +17,7 @@ import {
     SubheaderActions,
     RecordSchema,
     Attribute,
+    updateFieldCoordinatesSignature,
     FieldID } from '../../types';
 import { useUserContext } from '../../usercontext';
 
@@ -295,7 +296,7 @@ const Record = () => {
         }
     }, [])
 
-    const updateFieldCoordinates = React.useCallback((fieldId: FieldID, new_coordinates: number[][]) => {
+    const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldId, new_coordinates, pageNumber) => {
         if (locked) return true;
         let rightNow = Date.now();
         // TODO: need to update backend as well
@@ -310,6 +311,7 @@ const Record = () => {
                             lastUpdatedBy: userEmail,
                             edited: true,
                             user_provided_coordinates: new_coordinates,
+                            page: pageNumber,
                         } : tempAttribute
                     )
                 }
@@ -331,6 +333,7 @@ const Record = () => {
                                         lastUpdatedBy: userEmail,
                                         edited: true,
                                         user_provided_coordinates: new_coordinates,
+                                        page: pageNumber,
                                     }
                                 } else return tempSubattribute
                                 }

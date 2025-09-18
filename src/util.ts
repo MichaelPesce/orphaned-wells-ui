@@ -406,6 +406,10 @@ export function scrollIntoView(element: HTMLElement | null, container: HTMLEleme
     }
 }
 
+export function coordinatesDecimalsToPercentage(coords: number[][]) {
+  return coords.map(coord => coord.map(value => value * 100));
+}
+
 export const scrollToAttribute = (boxId: string, heightId: string, top: number, imageFiles: any) => {
     try{
         const imageContainerId = boxId;
