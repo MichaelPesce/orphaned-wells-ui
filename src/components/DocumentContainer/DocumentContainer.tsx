@@ -80,6 +80,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
         else {
             newImgIdx = 0;
         }
+        if (newImgIdx === null || newImgIdx === undefined) newImgIdx = 0;
         setImgIndex(newImgIdx);
         
     }, [displayKeyIndex, displayKeySubattributeIndex]);
