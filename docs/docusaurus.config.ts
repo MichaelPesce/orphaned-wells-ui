@@ -10,15 +10,15 @@ const config: Config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://catalog-historic-records.github.io',
+  url: 'https://catalog-historic-records-wip.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/orphaned-wells-ui/',
+  baseUrl: '/orphaned-wells-ui-doc/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'CATALOG-Historic-Records', // Usually your GitHub org/user name.
-  projectName: 'orphaned-wells-ui', // Usually your repo name.
+  organizationName: 'ltchong1', // Usually your GitHub org/user name.
+  projectName: 'orphaned-wells-ui-doc', // Usually your repo name.
   trailingSlash: false,
 
   onBrokenLinks: 'throw',

@@ -1,0 +1,83 @@
+---
+title: 6. Schema Spreadsheet
+description: Schema Spreadsheet
+sidebar_position: 14
+---
+
+# Schema Spreadsheet
+
+In order to bridge the gap between Google's Document AI and the OGRRE
+Tool, the OGRRE Workflow relies on the Schema Spreadsheet, an xlsx
+formatted spreadsheet. The Schema Spreadsheet starts with the primary
+Trained Models Sheet with the sheet name "Trained Models" that contains
+the records of the trained models for each processor and is used to
+indicate which model to use for each processor. In addition to the
+Trained Models Sheet for each Extractor Processor a Schema Record Sheet
+is added using the processor's name as the sheet name. Schema Record
+Sheets record the processor schema field definition information and
+define how each field's extracted values are processed by the OGRRE
+Tool.
+
+## Trained Models
+
+The Trained Models sheet has a row record for each model created for
+each processor with the column fields: Processor Type, Processor Name,
+Model Name, F1 Score, Primary Model in Processor, Training Documents,
+Testing Documents, Date Trained, Foundation Model, Processor ID, and
+Model ID.
+
+  |Column Field|Description|
+  |------------|-----------|
+  |Processor Type|Indicates the processor type between Splitter, Classifier, or Extractor processor|
+  |Processor Name|The name of the processor (must match exactly)|
+  |Model Name|The name of the model|
+  |F1 Score|The model's overall F1 Score|
+  |Primary Model in Processor|For each processor, the word "primary" is used to indicate which model will be used by the OGRRE Tool when processing documents|
+  |Training Documents|The number of training documents when training the model|
+  |Testing Documents|The number of testing documents when training the model|
+  |Date Trained|The date the model was trained|
+  |Foundation Model|Indicates which foundation model was used for training the model or if a Custom model was trained|
+  |Processor ID|The ID of the processor (found on the processor details/ overview tab or the Document AI "filepath" bar)|
+  |Model ID|The ID of the Model (found on the Manage Versions/ Deploy & Use tab under the column "Version ID")|
+
+## Schema Record
+
+For each Extractor Processor a Schema Record Sheet is created in which
+each schema field is entered as a row with the column fields: Google
+Processor Name, OGRRE Document Type, Page Order Sort, Name, Google Data
+type, Occurrence, Grouping, Database Data Type, Cleaning Function, Model
+Enabled, and (Model Name) F1 scores.
+
+| Column Field | Description |
+|--------------|-------------|
+| Google Processor Name | The name of the processor |
+| OGRRE Document Type | The name of the Document Type used in the OGRRE Tool |
+| Page Order Sort | The order in which each field is expected to appear on the documents starting from 1 for the top left most field. This field is used by the OGRRE Tool. |
+| Name | The name of the field (must match exactly). The convention used for Child Field Labels is the (Table Label Name)::(Child Field Name). i.e. Packer::Setting_Depth |
+| Google Data type | The Data Type in the Google Schema |
+| Occurrence | The Occurrence in the Google Schema |
+| Grouping | (Optional) This field can be used to tag related Field Labels |
+| Database Data Type | The data type that the extracted value will be stored as. Available options are bool, str, int, float, date, or Table. |
+| Cleaning Function | The cleaning function that will be applied to field. (See Cleaning Function Documentation for available cleaning functions). |
+| Model Enabled | (Optional) This field can be used to track which labels do or do not meet minimum requirement and then can be referred to while disabling Schema Fields before training a new model. |
+| (Model Name) F1 Scores | For each model, a separate column should be added to record the F1 scores for each field |
+
+## Updating the OGRRE Tool Schema
+
+With the Excel_to_Json(excel_file_path) command from excel_to_json.py
+the xlsx formatted Schema Spreadsheet is converted to a set of json
+files used by the OGRRE Tool.
+
+# Visual Record
+
+To help ensure consistent labeling for Splitter and Classifier
+Processors, the OGRRE Workflow recommends creating a Visual Record for
+reference. Unfortunately, neither the Google Interface nor the OGRRE
+Tool can be used for creating a visual record of documents, so an
+alternate program will need to be used, the OGRRE Team uses PowerPoint.
+As best practice the Visual Record consists of sections for each
+Document Type subsectioned into Document Versions paired with separate
+Extractor Processors. The Document Versions subsection should include
+the records of even subtle variations which is helpful in the case of
+wanting to divide a Version subsection and can be used for reference
+while relabeling affected documents.
