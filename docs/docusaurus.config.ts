@@ -13,12 +13,12 @@ const config: Config = {
   url: 'https://catalog-historic-records-wip.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/orphaned-wells-ui-doc/',
+  baseUrl: '/orphaned-wells-ui/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'ltchong1', // Usually your GitHub org/user name.
-  projectName: 'orphaned-wells-ui-doc', // Usually your repo name.
+  organizationName: 'CATALOG-HISTORIC-RECORDS', // Usually your GitHub org/user name.
+  projectName: 'orphaned-wells-ui', // Usually your repo name.
   trailingSlash: false,
 
   onBrokenLinks: 'throw',
