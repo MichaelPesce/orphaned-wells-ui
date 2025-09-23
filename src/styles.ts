@@ -263,15 +263,21 @@ export const LoginPageStyles = {
       top: '50%',
       left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: 400,
+      width: 500,
+      maxHeight: 340,
       backgroundColor: "#FAFAFA",
       boxShadow: 24,
       px: 4,
-      py: 8,
+      pb: 8,
+      pt: 4, 
       borderRadius: 4,
       "&:focus": {
           outline: "none"
       },
+  },
+  modalLogo: {
+    display: "flex",
+    justifyContent: "center",
   },
   modalTitle: {
       display: "flex",
@@ -282,9 +288,6 @@ export const LoginPageStyles = {
       display: "flex",
       justifyContent: "center",
       mt: 4
-  },
-  button: {
-      backgroundColor: "#4285F4",
   },
   unauthorized: {
       pt: 5,
