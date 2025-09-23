@@ -4,6 +4,8 @@ import { checkAuth, } from './services/app.service';
 import { callAPI } from './util';
 import { User } from './types';
 import LoginPage from './views/LoginPage/LoginPage';
+import { ThemeProvider } from '@mui/material/styles';
+import { ogrre_theme } from './themes/primaryTheme';
 
 interface UserContextObject {
   user: any;
@@ -89,10 +91,12 @@ export const UserContextProvider = ({ children }: any) => {
 
   return (
     <UserContext.Provider value={value}>
-      {(!loading && authenticated) ? children :
-      !loading &&
-      <LoginPage handleSuccessfulAuthentication={handleSuccessfulLogin}/>
-      }
+      <ThemeProvider theme={ogrre_theme}>
+        {(!loading && authenticated) ? children :
+        !loading &&
+        <LoginPage handleSuccessfulAuthentication={handleSuccessfulLogin}/>
+        }
+      </ThemeProvider>
     </UserContext.Provider>
   );
 };
