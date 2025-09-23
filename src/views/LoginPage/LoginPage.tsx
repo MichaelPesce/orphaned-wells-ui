@@ -50,7 +50,7 @@ const LoginPage = (props: LoginPageProps) => {
                 >
                     <Box sx={styles.modalBox}>
                         <Typography sx={styles.modalTitle} variant="h6" component="h2">
-                            Undocumented Orphan Wells UI
+                            OGRRE
                         </Typography>
                         <Typography sx={styles.modalBody} component="span">
                             <Button id='login-button' sx={styles.button} onClick={googleLogin} variant="contained" startIcon={<GoogleIcon />}>
