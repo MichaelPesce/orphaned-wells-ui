@@ -12,14 +12,17 @@ interface ChangeRoleDialogProps {
     selectedUser: any;
     onClose: () => void;
     team: string;
+    userPermissions?: string[];
 }
 
-const ChangeRoleDialog = ({ open, selectedUser, onClose, team }: ChangeRoleDialogProps) => {
+const ChangeRoleDialog = ({ open, selectedUser, onClose, team, userPermissions }: ChangeRoleDialogProps) => {
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
     const [availableRoles, setAvailableRoles] = useState<any[]>([])
-    const [roles, setRoles] = useState<string[]>([])
-    const dialogHeight = '25vh';
-    const dialogWidth = '30vw';
+    const [newRoles, setNewRoles] = useState<any>({});
+    const [loading, setLoading] = useState(false);
+    const dialogHeight = '30vh';
+    const dialogWidth = '40vw';
+    const is_sys_admin = userPermissions?.includes('system_administration');
 
     const descriptionElementRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
@@ -28,15 +31,19 @@ const ChangeRoleDialog = ({ open, selectedUser, onClose, team }: ChangeRoleDialo
             if (descriptionElement !== null) {
                 descriptionElement.focus();
             }
-
-            callAPI(fetchRoles, ['team'], handleFetchedAvailableRoles, (e)=> console.error('unable to fetch roles '+e));
+            const role_categories = ['team'];
+            if (is_sys_admin) role_categories.push("system")
+            callAPI(fetchRoles, [role_categories], handleFetchedAvailableRoles, handleFailedFetchRoles);
         }
     }, [open]);
 
     useEffect(() => {
         let initialRoles = selectedUser?.roles;
-        if (initialRoles && initialRoles.team && initialRoles.team[team])
-            setRoles(initialRoles.team[team])
+        if (initialRoles) {
+            const teamRoles = initialRoles.team[team];
+            const sysRoles = initialRoles.system;
+            setNewRoles({system: sysRoles, team: teamRoles})
+        }
     }, [selectedUser])
 
 
@@ -63,6 +70,12 @@ const ChangeRoleDialog = ({ open, selectedUser, onClose, team }: ChangeRoleDialo
 
     const handleFetchedAvailableRoles = (data: any) => {
         setAvailableRoles(data)
+        setLoading(false);
+    }
+
+    const handleFailedFetchRoles = (e: any) => {
+        setLoading(false);
+        console.error('unable to fetch roles '+e)
     }
 
     const handleClose = () => {
@@ -70,28 +83,51 @@ const ChangeRoleDialog = ({ open, selectedUser, onClose, team }: ChangeRoleDialo
     };
 
     const handleUpdateRoles = () => {
-        let data = {
+        let data;
+        if (is_sys_admin) {
+            data = {
+                role_category: 'system',
+                new_roles: newRoles.system,
+                email: selectedUser?.email
+            }
+            callAPI(updateUserRoles, [data], (data: any) => console.debug("successfully updated system roles"), failedUpdate);
+        }
+        data = {
             role_category: 'team',
-            new_roles: roles,
+            new_roles: newRoles.team,
             email: selectedUser?.email
         }
-        callAPI(updateUserRoles, [data], (data: any) => window.location.reload(), failedAuthorization);
+        callAPI(updateUserRoles, [data], (data: any) => window.location.reload(), failedUpdate);
     }
 
-    const handleSelect = (role: string) => {
-        let tempSelected = [...roles]
-        const index = tempSelected.indexOf(role);
-        if (index > -1) {
-            tempSelected.splice(index, 1);
+    const handleSelect = (role: any) => {
+        const role_id = role?.id;
+        const role_category = role?.category;
+
+        const tempNewRoles = {...newRoles}
+        if (tempNewRoles[role_category] !== undefined) {
+            // check if this role is already there
+            const role_index = tempNewRoles[role_category].indexOf(role_id);
+            if (role_index > -1) {
+                tempNewRoles[role_category].splice(role_index, 1);
+            } else {
+                tempNewRoles[role_category].push(role_id)
+            }
         } else {
-            tempSelected.push(role)
+            tempNewRoles[role_category] = [role_id]
         }
-
-        setRoles(tempSelected)
+        setNewRoles(tempNewRoles);
     }
 
-    const failedAuthorization = (e: string) => {
+    const failedUpdate = (e: string) => {
         setErrorMsg(e)
+    }
+
+    const hasRole = (role: any) => {
+        const role_id = role?.id;
+        const role_category = role?.category;
+        if (newRoles?.[role_category]?.includes(role_id)) return true;
+        else return false;
     }
 
     return (
@@ -125,24 +161,53 @@ const ChangeRoleDialog = ({ open, selectedUser, onClose, team }: ChangeRoleDialo
                     aria-labelledby="new-dg-dialog-content-text"
                     component={'span'}
                 >
-                    <Grid container>
-
-                        <Grid item xs={12}>
-                            {availableRoles.map((role) => (
+                    {
+                        !loading && (
+                            <Grid container>
+                                {
+                                    is_sys_admin && (
+                                        <Grid item xs={12}>
+                                            <h6 style={{padding: 0, margin: 0}}>System Roles</h6>
+                                            {availableRoles.map((role) => {
+                                                if (role.category === "system")
+                                                return (
+                                                    <Chip 
+                                                        key={role.id}
+                                                        color={'primary'}
+                                                        sx={hasRole(role) ? styles.chip.filled : styles.chip.unfilled}
+                                                        label={role.name}
+                                                        variant={hasRole(role) ? 'filled' : 'outlined'}
+                                                        icon={hasRole(role) ? <CheckIcon /> : undefined}
+                                                        onClick={() => handleSelect(role)}
+                                                    />
+                                                )
+                                            })}
+                                        </Grid>
+                                    )
+                                }
                                 
-                                <Chip 
-                                    key={role.id}
-                                    color={'primary'}
-                                    sx={roles.includes(role.id) ? styles.chip.filled : styles.chip.unfilled}
-                                    label={role.name}
-                                    variant={roles.includes(role.id) ? 'filled' : 'outlined'}
-                                    icon={roles.includes(role.id) ? <CheckIcon /> : undefined}
-                                    onClick={() => handleSelect(role.id)}
-                                />
-                            ))}
-                        </Grid>
-                        
-                    </Grid>
+
+                                <Grid item xs={12}>
+                                    <h6 style={{padding: 0, margin: 0}}>Team Roles for {team}</h6>
+                                    {availableRoles.map((role) => {
+                                        if (role.category === "team")
+                                        return (
+                                            <Chip 
+                                                key={role.id}
+                                                color={'primary'}
+                                                sx={hasRole(role) ? styles.chip.filled : styles.chip.unfilled}
+                                                label={role.name}
+                                                variant={hasRole(role) ? 'filled' : 'outlined'}
+                                                icon={hasRole(role) ? <CheckIcon /> : undefined}
+                                                onClick={() => handleSelect(role)}
+                                            />
+                                        )
+                                    })}
+                                </Grid>
+                                
+                            </Grid>
+                        )
+                    }
                 </DialogContentText>
                 <Button
                     variant="contained"
