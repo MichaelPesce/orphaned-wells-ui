@@ -131,6 +131,7 @@ const AdminPage = () => {
                 selectedUser={selectedUser}
                 onClose={() => setShowChangeRoleDialog(false)}
                 team={user?.default_team}
+                userPermissions={userPermissions}
             />
             <ErrorBar 
                 duration={10000} 

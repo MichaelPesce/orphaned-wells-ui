@@ -275,9 +275,11 @@ export const updateDefaultTeam = (data: any) => {
     });
 };
 
-export const fetchRoles = (role_category: string) => {
-    return fetch(BACKEND_URL + '/fetch_roles/'+role_category, {
+export const fetchRoles = (role_categories: string[]) => {
+    return fetch(BACKEND_URL + '/fetch_roles', {
+        method: 'POST',
         mode: 'cors',
+        body: JSON.stringify(role_categories),
         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
     });
 };

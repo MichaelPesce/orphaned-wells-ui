@@ -67,10 +67,14 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     };
 
     const setDefaultColumns = (data: {columns: string[], obj: any}) => {
-        let temp_columns = data.columns;
+        const temp_columns = data?.columns || [];
         setColumns(temp_columns)
-        if (data.obj.settings && data.obj.settings.exportColumns) {
-            setSelectedColumns([...data.obj.settings.exportColumns]);
+        if (data?.obj?.settings?.exportColumns) {
+            const tempSelectedColumns = data.obj.settings.exportColumns.filter((col: string) => {
+                if (temp_columns.includes(col)) return true;
+                return false;
+            })
+            setSelectedColumns([...tempSelectedColumns]);
         } else {
             setSelectedColumns([...temp_columns]);
         }
