@@ -12,7 +12,7 @@ const SchemaView = () => {
     const navigate = useNavigate();
     const { userPermissions} = useUserContext();
     const [schemaRecords, setSchemaRecords] = useState<SchemaRecord[]>([])
-    const AIRTABLE_IFRAME_SRC = `https://airtable.com/embed/${process.env.REACT_APP_AIRTABLE_BASEID}/${process.env.REACT_APP_AIRTABLE_PROCESSORS_VIEW_ID}`
+    const AIRTABLE_IFRAME_SRC = `https://airtable.com/embed/${process.env.REACT_APP_AIRTABLE_BASE_ID}/${process.env.REACT_APP_AIRTABLE_PROCESSORS_VIEW_ID}`
 
     const handleFetchedBases = (data: any) => {
         console.log("fetched bases")

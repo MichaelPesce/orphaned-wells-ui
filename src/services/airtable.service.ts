@@ -8,7 +8,7 @@ export const getAirtableBases = () => {
 };
 
 export const getAirtableTable = (table_id: string = process.env.REACT_APP_AIRTABLE_PROCESSORS_TABLE_ID || '') => {
-    return fetch(`${AIRTABLE_API_URL}/${process.env.REACT_APP_AIRTABLE_BASEID}/${table_id}`, {
+    return fetch(`${AIRTABLE_API_URL}/${process.env.REACT_APP_AIRTABLE_BASE_ID}/${table_id}`, {
         mode: 'cors',
         headers: { "Authorization": "Bearer " + process.env.REACT_APP_AIRTABLE_API_TOKEN }
     });
