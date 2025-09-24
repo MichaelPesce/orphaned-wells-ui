@@ -4,15 +4,26 @@ import { Box } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 import Subheader from '../../components/Subheader/Subheader';
 import { callAPI } from '../../util';
-import { getAirtableProcessors } from '../../services/airtable.service';
+import { getAirtableTable, getAirtableBases } from '../../services/airtable.service';
+import SchemaTable from '../../components/SchemaTable/SchemaTable';
+import { SchemaRecord } from '../../types';
 
 const SchemaView = () => {
     const navigate = useNavigate();
     const { userPermissions} = useUserContext();
+    const [schemaRecords, setSchemaRecords] = useState<SchemaRecord[]>([])
+    const AIRTABLE_IFRAME_SRC = `https://airtable.com/embed/${process.env.REACT_APP_AIRTABLE_BASEID}/${process.env.REACT_APP_AIRTABLE_PROCESSORS_VIEW_ID}`
+
+    const handleFetchedBases = (data: any) => {
+        console.log("fetched bases")
+        console.log(data)
+        // setSchemaRecords(data?.records)
+    }
 
     const handleFetchedProcessorData = (data: any) => {
         console.log("fetched processor data from airtable")
         console.log(data)
+        setSchemaRecords(data?.records)
     }
 
     const handleFailure = (e: any) => {
@@ -23,13 +34,24 @@ const SchemaView = () => {
     useEffect(() => {
         const hasAccess = userPermissions?.includes("system_administration");
         if (!hasAccess) navigate("/");
+        // callAPI(
+        //     getAirtableTable,
+        //     [],
+        //     handleFetchedProcessorData,
+        //     handleFailure,
+        // )
+    }, [userPermissions]);
+
+    useEffect(() => {
+        const hasAccess = userPermissions?.includes("system_administration");
+        if (!hasAccess) navigate("/");
         callAPI(
-            getAirtableProcessors,
+            getAirtableTable,
             [],
             handleFetchedProcessorData,
             handleFailure,
         )
-    }, [userPermissions]);
+    }, []);
 
     const styles = {
         outerBox: {
@@ -39,6 +61,8 @@ const SchemaView = () => {
         innerBox: {
             paddingY: 5,
             paddingX: 5,
+            textColor: "black"
+            // backgroundColor: "black"
         },
     };
 
@@ -46,20 +70,22 @@ const SchemaView = () => {
         <Box sx={styles.outerBox}>
             <Subheader
                 currentPage="Testing"
-                // buttonName={(userPermissions && userPermissions.includes('create_project')) ? "New Project" : undefined}
+                buttonName={"Edit Schema"}
                 // handleClickButton={handleClickNewProject}
             />
             <Box sx={styles.innerBox}>
+                {/* <SchemaTable records={schemaRecords}/> */}
                 <iframe
                     className="airtable-embed"
-                    src="https://airtable.com/embed/appvX9mfhrPSMEzpW/shri2mTyxQijro3Ox"
+                    src={AIRTABLE_IFRAME_SRC}
                     // frameBorder="0"
                     onWheel={() => {}}
                     width="100%"
                     height="533"
                     style={{
-                        // background: "transparent",
+                        background: "transparent",
                         border: "1px solid #ccc",
+                        backgroundColor: "black"
                     }}
                     title="Airtable Embed"
                 />
