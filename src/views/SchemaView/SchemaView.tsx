@@ -42,17 +42,6 @@ const SchemaView = () => {
         // )
     }, [userPermissions]);
 
-    useEffect(() => {
-        const hasAccess = userPermissions?.includes("system_administration");
-        if (!hasAccess) navigate("/");
-        callAPI(
-            getAirtableTable,
-            [],
-            handleFetchedProcessorData,
-            handleFailure,
-        )
-    }, []);
-
     const styles = {
         outerBox: {
             backgroundColor: "#F5F5F6",
@@ -61,8 +50,6 @@ const SchemaView = () => {
         innerBox: {
             paddingY: 5,
             paddingX: 5,
-            textColor: "black"
-            // backgroundColor: "black"
         },
     };
 
@@ -85,7 +72,6 @@ const SchemaView = () => {
                     style={{
                         background: "transparent",
                         border: "1px solid #ccc",
-                        backgroundColor: "black"
                     }}
                     title="Airtable Embed"
                 />
