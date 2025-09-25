@@ -165,6 +165,12 @@ export interface FieldID {
     parentKey?: string;
 }
 
+export interface SchemaRecord {
+  id: string;
+  fields: { [key: string]: any };
+  createdTime: string;
+}
+
 /*
 props interfaces
 */
@@ -328,6 +334,11 @@ export interface ImageCropperProps {
     updateFieldLocationID?: FieldID;
     setUpdateFieldLocationID: (v?: FieldID) => void;
     handleUpdateFieldCoordinates: updateFieldCoordinatesSignature;
+}
+
+
+export interface SchemaTableProps {
+  records: SchemaRecord[];
 }
 
 /*

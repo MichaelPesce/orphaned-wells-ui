@@ -1,0 +1,44 @@
+.at-table-container {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #fff;
+  font-family: "Inter", system-ui, sans-serif;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.at-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* Ensures even column widths */
+}
+
+.at-table th {
+  background-color: #f8f8f8;
+  color: #333;
+  font-weight: 500;
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: 14px;
+}
+
+.at-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.at-table tr:hover td {
+  background-color: #fdfdfd;
+}
+
+.at-empty {
+  padding: 16px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}
