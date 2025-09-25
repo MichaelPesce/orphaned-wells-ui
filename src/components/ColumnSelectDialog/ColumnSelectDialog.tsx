@@ -8,9 +8,11 @@ import { downloadRecords, getColumnData } from '../../services/app.service';
 import { ColumnSelectDialogProps, CheckboxesGroupProps, ExportTypeSelectionProps } from '../../types';
 import CircularProgress from '@mui/material/CircularProgress';
 import ErrorBar from '../ErrorBar/ErrorBar';
+import { useUserContext } from '../../usercontext';
 
 const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     const { open, onClose, location, handleUpdate, _id, appliedFilters, sortBy, sortAscending } = props;
+    const { userPermissions } = useUserContext();
 
     const [columns, setColumns] = useState<string[]>([]);
     const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
@@ -69,15 +71,20 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     const setDefaultColumns = (data: {columns: string[], obj: any}) => {
         const temp_columns = data?.columns || [];
         setColumns(temp_columns)
-        if (data?.obj?.settings?.exportColumns) {
-            const tempSelectedColumns = data.obj.settings.exportColumns.filter((col: string) => {
-                if (temp_columns.includes(col)) return true;
-                return false;
-            })
-            setSelectedColumns([...tempSelectedColumns]);
-        } else {
-            setSelectedColumns([...temp_columns]);
-        }
+        setSelectedColumns([...temp_columns]);
+        /*
+        This code uses the saved settings to set the default columns selected.
+        Issue: when a user is low privilege, the settings cannot be updated, so they're stuck with whatever someone else saved them as.
+            if (data?.obj?.settings?.exportColumns) {
+                const tempSelectedColumns = data.obj.settings.exportColumns.filter((col: string) => {
+                    if (temp_columns.includes(col)) return true;
+                    return false;
+                })
+                setSelectedColumns([...tempSelectedColumns]);
+            } else {
+                setSelectedColumns([...temp_columns]);
+            }
+        */
         setObjSettings(data.obj.settings)
         setName(data.obj.name)
     }
@@ -122,7 +129,8 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
         } else {
             settings = {exportColumns: selectedColumns}
         }
-        handleUpdate({"settings": settings})
+        if (userPermissions?.includes("manage_project"))
+            handleUpdate({"settings": settings})
     };
 
     const handleFailedExport = (e: string) => {
