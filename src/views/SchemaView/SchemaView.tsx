@@ -56,7 +56,7 @@ const SchemaView = () => {
     return (
         <Box sx={styles.outerBox}>
             <Subheader
-                currentPage="Testing"
+                currentPage="Schema"
                 buttonName={"Edit Schema"}
                 // handleClickButton={handleClickNewProject}
             />
