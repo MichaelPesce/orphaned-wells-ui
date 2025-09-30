@@ -481,11 +481,15 @@ const Record = () => {
     }
 
     const handleClickNext = () => {
-        navigateToRecord({recordData: {_id: recordData.next_id}})
+        const next_id = recordData.next_id;
+        setRecordData({} as RecordData);
+        navigateToRecord({recordData: {_id: next_id}})
     }
 
     const handleClickPrevious = () => {
-        navigateToRecord({recordData: {_id: recordData.previous_id}})
+        const next_id = recordData.previous_id;
+        setRecordData({} as RecordData);
+        navigateToRecord({recordData: {_id: next_id}})
     }
 
     const handleClickMarkReviewed = () => {
