@@ -7,8 +7,7 @@ import Record from './views/RecordPage/RecordPage';
 import TeamRecordsPage from './views/TeamRecordsPage/TeamRecordsPage';
 import AdminPage from './views/AdminPage/AdminPage';
 import Header from './components/Header/Header';
-// import { ThemeProvider } from '@mui/material/styles';
-// import { theme } from './themes/primaryTheme';
+import SchemaView from './views/SchemaView/SchemaView';
 import './App.css';
 
 function App() {
@@ -43,6 +42,10 @@ function App() {
           <Route
               path="users" 
               element={<AdminPage/>}
+          />
+          <Route
+              path="schema" 
+              element={<SchemaView/>}
           />
           <Route
               path="*" 
