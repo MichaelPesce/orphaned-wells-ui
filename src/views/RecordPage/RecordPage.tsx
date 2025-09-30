@@ -38,8 +38,8 @@ const Record = () => {
     const params = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { userPermissions, userEmail } = useUserContext();
-    const { state } = useLocation() || {};
-    const { group_id, location } = state;
+    const { state } = useLocation();
+    const { group_id, location } = state || {};
 
     const styles = {
         outerBox: {
