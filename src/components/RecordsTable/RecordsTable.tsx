@@ -27,7 +27,7 @@ import ColumnSelectDialog from '../ColumnSelectDialog/ColumnSelectDialog';
 import EmptyTable from '../EmptyTable/EmptyTable';
 import TableLoading from '../TableLoading/TableLoading';
 
-const SORTABLE_COLUMNS = ["name", "dateCreated", "status", "review_status", "api_number"]
+const SORTABLE_COLUMNS = ["dateCreated", "api_number"]
 
 const RecordsTable = (props: RecordsTableProps) => {
   let navigate = useNavigate();
@@ -41,31 +41,31 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [loading, setLoading] = useState(true);
   const [ showNotes, setShowNotes ] = useState(false);
   const [ notesRecordId, setNotesRecordId ] = useState<string>();
-  // const [ notes, setNotes ] = useState<RecordNote[]>();
   const [ openColumnSelect, setOpenColumnSelect ] = useState(false);
   const [records, setRecords] = useState<any[]>([]);
   const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
-  const [sortBy, setSortBy] = useState('dateCreated');
-  const [sortAscending, setSortAscending] = useState(1);
   const [filterBy, setFilterBy] = useState<any[]>(
     JSON.parse(localStorage.getItem("appliedFilters") || '{}')[params.id || ""] || []
+  );
+  const [sorted, setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
   );
   const table_columns = TABLE_ATTRIBUTES[location]
 
   useEffect(() => {
-    setLoading(true)
+    setRecords([]);
+    setLoading(true);
     loadData();
-  }, [params.id, pageSize, currentPage, sortBy, sortAscending, filterBy]);
+  }, [params.id, pageSize, currentPage, filterBy, sorted]);
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [sortBy, sortAscending, filterBy]);
+  }, [filterBy, sorted]);
 
   const loadData = () => {
     const body = {
-      sort: [sortBy, sortAscending],
+      sort: sorted,
       filter: convertFiltersToMongoFormat(filterBy),
       id: params.id,
     };
@@ -90,7 +90,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   }
 
   const handleClickRecord = (record_id: string) => {
-    navigate("/record/" + record_id);
+    navigate("/record/" + record_id, { state: {group_id: params.id, location: location}});
   }
 
   const handleApplyFilters = (appliedFilters: any) => {
@@ -159,11 +159,24 @@ const RecordsTable = (props: RecordsTableProps) => {
 
   const handleSort = (key: string) => {
     if (SORTABLE_COLUMNS.includes(key)) {
-      if (sortBy === key) setSortAscending((sortAscending || 1) * -1);
-      else {
-        setSortBy(key);
-        setSortAscending(1);
+      const sort_by_key = sorted[0];
+      const sort_direction = sorted[1];
+      const new_sorted = []
+      if (sort_by_key === key) { // change direction, keep key the same
+        new_sorted.push(sort_by_key);
+        new_sorted.push((sort_direction || 1) * -1);
       }
+      else {
+        new_sorted.push(key);
+        new_sorted.push(1);
+      }
+      setSorted(new_sorted);
+      let new_saved_sort;
+      let current_saved_sorted = localStorage.getItem("sorted");
+      if (current_saved_sorted === null) new_saved_sort = {};
+      else new_saved_sort = JSON.parse(current_saved_sorted);
+      new_saved_sort[params.id || ""] = new_sorted;
+      localStorage.setItem("sorted", JSON.stringify(new_saved_sort));
     }
   }
 
@@ -315,12 +328,12 @@ const RecordsTable = (props: RecordsTableProps) => {
                 table_columns.displayNames.map((attribute, idx) => (
                   <TableCell sx={styles.headerCell} key={idx} align={idx > 0 ? "right" : "left"}>
                     <p style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx])}>
-                      {table_columns.keyNames[idx] === sortBy &&
+                      {table_columns.keyNames[idx] === sorted[0] &&
                         <IconButton>
                           {
-                            sortAscending === 1 ? 
+                            sorted[1] === 1 ? 
                               <KeyboardArrowUpIcon /> :
-                            sortAscending === -1 &&
+                            sorted[1] === -1 &&
                               <KeyboardArrowDownIcon />
                           }
                         </IconButton>
@@ -376,8 +389,8 @@ const RecordsTable = (props: RecordsTableProps) => {
             handleUpdate={handleUpdate}
             _id={params.id}
             appliedFilters={filterBy}
-            sortBy={sortBy}
-            sortAscending={sortAscending}
+            sortBy={sorted[0]}
+            sortAscending={sorted[1]}
         />
       </TableContainer>
       {

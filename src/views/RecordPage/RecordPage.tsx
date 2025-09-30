@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getRecordData, updateRecord, deleteRecord, cleanRecords } from '../../services/app.service';
 import { callAPI, useKeyDown } from '../../util';
 import Subheader from '../../components/Subheader/Subheader';
@@ -20,6 +20,7 @@ import {
     updateFieldCoordinatesSignature,
     FieldID } from '../../types';
 import { useUserContext } from '../../usercontext';
+import { convertFiltersToMongoFormat } from '../../util';
 
 const Record = () => {
     const [recordData, setRecordData] = useState<RecordData>({} as RecordData);
@@ -37,6 +38,8 @@ const Record = () => {
     const params = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { userPermissions, userEmail } = useUserContext();
+    const { state } = useLocation();
+    const { group_id, location } = state || {};
 
     const styles = {
         outerBox: {
@@ -63,6 +66,16 @@ const Record = () => {
     }
 
     useEffect(() => {
+        const filterBy = convertFiltersToMongoFormat(JSON.parse(localStorage.getItem("appliedFilters") || '{}')[group_id || ""] || [])
+        const sorted = JSON.parse(localStorage.getItem("sorted") || '{}')[group_id || ""] || ['dateCreated', 1];
+        const page_state = {
+            location: location,
+            group_id: group_id,
+            filterBy: filterBy,
+            sortBy: sorted,
+        }
+        // TODO: 
+        // send location (team, project, or record_group) group_id (rg_id, project_id, or team name), filterBy, and sorted
         callAPI(
             getRecordData,
             [params.id],
@@ -481,11 +494,15 @@ const Record = () => {
     }
 
     const handleClickNext = () => {
-        navigateToRecord({recordData: {_id: recordData.next_id}})
+        const next_id = recordData.next_id;
+        setRecordData({} as RecordData);
+        navigateToRecord({recordData: {_id: next_id}})
     }
 
     const handleClickPrevious = () => {
-        navigateToRecord({recordData: {_id: recordData.previous_id}})
+        const next_id = recordData.previous_id;
+        setRecordData({} as RecordData);
+        navigateToRecord({recordData: {_id: next_id}})
     }
 
     const handleClickMarkReviewed = () => {
@@ -501,7 +518,7 @@ const Record = () => {
         if (record_data?._id) {
             let newUrl = "/record/" + record_data._id;
             if (record_data._id == recordData._id) window.location.reload()
-            else navigate(newUrl)
+            else navigate(newUrl, { state: { group_id: group_id, location: location } })
         } else {
             console.error("error redirecting")
         }
