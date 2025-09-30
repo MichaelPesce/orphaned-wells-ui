@@ -35,14 +35,6 @@ const Project = () => {
             setLoading(true);
             callAPI(getRecordGroups, [params.id], handleFetchedRecordGroups, handleError);
         }
-        else if (tabs[currentTab] === "All Records") {
-            if (projectData.record_groups) {
-                
-            } else {
-                console.error("missing project data")
-            }
-            
-        }
     }, [currentTab]);
 
     useEffect(() => {
