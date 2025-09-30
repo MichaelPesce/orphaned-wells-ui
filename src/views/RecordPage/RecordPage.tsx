@@ -74,11 +74,9 @@ const Record = () => {
             filterBy: filterBy,
             sortBy: sorted,
         }
-        // TODO: 
-        // send location (team, project, or record_group) group_id (rg_id, project_id, or team name), filterBy, and sorted
         callAPI(
             getRecordData,
-            [params.id],
+            [params.id, page_state],
             handleSuccessfulFetchRecord,
             handleFailedFetchRecord,
         )
