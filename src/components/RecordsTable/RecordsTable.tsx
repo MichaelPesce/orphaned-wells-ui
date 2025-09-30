@@ -90,7 +90,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   }
 
   const handleClickRecord = (record_id: string) => {
-    navigate("/record/" + record_id);
+    navigate("/record/" + record_id, { state: {group_id: params.id, location: location}});
   }
 
   const handleApplyFilters = (appliedFilters: any) => {
