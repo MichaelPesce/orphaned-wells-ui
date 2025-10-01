@@ -516,7 +516,7 @@ const Record = () => {
         if (record_data?._id) {
             let newUrl = "/record/" + record_data._id;
             if (record_data._id == recordData._id) window.location.reload()
-            else navigate(newUrl, { state: { group_id: group_id, location: location } })
+            else navigate(newUrl, { state: { group_id: group_id, location: location}, replace: true  })
         } else {
             console.error("error redirecting")
         }
