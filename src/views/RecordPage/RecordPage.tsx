@@ -74,11 +74,9 @@ const Record = () => {
             filterBy: filterBy,
             sortBy: sorted,
         }
-        // TODO: 
-        // send location (team, project, or record_group) group_id (rg_id, project_id, or team name), filterBy, and sorted
         callAPI(
             getRecordData,
-            [params.id],
+            [params.id, page_state],
             handleSuccessfulFetchRecord,
             handleFailedFetchRecord,
         )
@@ -518,7 +516,7 @@ const Record = () => {
         if (record_data?._id) {
             let newUrl = "/record/" + record_data._id;
             if (record_data._id == recordData._id) window.location.reload()
-            else navigate(newUrl, { state: { group_id: group_id, location: location } })
+            else navigate(newUrl, { state: { group_id: group_id, location: location}, replace: true  })
         } else {
             console.error("error redirecting")
         }
@@ -589,7 +587,7 @@ const Record = () => {
     return (
         <Box sx={styles.outerBox}>
             <Subheader
-                currentPage={`${recordData.recordIndex !== undefined ? recordData.recordIndex : ""}. ${recordData.name !== undefined ? recordData.name : ""}`}
+                currentPage={`${recordData.recordIndex !== undefined ? recordData.recordIndex+"." : ""} ${recordData.name !== undefined ? recordData.name : ""}`}
                 actions={subheaderActions}
                 previousPages={previousPages}
                 status={recordData.review_status}
