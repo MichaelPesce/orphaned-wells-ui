@@ -1,6 +1,20 @@
 const path = require("path");
 const test_record_group_name = "Illinois Test Project"
 const test_project_name = "ISGS Project"
+const test_rg_id = "6656476a448c4d1812645c07"
+const test_record = {
+  id: "665647e58294448787521760",
+  name: "120190021400_WELL_COMPLETION_REPORT_1"
+}
+const next_record = {
+  id: "665647e549e025f35668c67d",
+  name: "120190139500_WELL_COMPLETION_REPORT_1"
+}
+const prev_record = {
+  id: "665647e45642b536ded828ad",
+  name: "120190129000_WELL_COMPLETION_REPORT_1",
+}
+
 describe('End to end testing', () => {
   beforeEach(() => {
     cy.loginByGoogleApi()
@@ -153,9 +167,9 @@ describe('End to end testing', () => {
 
   it('tests edit field, review status updates, mark as unreviewed', () => {
     // click on record
-    cy.visit('/record/665647e58294448787521760');
+    cy.visit('/record/'+test_record.id);
     cy.wait(2000)
-    cy.screenshot('navigated to record cypress test record')
+    cy.screenshot('navigated to cypress test record: '+test_record.id)
 
     // make table full screen
     cy.get('#fullscreen-table-button').click()
@@ -199,8 +213,30 @@ describe('End to end testing', () => {
 
   })
 
+  it('tests next, previous records', () => {
+    // navigate to record
+    cy.visit('/record/'+test_record.id);
+    cy.contains('div', test_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to cypress test record: '+test_record.id)
+
+    // keyboard shortcut for going to next record
+    cy.get('body').type('{ctrl}{rightArrow}')
+    cy.contains('div', next_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+next_record.name)
+
+    // keyboard shortcut for going to previous record
+    cy.get('body').type('{ctrl}{leftArrow}')
+    cy.contains('div', test_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+next_record.name)
+
+    cy.get('body').type('{ctrl}{leftArrow}')
+    cy.contains('div', prev_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+prev_record.name)
+
+  })
+
   it('tests export data', () => {
-    cy.visit('/record_group/6656476a448c4d1812645c07');
+    cy.visit('/record_group/'+test_rg_id);
     cy.wait(1000)
     cy.screenshot('navigated to project test list')
 
