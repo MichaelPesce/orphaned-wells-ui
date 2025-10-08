@@ -274,6 +274,7 @@ const TableFilter = (props: TableFilterProps) => {
                             thisFilter.type === 'date' &&
                             <TextField
                                 inputProps={{
+                                    "className": "date-filter-input",
                                     "step": 1,
                                 }}
                                 InputLabelProps={{ shrink: true }}
