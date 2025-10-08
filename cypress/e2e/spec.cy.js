@@ -23,239 +23,239 @@ describe('End to end testing', () => {
     cy.loginByGoogleApi()
   })
 
-  // it('tests that each page loads correctly', () => {
-  //   cy.visit('/');
-  //   cy.wait(1000);
-  //   cy.screenshot('loaded homepage')
+  it('tests that each page loads correctly', () => {
+    cy.visit('/');
+    cy.wait(1000);
+    cy.screenshot('loaded homepage')
 
-  //   // test that privileges are working
-  //   cy.findByRole('button', {
-  //     name: /new project/i
-  //   }).should('be.visible')
-  //   cy.findByRole('tab', {
-  //     name: /users/i
-  //   }).should('be.visible')
+    // test that privileges are working
+    cy.findByRole('button', {
+      name: /new project/i
+    }).should('be.visible')
+    cy.findByRole('tab', {
+      name: /users/i
+    }).should('be.visible')
 
-  //   cy.screenshot('homepage')
+    cy.screenshot('homepage')
 
-  //   // navigate to project page
-  //   cy.findByRole('rowheader', {
-  //     name: test_project_name
-  //   }).click()
+    // navigate to project page
+    cy.findByRole('rowheader', {
+      name: test_project_name
+    }).click()
 
-  //   cy.wait(5000)
+    cy.wait(5000)
 
-  //   // test that project page loaded correctly
-  //   cy.findByRole('button', {
-  //     name: test_project_name
-  //   }).should('be.visible')
-  //   cy.findByRole('columnheader', {
-  //     name: /record group name/i
-  //   }).should('be.visible')
+    // test that project page loaded correctly
+    cy.findByRole('button', {
+      name: test_project_name
+    }).should('be.visible')
+    cy.findByRole('columnheader', {
+      name: /record group name/i
+    }).should('be.visible')
 
-  //   cy.screenshot('project page')
+    cy.screenshot('project page')
 
-  //   // click first record group
-  //   cy.findByRole('rowheader', {
-  //     name: test_record_group_name
-  //   }).click()
+    // click first record group
+    cy.findByRole('rowheader', {
+      name: test_record_group_name
+    }).click()
 
-  //   // test that record group page loaded correctly
-  //   cy.findByRole('button', {
-  //     name: test_record_group_name
-  //   }).should('be.visible')
-  //   cy.findByRole('columnheader', {
-  //     name: /record name/i
-  //   }).should('be.visible')
-  //   cy.screenshot('record group page')
+    // test that record group page loaded correctly
+    cy.findByRole('button', {
+      name: test_record_group_name
+    }).should('be.visible')
+    cy.findByRole('columnheader', {
+      name: /record name/i
+    }).should('be.visible')
+    cy.screenshot('record group page')
 
-  //   // click first record
-  //   cy.get('.MuiTableRow-root').eq(1).click();
+    // click first record
+    cy.get('.MuiTableRow-root').eq(1).click();
     
-  //   // test that record page loaded correctly
-  //   cy.findByRole('columnheader', {
-  //     name: /field/i
-  //   }).should('be.visible')
+    // test that record page loaded correctly
+    cy.findByRole('columnheader', {
+      name: /field/i
+    }).should('be.visible')
 
-  //   cy.screenshot('record page')
-  // })
+    cy.screenshot('record page')
+  })
 
-  // it('tests create new project', () => {
-  //   // load homepage
-  //   cy.visit('/');
-  //   cy.wait(1000);
-  //   cy.screenshot('loaded homepage')
+  it('tests create new project', () => {
+    // load homepage
+    cy.visit('/');
+    cy.wait(1000);
+    cy.screenshot('loaded homepage')
 
-  //   // click new project button
-  //   cy.findByRole('button', {
-  //     name: /new project/i
-  //   }).click()
-  //   cy.wait(1000)
-  //   cy.screenshot('clicked new project')
+    // click new project button
+    cy.findByRole('button', {
+      name: /new project/i
+    }).click()
+    cy.wait(1000)
+    cy.screenshot('clicked new project')
     
-  //   // enter project name: test project
-  //   cy.enter_text('id', 'project-name-textbox', 'cypress test project')
+    // enter project name: test project
+    cy.enter_text('id', 'project-name-textbox', 'cypress test project')
 
-  //   // click first processor available
-  //   // cy.get('#processor_0').click()
-  //   // cy.screenshot('entered project name and selected processor')
+    // click first processor available
+    // cy.get('#processor_0').click()
+    // cy.screenshot('entered project name and selected processor')
 
-  //   // click create project button and wait for API response
-  //   cy.intercept({
-  //     method: 'POST',
-  //     url: Cypress.env('backendURL')+'/**',
-  //   }).as('createProject');
+    // click create project button and wait for API response
+    cy.intercept({
+      method: 'POST',
+      url: Cypress.env('backendURL')+'/**',
+    }).as('createProject');
 
-  //   cy.findByRole('button', {
-  //     name: /create project/i
-  //   }).click();
+    cy.findByRole('button', {
+      name: /create project/i
+    }).click();
 
-  //   cy.wait('@createProject', {timeout: 10000});
+    cy.wait('@createProject', {timeout: 10000});
 
-  //   // test that project page created correctly
-  //   cy.findByRole('button', {
-  //     name: 'cypress test project'
-  //   }).should('be.visible')
-  //   cy.findByRole('columnheader', {
-  //     name: /record group name/i
-  //   }).should('be.visible')
+    // test that project page created correctly
+    cy.findByRole('button', {
+      name: 'cypress test project'
+    }).should('be.visible')
+    cy.findByRole('columnheader', {
+      name: /record group name/i
+    }).should('be.visible')
 
-  //   cy.screenshot('end test create new project')
+    cy.screenshot('end test create new project')
 
-  // })
+  })
 
-  // it('tests delete project', () => {
-  //   // load homepage
-  //   cy.visit('/');
-  //   cy.wait(1000);
-  //   cy.screenshot('loaded homepage')
+  it('tests delete project', () => {
+    // load homepage
+    cy.visit('/');
+    cy.wait(1000);
+    cy.screenshot('loaded homepage')
 
-  //   // get starting length of projects table and work from there
-  //   cy.get('.project_row').its('length').then((project_amt) => {
+    // get starting length of projects table and work from there
+    cy.get('.project_row').its('length').then((project_amt) => {
 
-  //     cy.log("project_amt: ")
-  //     cy.log(project_amt)
+      cy.log("project_amt: ")
+      cy.log(project_amt)
 
-  //     // click on last created project (should be named test project)
-  //     cy.get('#cypresstestproject_project_row').click();
-  //     cy.wait(2000)
-  //     cy.screenshot('navigated to project')
+      // click on last created project (should be named test project)
+      cy.get('#cypresstestproject_project_row').click();
+      cy.wait(2000)
+      cy.screenshot('navigated to project')
 
-  //     // click dropdown and select delete project
-  //     cy.get('#options-button').click();
-  //     cy.wait(1000)
-  //     cy.screenshot('clicked dropdown')
-  //     cy.findByRole('menuitem', {
-  //       name: /delete project/i
-  //     }).click()
-  //     cy.wait(1000)
-  //     cy.screenshot('clicked delete')
+      // click dropdown and select delete project
+      cy.get('#options-button').click();
+      cy.wait(1000)
+      cy.screenshot('clicked dropdown')
+      cy.findByRole('menuitem', {
+        name: /delete project/i
+      }).click()
+      cy.wait(1000)
+      cy.screenshot('clicked delete')
       
-  //     // click confirmation delete button
-  //     cy.findByRole('button', {
-  //       name: /delete/i
-  //     }).click()
-  //     // cy.get('.popup-primary-button').click()
-  //     cy.wait(3000)
+      // click confirmation delete button
+      cy.findByRole('button', {
+        name: /delete/i
+      }).click()
+      // cy.get('.popup-primary-button').click()
+      cy.wait(3000)
 
-  //     // confirm that we are back on homepage and that there is 1 less project
-  //     cy.findByRole('button', {
-  //       name: /new project/i
-  //     }).should('be.visible')
-  //     cy.get('.project_row').should('have.length', project_amt - 1)
-  //     cy.screenshot('end test delete project')
+      // confirm that we are back on homepage and that there is 1 less project
+      cy.findByRole('button', {
+        name: /new project/i
+      }).should('be.visible')
+      cy.get('.project_row').should('have.length', project_amt - 1)
+      cy.screenshot('end test delete project')
       
-  //  });
-  // })
+   });
+  })
 
-  // it('tests edit field, review status updates, mark as unreviewed', () => {
-  //   // click on record
-  //   cy.visit('/record/'+test_record.id);
-  //   cy.wait(2000)
-  //   cy.screenshot('navigated to cypress test record: '+test_record.id)
+  it('tests edit field, review status updates, mark as unreviewed', () => {
+    // click on record
+    cy.visit('/record/'+test_record.id);
+    cy.wait(2000)
+    cy.screenshot('navigated to cypress test record: '+test_record.id)
 
-  //   // make table full screen
-  //   cy.get('#fullscreen-table-button').click()
+    // make table full screen
+    cy.get('#fullscreen-table-button').click()
 
-  //   // click on field
-  //   let field_name = "Acidized"
-  //   cy.get('#'+field_name+'_confidence').contains(/not found/i)
-  //   cy.findByText(field_name).click()
-  //   cy.screenshot('clicked on '+field_name)
+    // click on field
+    let field_name = "Acidized"
+    cy.get('#'+field_name+'_confidence').contains(/not found/i)
+    cy.findByText(field_name).click()
+    cy.screenshot('clicked on '+field_name)
 
-  //   // click on edit icon
-  //   cy.get('#edit-field-icon').click()
-  //   cy.screenshot('clicked edit icon')
+    // click on edit icon
+    cy.get('#edit-field-icon').click()
+    cy.screenshot('clicked edit icon')
 
-  //   // enter text
-  //   cy.enter_text('id', 'edit-field-text-box', 'edited{enter}')
-  //   cy.wait(1000)
-  //   cy.screenshot('entered text and hit enter')
+    // enter text
+    cy.enter_text('id', 'edit-field-text-box', 'edited{enter}')
+    cy.wait(1000)
+    cy.screenshot('entered text and hit enter')
 
-  //   // verify that field now shows edited
-  //   cy.get('#'+field_name+'_confidence').contains(/edited/i)
-  //   cy.screenshot('edited field')
+    // verify that field now shows edited
+    cy.get('#'+field_name+'_confidence').contains(/edited/i)
+    cy.screenshot('edited field')
 
-  //   // verifew review status is incomplete
-  //   cy.reload()
-  //   cy.get('#review_status_chip').contains('incomplete')
-  //   cy.screenshot('review status is incomplete')
+    // verifew review status is incomplete
+    cy.reload()
+    cy.get('#review_status_chip').contains('incomplete')
+    cy.screenshot('review status is incomplete')
 
-  //   // mark as unreviewed
-  //   cy.findByRole('button', {
-  //     name: /reset to unreviewed/i
-  //   }).click()
-  //   cy.wait(1000)
-  //   cy.get('.popup-primary-button').click()
-  //   cy.wait(1000)
+    // mark as unreviewed
+    cy.findByRole('button', {
+      name: /reset to unreviewed/i
+    }).click()
+    cy.wait(1000)
+    cy.get('.popup-primary-button').click()
+    cy.wait(1000)
 
-  //   // verify review status is unreviewed
-  //   cy.wait(5000)
-  //   cy.get('#review_status_chip').contains('unreviewed')
-  //   cy.screenshot('review status is unreviewed')
+    // verify review status is unreviewed
+    cy.wait(5000)
+    cy.get('#review_status_chip').contains('unreviewed')
+    cy.screenshot('review status is unreviewed')
 
-  // })
+  })
 
-  // it('tests next, previous records', () => {
-  //   // navigate to record
-  //   cy.visit('/record/'+test_record.id);
-  //   cy.contains('div', test_record.name).should('be.visible', {timeout: 10000})
-  //   cy.screenshot('navigated to cypress test record: '+test_record.id)
+  it('tests next, previous records', () => {
+    // navigate to record
+    cy.visit('/record/'+test_record.id);
+    cy.contains('div', test_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to cypress test record: '+test_record.id)
 
-  //   // keyboard shortcut for going to next record
-  //   cy.get('body').type('{ctrl}{rightArrow}')
-  //   cy.contains('div', next_record.name).should('be.visible', {timeout: 10000})
-  //   cy.screenshot('navigated to next record: '+next_record.name)
+    // keyboard shortcut for going to next record
+    cy.get('body').type('{ctrl}{rightArrow}')
+    cy.contains('div', next_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+next_record.name)
 
-  //   // keyboard shortcut for going to previous record
-  //   cy.get('body').type('{ctrl}{leftArrow}')
-  //   cy.contains('div', test_record.name).should('be.visible', {timeout: 10000})
-  //   cy.screenshot('navigated to next record: '+next_record.name)
+    // keyboard shortcut for going to previous record
+    cy.get('body').type('{ctrl}{leftArrow}')
+    cy.contains('div', test_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+next_record.name)
 
-  //   cy.get('body').type('{ctrl}{leftArrow}')
-  //   cy.contains('div', prev_record.name).should('be.visible', {timeout: 10000})
-  //   cy.screenshot('navigated to next record: '+prev_record.name)
+    cy.get('body').type('{ctrl}{leftArrow}')
+    cy.contains('div', prev_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+prev_record.name)
 
-  // })
+  })
 
-  // it('tests export data', () => {
-  //   cy.visit('/record_group/'+test_record_group.id);
-  //   cy.contains('div', test_record_group.name).should('be.visible', {timeout: 10000})
-  //   cy.screenshot('navigated to record group')
+  it('tests export data', () => {
+    cy.visit('/record_group/'+test_record_group.id);
+    cy.contains('div', test_record_group.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to record group')
 
-  //   // click export project
-  //   cy.findByRole('button', {
-  //     name: /export/i
-  //   }).click()
-  //   cy.wait(1000)
+    // click export project
+    cy.findByRole('button', {
+      name: /export/i
+    }).click()
+    cy.wait(1000)
 
-  //   // click export
-  //   cy.get('#download-button').click()
+    // click export
+    cy.get('#download-button').click()
 
-  //   // verify that file was downloaded
-  //   const downloadsFolder = Cypress.config("downloadsFolder");
-  //   cy.readFile(path.join(downloadsFolder, test_record_group_name+"_records.zip")).should("exist");
-  // })
+    // verify that file was downloaded
+    const downloadsFolder = Cypress.config("downloadsFolder");
+    cy.readFile(path.join(downloadsFolder, test_record_group_name+"_records.zip")).should("exist");
+  })
 
     it('tests filtering, sorting', () => {
       cy.visit('/record_group/'+test_record_group.id);
@@ -283,24 +283,36 @@ describe('End to end testing', () => {
       const record_number_20 = "120190132100_WELL_COMPLETION_REPORT_1"
       const record_number_19 = "120190131200_WELL_COMPLETION_REPORT_1"
       cy.get('.record_row').eq(19).should('contain', record_number_20)
-      cy.contains('button', /date uploaded/i).click()
+      cy.contains('p', /date uploaded/i).click()
 
       // Assert that the 20th element is now first
       cy.get('.record_row').eq(0).should('contain', record_number_20, { timeout: 10000 })
 
       // Navigate to record
-      // cy.get('.record_row').eq(0).click()
+      cy.get('.record_row').eq(0).click()
 
+      // Assert that we have the right record name and index
+      cy.contains('div', `1. ${record_number_20}`, { timeout: 20000 })
 
+      // Navigate to next record
+      cy.contains('button', /next/i).click()
+
+      // Assert that we have the right record name and index
+      cy.contains('div', `2. ${record_number_19}`, { timeout: 20000 })
+      
+      // Go back to record page
+      cy.contains('button', test_record_group.name).click()
+      cy.contains('div', test_record_group.name).should('be.visible', {timeout: 10000})
 
       // Reverse date sort
-      // cy.contains('button', /date uploaded/i).click()
-
+      cy.contains('p', /date uploaded/i).click()
 
       // Clear filters
-      // cy.contains('button', /filters/i).click()
-      // cy.contains('button', /reset filters/i).click()
-      // cy.get('.record_row').should('have.length', 100, { timeout: 10000 })
+      cy.contains('button', /filters/i).click()
+      cy.contains('button', /reset filters/i).click()
+
+      // Assert that we have 100 records in the table again
+      cy.get('.record_row').should('have.length', 100, { timeout: 10000 })
       
   })
 
