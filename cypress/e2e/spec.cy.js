@@ -1,6 +1,23 @@
 const path = require("path");
 const test_record_group_name = "Illinois Test Project"
 const test_project_name = "ISGS Project"
+const test_record_group = {
+  id: "6656476a448c4d1812645c07",
+  name: "Illinois Test Project",
+}
+const test_record = {
+  id: "665647e58294448787521760",
+  name: "120190021400_WELL_COMPLETION_REPORT_1"
+}
+const next_record = {
+  id: "665647e549e025f35668c67d",
+  name: "120190139500_WELL_COMPLETION_REPORT_1"
+}
+const prev_record = {
+  id: "665647e45642b536ded828ad",
+  name: "120190129000_WELL_COMPLETION_REPORT_1",
+}
+
 describe('End to end testing', () => {
   beforeEach(() => {
     cy.loginByGoogleApi()
@@ -153,9 +170,9 @@ describe('End to end testing', () => {
 
   it('tests edit field, review status updates, mark as unreviewed', () => {
     // click on record
-    cy.visit('/record/665647e58294448787521760');
+    cy.visit('/record/'+test_record.id);
     cy.wait(2000)
-    cy.screenshot('navigated to record cypress test record')
+    cy.screenshot('navigated to cypress test record: '+test_record.id)
 
     // make table full screen
     cy.get('#fullscreen-table-button').click()
@@ -199,10 +216,32 @@ describe('End to end testing', () => {
 
   })
 
+  it('tests next, previous records', () => {
+    // navigate to record
+    cy.visit('/record/'+test_record.id);
+    cy.contains('div', test_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to cypress test record: '+test_record.id)
+
+    // keyboard shortcut for going to next record
+    cy.get('body').type('{ctrl}{rightArrow}')
+    cy.contains('div', next_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+next_record.name)
+
+    // keyboard shortcut for going to previous record
+    cy.get('body').type('{ctrl}{leftArrow}')
+    cy.contains('div', test_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+next_record.name)
+
+    cy.get('body').type('{ctrl}{leftArrow}')
+    cy.contains('div', prev_record.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to next record: '+prev_record.name)
+
+  })
+
   it('tests export data', () => {
-    cy.visit('/record_group/6656476a448c4d1812645c07');
-    cy.wait(1000)
-    cy.screenshot('navigated to project test list')
+    cy.visit('/record_group/'+test_record_group.id);
+    cy.contains('div', test_record_group.name).should('be.visible', {timeout: 10000})
+    cy.screenshot('navigated to record group')
 
     // click export project
     cy.findByRole('button', {
@@ -216,6 +255,65 @@ describe('End to end testing', () => {
     // verify that file was downloaded
     const downloadsFolder = Cypress.config("downloadsFolder");
     cy.readFile(path.join(downloadsFolder, test_record_group_name+"_records.zip")).should("exist");
+  })
+
+    it('tests filtering, sorting', () => {
+      cy.visit('/record_group/'+test_record_group.id);
+      cy.contains('div', test_record_group.name).should('be.visible', {timeout: 10000})
+      cy.screenshot('navigated to record group')
+
+      // Assert that record group has the proper record amount
+      cy.get('.record_row').should('have.length', 100)
+
+      // Apply a filter - date selected before June 1, 2024
+      cy.contains('button', /filters/i).click()
+      cy.contains('button', /new filter/i).click()
+      cy.get('#column-select').click()
+      cy.contains('li', "Date Uploaded").click()
+      cy.get('#operator-select').click()
+      cy.contains('li', "Is Before").click()
+      cy.get('.date-filter-input').type('2024-06-01', {force: true})
+      cy.contains('button', /apply filters/i).click({force: true})
+
+      // Assert that we now have 20 records
+      cy.get('.record_row').should('have.length', 20, { timeout: 10000 })
+
+      // Test sorting. 
+      // Assert we have the right element in the 20th row
+      const record_number_20 = "120190132100_WELL_COMPLETION_REPORT_1"
+      const record_number_19 = "120190131200_WELL_COMPLETION_REPORT_1"
+      cy.get('.record_row').eq(19).should('contain', record_number_20)
+      cy.contains('p', /date uploaded/i).click()
+
+      // Assert that the 20th element is now first
+      cy.get('.record_row').eq(0).should('contain', record_number_20, { timeout: 10000 })
+
+      // Navigate to record
+      cy.get('.record_row').eq(0).click()
+
+      // Assert that we have the right record name and index
+      cy.contains('div', `1. ${record_number_20}`, { timeout: 20000 })
+
+      // Navigate to next record
+      cy.contains('button', /next/i).click()
+
+      // Assert that we have the right record name and index
+      cy.contains('div', `2. ${record_number_19}`, { timeout: 20000 })
+      
+      // Go back to record page
+      cy.contains('button', test_record_group.name).click()
+      cy.contains('div', test_record_group.name).should('be.visible', {timeout: 10000})
+
+      // Reverse date sort
+      cy.contains('p', /date uploaded/i).click()
+
+      // Clear filters
+      cy.contains('button', /filters/i).click()
+      cy.contains('button', /reset filters/i).click()
+
+      // Assert that we have 100 records in the table again
+      cy.get('.record_row').should('have.length', 100, { timeout: 10000 })
+      
   })
 
 })

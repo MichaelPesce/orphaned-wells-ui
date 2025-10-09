@@ -295,6 +295,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         onClick={() => handleClickRecord(row._id)}
         key={row._id}
         id={row.name+"_record_row"}
+        className="record_row"
       >
         <TableCell align="right">{row.recordIndex}.</TableCell>
         {table_columns.keyNames.map((v,i) => (
