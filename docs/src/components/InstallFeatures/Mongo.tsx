@@ -33,10 +33,10 @@ export function InitializeDatabase() {
         <li><b>team_name</b> (<b>-t</b>): the initial team name [<i>required</i>]</li>
         <li><b>email</b> (<b>-e</b>): email of the initial user [<i>required</i>]</li>
         <li><b>assigned_role</b> (<b>-a</b>): The role for the user you are creating. If not provided, the user will be assigned the role of <code>sys_admin</code> which contains all system and team permissions [<i>optional</i>]</li>
-        <li><b>database_username</b> (<b>-t</b>): Database username [<i>required</i>]</li>
-        <li><b>database_password</b> (<b>-e</b>): Database user password [<i>required</i>]</li>
-        <li><b>database_connection</b> (<b>-e</b>): Database connection string [<i>required</i>]</li>
-        <li><b>database_name</b> (<b>-e</b>): Database name [<i>required</i>]</li>
+        <li><b>database_username</b> (<b>-dbu</b>): Database username [<i>required</i>]</li>
+        <li><b>database_password</b> (<b>-dbp</b>): Database user password [<i>required</i>]</li>
+        <li><b>database_connection</b> (<b>-dbh</b>): Database connection string [<i>required</i>]</li>
+        <li><b>database_name</b> (<b>-dbn</b>): Database name [<i>required</i>]</li>
       </ul>
     </div>
   );
