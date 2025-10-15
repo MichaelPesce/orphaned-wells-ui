@@ -484,7 +484,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
     return (
     <>
-        <TableRow id={tableId} sx={(isSelected && !isParent) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
+        <TableRow id={tableId} sx={(isSelected) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
             <TableCell sx={styles.fieldKey}>
                 <span>
                     {k}
