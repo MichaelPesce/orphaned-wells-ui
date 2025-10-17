@@ -1,0 +1,47 @@
+name: Deploy Osage Frontend
+
+on:
+  push:
+    branches: [osage]
+
+jobs:
+
+  osage-production-deploy:
+    if: github.repository == 'CATALOG-Historic-Records/orphaned-wells-ui'
+    name: Deploy to Google App Engine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: 'google-github-actions/auth@v2'
+        with:
+            credentials_json: '${{ secrets.GCLOUD_SERVICE_ACCOUNT_JSON }}'
+
+      - name: Install packages
+        run: |
+            npm clean-install
+      
+      - name: Add backend url to .env file
+        run: |
+            echo REACT_APP_BACKEND_URL=${{ secrets.OSAGE_BACKEND_URL }} >> .env
+
+      - name: Add state to .env file
+        run: |
+            echo REACT_APP_STATE=osage >> .env
+
+      - name: Add Google client ID to .env file
+        run: |
+            echo REACT_APP_GOOGLE_CLIENTID=${{ secrets.GOOGLE_CLIENTID }} >> .env
+
+      - name: Add environment to .env file
+        run: |
+            echo REACT_APP_ENVIRONMENT=osage >> .env
+
+      - name: Build frontend
+        env:
+          CI: false
+        run: |
+            npm run build
+
+      - name: Deploy
+        run: |
+            gcloud app deploy app-osage.yaml
