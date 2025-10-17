@@ -47,7 +47,8 @@ ROLES = [
             "verify_record",
             "delete",
             "manage_system",
-            "clean_record"
+            "clean_record",
+            "system_administration"
         ],
         "includes": [
             "team_lead"
