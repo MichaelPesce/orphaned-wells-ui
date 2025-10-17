@@ -24,6 +24,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
     const dialogHeight = '85vh';
     const dialogWidth = '60vw';
+    const defaultProcessorPath = `${process.env.PUBLIC_URL}/img/Default Extractor.png`
 
     const descriptionElementRef = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
@@ -203,7 +204,15 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
                                         </p>
                                         <Box sx={styles.processorImageBox} onClick={() => handleSelectProcessor(processorData)}>
                                             <Tooltip title={processorData.documentType}>
-                                                <img id={`processor_${idx}`} src={`${process.env.PUBLIC_URL}/img/${processorData['Processor Name']}.png`} style={getImageStyle(processorData['Processor ID'])} />
+                                                <img 
+                                                    id={`processor_${idx}`}
+                                                    src={`${process.env.PUBLIC_URL}/img/${processorData['Processor Name']}.png`}
+                                                    style={getImageStyle(processorData['Processor ID'])}
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.src = defaultProcessorPath;
+                                                    }}
+                                                />
                                             </Tooltip>
                                         </Box>
                                     </Grid>
