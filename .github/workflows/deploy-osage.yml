@@ -2,12 +2,12 @@ name: Deploy CA Frontend
 
 on:
   push:
-    branches: [osage]
+    branches: [fix-subfield-issue]
 
 jobs:
 
   osage-production-deploy:
-    if: github.repository == 'CATALOG-Historic-Records/orphaned-wells-ui'
+    # if: github.repository == 'CATALOG-Historic-Records/orphaned-wells-ui'
     name: Deploy to Google App Engine
     runs-on: ubuntu-latest
     steps:
