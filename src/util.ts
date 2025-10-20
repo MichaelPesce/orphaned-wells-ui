@@ -7,7 +7,7 @@ export const DEFAULT_FILTER_OPTIONS: {
 } = {
   review_status: {
       key: 'review_status',
-      displayName: "Review Status",   
+      displayName: "Review Status",
       type: "checkbox",
       operator: 'equals',
       options: [
@@ -20,7 +20,7 @@ export const DEFAULT_FILTER_OPTIONS: {
   },
   verification_status: {
     key: 'verification_status',
-    displayName: "Verification Status",   
+    displayName: "Verification Status",
     type: "checkbox",
     operator: 'equals',
     options: [
@@ -30,9 +30,21 @@ export const DEFAULT_FILTER_OPTIONS: {
     ],
     selectedOptions: ["unverified", "awaiting verification", "verified"]
   },
+  status: {
+    key: 'status',
+    displayName: "Digitization Status",
+    type: "checkbox",
+    operator: 'equals',
+    options: [
+        { name: "digitized", checked: true, value: "digitized" },
+        { name: "processing", checked: true, value: "processing" },
+        { name: "error", checked: true, value: "error" },
+    ],
+    selectedOptions: ["digitized", "processing", "error"]
+  },
   error_status: {
     key: 'error_status',
-    displayName: "Error Status",   
+    displayName: "Error Status",
     type: "checkbox",
     operator: 'equals',
     options: [
