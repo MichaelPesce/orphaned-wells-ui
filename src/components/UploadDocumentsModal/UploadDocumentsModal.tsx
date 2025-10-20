@@ -19,7 +19,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
     const [ file, setFile ] = useState<File | null>(null);
     const [uploadDirectory, setUploadDirectory] = useState<string>()
     const [uploadDirectoryFiles, setUploadDirectoryFiles ] = useState<any>([])
-    const [ runCleaningFunctions, setRunCleaningFunctions ] = useState(false)
+    const [ runCleaningFunctions, setRunCleaningFunctions ] = useState(true);
     const [ processorState, setProcessorState ] = useState(10)
     const [ uploadingDirectory, setUploadingDirectory ] = useState(false)
     const maxFileSize = 10;

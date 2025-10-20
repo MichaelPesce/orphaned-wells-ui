@@ -20,7 +20,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
     const [ duplicateFiles, setDuplicateFiles ] = useState<string[]>()
     const [ errorFiles, setErrorFiles ] = useState<string[]>([])
     const [ disabled, setDisabled ] = useState(false)
-    const MAX_UPLOAD_AMT = 100;
+    const MAX_UPLOAD_AMT = 500;
 
     useEffect(() => {
         let uploadedAmt = uploadedFiles.length;
