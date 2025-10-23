@@ -23,6 +23,9 @@ export interface RecordData {
     lastUpdated?: number;
     lastUpdatedBy?: string;
     has_errors?: boolean;
+    section?: string;
+    township?: string;
+    range?: string;
 }
 
 export interface ProjectData {

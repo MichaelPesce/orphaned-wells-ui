@@ -86,6 +86,40 @@ export const TABLE_ATTRIBUTES: {
   }
 }
 
+export const ISGS_TABLE_ATTRIBUTES: {
+  [key: string]: TableColumns;
+} = {
+  record_group: {
+      displayNames: ["Record Name", "Date Uploaded", "API Number", "Mean Confidence", "Lowest Confidence", "Notes", "Digitization Status", "Review Status"],
+      keyNames: ["name", "dateCreated", "api_number", "confidence_median", "confidence_lowest", "notes", "status", "review_status"],
+  },
+  project: {
+    displayNames: ["Record Name", "Record Group", "Date Uploaded", "API Number", "Notes", "Digitization Status", "Review Status"],
+    keyNames: ["name", "record_group", "dateCreated", "api_number", "notes", "status", "review_status"],
+  },
+  team: {
+    displayNames: ["Record Name", "Date Uploaded", "API Number", "Notes", "Digitization Status", "Review Status"],
+    keyNames: ["name", "dateCreated", "api_number", "notes", "status", "review_status"],
+  }
+}
+
+export const OSAGE_TABLE_ATTRIBUTES: {
+  [key: string]: TableColumns;
+} = {
+  record_group: {
+      displayNames: ["Record Name", "Date Uploaded", "Section", "Township", "Mean Confidence", "Lowest Confidence", "Notes", "Digitization Status", "Review Status"],
+      keyNames: ["name", "dateCreated", "Sec", "T", "confidence_median", "confidence_lowest", "notes", "status", "review_status"],
+  },
+  project: {
+    displayNames: ["Record Name", "Record Group", "Date Uploaded", "Section", "Township", "Notes", "Digitization Status", "Review Status"],
+    keyNames: ["name", "record_group", "dateCreated", "Sec", "T", "notes", "status", "review_status"],
+  },
+  team: {
+    displayNames: ["Record Name", "Date Uploaded", "Section", "Township", "Notes", "Digitization Status", "Review Status"],
+    keyNames: ["name", "dateCreated", "Sec", "T", "notes", "status", "review_status"],
+  }
+}
+
 export const deleteCommentFromNotes = (recordNotes: RecordNote[], deleteIdx?: number) => {
   let tempNotes = structuredClone(recordNotes)
   if (deleteIdx === undefined) {

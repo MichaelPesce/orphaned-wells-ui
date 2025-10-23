@@ -17,7 +17,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LastPageIcon from '@mui/icons-material/LastPage';
 import PublishedWithChangesOutlinedIcon from '@mui/icons-material/PublishedWithChangesOutlined';
-import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES } from '../../util';
+import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES } from '../../util';
 import { styles } from '../../styles';
 import RecordNotesDialog from '../RecordNotesDialog/RecordNotesDialog';
 import TableFilters from '../TableFilters/TableFilters';
@@ -51,7 +51,11 @@ const RecordsTable = (props: RecordsTableProps) => {
   );
   const [sorted, setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
   );
-  const table_columns = TABLE_ATTRIBUTES[location]
+
+  const table_columns = 
+    process.env.REACT_APP_COLLABORATOR === "isgs" ? ISGS_TABLE_ATTRIBUTES[location] : 
+    process.env.REACT_APP_COLLABORATOR === "osage" ? OSAGE_TABLE_ATTRIBUTES[location] :
+    TABLE_ATTRIBUTES[location];
 
   useEffect(() => {
     setRecords([]);
@@ -200,7 +204,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     else return ""
   }
 
-  const tableCell = (row: RecordData, key: string) => {
+  const tableCell = (row: any, key: string) => {
     // determine colors of status icons. this is getting more and more complicated...
     let digitizationStatusIconColor = row.has_errors ? '#B71D1C' : 'green'
     let reviewStatusIconColor = row.has_errors ? '#B71D1C' : 'green'
@@ -210,18 +214,18 @@ const RecordsTable = (props: RecordsTableProps) => {
     else if (row.review_status === 'unreviewed') reviewStatusIconColor = 'grey'
     
     if (key === "name") return <TableCell key={key}>{row.name}</TableCell>
-    if (key === "dateCreated") return <TableCell key={key} align="right">{formatDate(row.dateCreated)}</TableCell>
-    if (key === "api_number") return <TableCell key={key} align="right">{row.api_number}</TableCell>
-    if (key === "confidence_median") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateAverageConfidence(row.attributesList)}</TableCell>
-    if (key === "confidence_lowest") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateLowestConfidence(row.attributesList)}</TableCell>
-    if (key === "notes") return (
+    else if (key === "dateCreated") return <TableCell key={key} align="right">{formatDate(row.dateCreated)}</TableCell>
+    else if (key === "api_number") return <TableCell key={key} align="right">{row.api_number}</TableCell>
+    else if (key === "confidence_median") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateAverageConfidence(row.attributesList)}</TableCell>
+    else if (key === "confidence_lowest") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateLowestConfidence(row.attributesList)}</TableCell>
+    else if (key === "notes") return (
       <TableCell key={key} align="right">
           <IconButton sx={(!row.record_notes || row.record_notes?.length === 0) ? {} : { color: "#F2DB6F" }} onClick={(e) => handleClickNotes(e, row)}>
           <StickyNote2Icon />
         </IconButton>
       </TableCell>
     )
-    if (key === "status") return (
+    else if (key === "status") return (
         <TableCell key={key} align="right">
           <Typography variant='inherit' noWrap>
             <IconButton sx={{ color: digitizationStatusIconColor }}>
@@ -246,7 +250,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         </TableCell>
     )
 
-    if (key === "review_status") return (
+    else if (key === "review_status") return (
         <TableCell key={key} align="right">
           <Typography variant='inherit' noWrap>
           <IconButton sx={{ color: reviewStatusIconColor }}>
@@ -277,7 +281,7 @@ const RecordsTable = (props: RecordsTableProps) => {
           </Typography>
         </TableCell>
     )
-    if (key === "record_group") return (
+    else if (key === "record_group") return (
       <TableCell key={key} align='right'>
         <Typography variant='inherit' noWrap>
           {getRecordGroupName(row.record_group_id)}
@@ -285,7 +289,8 @@ const RecordsTable = (props: RecordsTableProps) => {
         
       </TableCell>
     )
-    if (key === "documentType") return <TableCell key={key} align='right'>{getDocumentType(row.record_group_id)}</TableCell>
+    else if (key === "documentType") return <TableCell key={key} align='right'>{getDocumentType(row.record_group_id)}</TableCell>
+    else return <TableCell key={key} align='right'>{row[key]}</TableCell>
   }
 
   const tableRow = (row: RecordData, idx: number) => {
