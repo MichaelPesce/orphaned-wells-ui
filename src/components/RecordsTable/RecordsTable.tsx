@@ -27,7 +27,15 @@ import ColumnSelectDialog from '../ColumnSelectDialog/ColumnSelectDialog';
 import EmptyTable from '../EmptyTable/EmptyTable';
 import TableLoading from '../TableLoading/TableLoading';
 
-const SORTABLE_COLUMNS = ["dateCreated", "api_number"]
+const SORTABLE_COLUMNS = {
+  dateCreated: "toplevel",
+  api_number: "toplevel",
+  Sec: "attribute",
+  R: "attribute",
+  T: "attribute",
+} as const; // <- important: makes the values readonly literal types
+
+type SortableColumnKey = keyof typeof SORTABLE_COLUMNS;
 
 const RecordsTable = (props: RecordsTableProps) => {
   let navigate = useNavigate();
@@ -161,17 +169,19 @@ const RecordsTable = (props: RecordsTableProps) => {
     setPageSize(newSize);
   }
 
-  const handleSort = (key: string) => {
-    if (SORTABLE_COLUMNS.includes(key)) {
+  const handleSort = (key: SortableColumnKey) => {
+    if (Object.keys(SORTABLE_COLUMNS).includes(key)) {
+      let new_sort_key = `${key}`;
       const sort_by_key = sorted[0];
       const sort_direction = sorted[1];
       const new_sorted = []
-      if (sort_by_key === key) { // change direction, keep key the same
+      if (SORTABLE_COLUMNS[key] === "attribute") new_sort_key = `attributesList.${key}`
+      if (sort_by_key === new_sort_key) { // change direction, keep key the same
         new_sorted.push(sort_by_key);
         new_sorted.push((sort_direction || 1) * -1);
       }
       else {
-        new_sorted.push(key);
+        new_sorted.push(new_sort_key);
         new_sorted.push(1);
       }
       setSorted(new_sorted);
@@ -186,7 +196,7 @@ const RecordsTable = (props: RecordsTableProps) => {
 
   const getParagraphStyle = (key: string) => {
     let paragraphStyle: React.CSSProperties = { margin: 0 };
-    if (SORTABLE_COLUMNS.includes(key)) paragraphStyle['cursor'] = 'pointer';
+    if (Object.keys(SORTABLE_COLUMNS).includes(key)) paragraphStyle['cursor'] = 'pointer';
     return paragraphStyle;
   }
 
@@ -333,8 +343,8 @@ const RecordsTable = (props: RecordsTableProps) => {
               {
                 table_columns.displayNames.map((attribute, idx) => (
                   <TableCell sx={styles.headerCell} key={idx} align={idx > 0 ? "right" : "left"}>
-                    <p style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx])}>
-                      {table_columns.keyNames[idx] === sorted[0] &&
+                    <p style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx] as SortableColumnKey)}>
+                      {sorted[0].includes(table_columns.keyNames[idx]) &&
                         <IconButton>
                           {
                             sorted[1] === 1 ? 
