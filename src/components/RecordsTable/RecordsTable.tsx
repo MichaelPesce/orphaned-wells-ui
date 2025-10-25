@@ -33,7 +33,7 @@ const SORTABLE_COLUMNS = {
   Sec: "attribute",
   R: "attribute",
   T: "attribute",
-} as const; // <- important: makes the values readonly literal types
+} as const;
 
 type SortableColumnKey = keyof typeof SORTABLE_COLUMNS;
 
