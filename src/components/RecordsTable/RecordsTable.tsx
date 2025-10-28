@@ -54,11 +54,21 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
-  const [filterBy, setFilterBy] = useState<any[]>(
+  const [filterBy, _setFilterBy] = useState<any[]>(
     JSON.parse(localStorage.getItem("appliedFilters") || '{}')[params.id || ""] || []
   );
-  const [sorted, setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
+  const [sorted, _setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
   );
+
+  const setFilterBy = (newFilterBy: any) => {
+    _setFilterBy(newFilterBy);
+    setCurrentPage(0);
+  }
+
+  const setSorted = (newSorted: any) => {
+    _setSorted(newSorted);
+    setCurrentPage(0);
+  }
 
   const table_columns = 
     process.env.REACT_APP_COLLABORATOR === "isgs" ? ISGS_TABLE_ATTRIBUTES[location] : 
@@ -70,10 +80,6 @@ const RecordsTable = (props: RecordsTableProps) => {
     setLoading(true);
     loadData();
   }, [params.id, pageSize, currentPage, filterBy, sorted]);
-
-  useEffect(() => {
-    setCurrentPage(0);
-  }, [filterBy, sorted]);
 
   const loadData = () => {
     const body = {
@@ -312,7 +318,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         id={row.name+"_record_row"}
         className="record_row"
       >
-        <TableCell align="right">{row.recordIndex}.</TableCell>
+        <TableCell align="right">{row?.rank || row?.recordIndex}.</TableCell>
         {table_columns.keyNames.map((v,i) => (
           tableCell(row, v)
         ))}

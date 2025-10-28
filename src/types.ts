@@ -26,6 +26,7 @@ export interface RecordData {
     section?: string;
     township?: string;
     range?: string;
+    rank?: number;
 }
 
 export interface ProjectData {
