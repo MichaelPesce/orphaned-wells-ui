@@ -318,7 +318,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         id={row.name+"_record_row"}
         className="record_row"
       >
-        <TableCell align="right">{row?.rank || row?.recordIndex}.</TableCell>
+        <TableCell align="right">{row?.rank}.</TableCell>
         {table_columns.keyNames.map((v,i) => (
           tableCell(row, v)
         ))}

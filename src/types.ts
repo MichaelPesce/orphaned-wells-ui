@@ -16,7 +16,6 @@ export interface RecordData {
     record_notes?: RecordNote[];
     previous_id?: string;
     next_id?: string;
-    recordIndex?: number;
     review_status?: string;
     notes?: string | null;
     verification_status?: string;
@@ -26,7 +25,7 @@ export interface RecordData {
     section?: string;
     township?: string;
     range?: string;
-    rank?: number;
+    rank?: number; // index of record based on current sorting, filtering
 }
 
 export interface ProjectData {
