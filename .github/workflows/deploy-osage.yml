@@ -28,6 +28,10 @@ jobs:
         run: |
             echo REACT_APP_STATE=osage >> .env
 
+      - name: Add collaborator to .env file
+        run: |
+            echo REACT_APP_COLLABORATOR=osage >> .env
+
       - name: Add Google client ID to .env file
         run: |
             echo REACT_APP_GOOGLE_CLIENTID=${{ secrets.GOOGLE_CLIENTID }} >> .env

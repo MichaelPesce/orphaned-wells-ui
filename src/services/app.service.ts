@@ -35,20 +35,6 @@ export const getColumnData = (location: string, _id: string) => {
     });
 }
 
-export const getProjectData = (project_id: string, page: number, records_per_page: number, sort: string, filter: string) => {
-    let route = BACKEND_URL + '/get_project/' + project_id + '?page=' + page + '&records_per_page=' + records_per_page;
-    let data: { sort: string; filter: string } = {
-        sort: sort,
-        filter: filter
-    };
-    return fetch(route, {
-        method: 'POST',
-        mode: 'cors',
-        body: JSON.stringify(data),
-        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
-    });
-};
-
 export const getRecordGroup = (rg_id: string) => {
     return fetch(BACKEND_URL + '/get_record_group/' + rg_id, {
         mode: 'cors',

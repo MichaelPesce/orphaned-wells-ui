@@ -587,7 +587,7 @@ const Record = () => {
     return (
         <Box sx={styles.outerBox}>
             <Subheader
-                currentPage={`${recordData.recordIndex !== undefined ? recordData.recordIndex+"." : ""} ${recordData.name !== undefined ? recordData.name : ""}`}
+                currentPage={`${recordData.rank !== undefined ? recordData.rank+"." : ""} ${recordData.name !== undefined ? recordData.name : ""}`}
                 actions={subheaderActions}
                 previousPages={previousPages}
                 status={recordData.review_status}

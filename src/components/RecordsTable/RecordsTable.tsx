@@ -17,7 +17,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LastPageIcon from '@mui/icons-material/LastPage';
 import PublishedWithChangesOutlinedIcon from '@mui/icons-material/PublishedWithChangesOutlined';
-import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES } from '../../util';
+import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES } from '../../util';
 import { styles } from '../../styles';
 import RecordNotesDialog from '../RecordNotesDialog/RecordNotesDialog';
 import TableFilters from '../TableFilters/TableFilters';
@@ -27,7 +27,15 @@ import ColumnSelectDialog from '../ColumnSelectDialog/ColumnSelectDialog';
 import EmptyTable from '../EmptyTable/EmptyTable';
 import TableLoading from '../TableLoading/TableLoading';
 
-const SORTABLE_COLUMNS = ["dateCreated", "api_number"]
+const SORTABLE_COLUMNS = {
+  dateCreated: "toplevel",
+  api_number: "toplevel",
+  Sec: "attribute",
+  R: "attribute",
+  T: "attribute",
+} as const;
+
+type SortableColumnKey = keyof typeof SORTABLE_COLUMNS;
 
 const RecordsTable = (props: RecordsTableProps) => {
   let navigate = useNavigate();
@@ -46,22 +54,32 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
-  const [filterBy, setFilterBy] = useState<any[]>(
+  const [filterBy, _setFilterBy] = useState<any[]>(
     JSON.parse(localStorage.getItem("appliedFilters") || '{}')[params.id || ""] || []
   );
-  const [sorted, setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
+  const [sorted, _setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
   );
-  const table_columns = TABLE_ATTRIBUTES[location]
+
+  const setFilterBy = (newFilterBy: any) => {
+    _setFilterBy(newFilterBy);
+    setCurrentPage(0);
+  }
+
+  const setSorted = (newSorted: any) => {
+    _setSorted(newSorted);
+    setCurrentPage(0);
+  }
+
+  const table_columns = 
+    process.env.REACT_APP_COLLABORATOR === "isgs" ? ISGS_TABLE_ATTRIBUTES[location] : 
+    process.env.REACT_APP_COLLABORATOR === "osage" ? OSAGE_TABLE_ATTRIBUTES[location] :
+    TABLE_ATTRIBUTES[location];
 
   useEffect(() => {
     setRecords([]);
     setLoading(true);
     loadData();
   }, [params.id, pageSize, currentPage, filterBy, sorted]);
-
-  useEffect(() => {
-    setCurrentPage(0);
-  }, [filterBy, sorted]);
 
   const loadData = () => {
     const body = {
@@ -157,17 +175,19 @@ const RecordsTable = (props: RecordsTableProps) => {
     setPageSize(newSize);
   }
 
-  const handleSort = (key: string) => {
-    if (SORTABLE_COLUMNS.includes(key)) {
+  const handleSort = (key: SortableColumnKey) => {
+    if (Object.keys(SORTABLE_COLUMNS).includes(key)) {
+      let new_sort_key = `${key}`;
       const sort_by_key = sorted[0];
       const sort_direction = sorted[1];
       const new_sorted = []
-      if (sort_by_key === key) { // change direction, keep key the same
+      if (SORTABLE_COLUMNS[key] === "attribute") new_sort_key = `attributesList.${key}`
+      if (sort_by_key === new_sort_key) { // change direction, keep key the same
         new_sorted.push(sort_by_key);
         new_sorted.push((sort_direction || 1) * -1);
       }
       else {
-        new_sorted.push(key);
+        new_sorted.push(new_sort_key);
         new_sorted.push(1);
       }
       setSorted(new_sorted);
@@ -182,7 +202,7 @@ const RecordsTable = (props: RecordsTableProps) => {
 
   const getParagraphStyle = (key: string) => {
     let paragraphStyle: React.CSSProperties = { margin: 0 };
-    if (SORTABLE_COLUMNS.includes(key)) paragraphStyle['cursor'] = 'pointer';
+    if (Object.keys(SORTABLE_COLUMNS).includes(key)) paragraphStyle['cursor'] = 'pointer';
     return paragraphStyle;
   }
 
@@ -200,7 +220,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     else return ""
   }
 
-  const tableCell = (row: RecordData, key: string) => {
+  const tableCell = (row: any, key: string) => {
     // determine colors of status icons. this is getting more and more complicated...
     let digitizationStatusIconColor = row.has_errors ? '#B71D1C' : 'green'
     let reviewStatusIconColor = row.has_errors ? '#B71D1C' : 'green'
@@ -210,18 +230,18 @@ const RecordsTable = (props: RecordsTableProps) => {
     else if (row.review_status === 'unreviewed') reviewStatusIconColor = 'grey'
     
     if (key === "name") return <TableCell key={key}>{row.name}</TableCell>
-    if (key === "dateCreated") return <TableCell key={key} align="right">{formatDate(row.dateCreated)}</TableCell>
-    if (key === "api_number") return <TableCell key={key} align="right">{row.api_number}</TableCell>
-    if (key === "confidence_median") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateAverageConfidence(row.attributesList)}</TableCell>
-    if (key === "confidence_lowest") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateLowestConfidence(row.attributesList)}</TableCell>
-    if (key === "notes") return (
+    else if (key === "dateCreated") return <TableCell key={key} align="right">{formatDate(row.dateCreated)}</TableCell>
+    else if (key === "api_number") return <TableCell key={key} align="right">{row.api_number}</TableCell>
+    else if (key === "confidence_median") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateAverageConfidence(row.attributesList)}</TableCell>
+    else if (key === "confidence_lowest") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateLowestConfidence(row.attributesList)}</TableCell>
+    else if (key === "notes") return (
       <TableCell key={key} align="right">
           <IconButton sx={(!row.record_notes || row.record_notes?.length === 0) ? {} : { color: "#F2DB6F" }} onClick={(e) => handleClickNotes(e, row)}>
           <StickyNote2Icon />
         </IconButton>
       </TableCell>
     )
-    if (key === "status") return (
+    else if (key === "status") return (
         <TableCell key={key} align="right">
           <Typography variant='inherit' noWrap>
             <IconButton sx={{ color: digitizationStatusIconColor }}>
@@ -246,7 +266,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         </TableCell>
     )
 
-    if (key === "review_status") return (
+    else if (key === "review_status") return (
         <TableCell key={key} align="right">
           <Typography variant='inherit' noWrap>
           <IconButton sx={{ color: reviewStatusIconColor }}>
@@ -277,7 +297,7 @@ const RecordsTable = (props: RecordsTableProps) => {
           </Typography>
         </TableCell>
     )
-    if (key === "record_group") return (
+    else if (key === "record_group") return (
       <TableCell key={key} align='right'>
         <Typography variant='inherit' noWrap>
           {getRecordGroupName(row.record_group_id)}
@@ -285,7 +305,8 @@ const RecordsTable = (props: RecordsTableProps) => {
         
       </TableCell>
     )
-    if (key === "documentType") return <TableCell key={key} align='right'>{getDocumentType(row.record_group_id)}</TableCell>
+    else if (key === "documentType") return <TableCell key={key} align='right'>{getDocumentType(row.record_group_id)}</TableCell>
+    else return <TableCell key={key} align='right'>{row[key]}</TableCell>
   }
 
   const tableRow = (row: RecordData, idx: number) => {
@@ -297,7 +318,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         id={row.name+"_record_row"}
         className="record_row"
       >
-        <TableCell align="right">{row.recordIndex}.</TableCell>
+        <TableCell align="right">{row?.rank}.</TableCell>
         {table_columns.keyNames.map((v,i) => (
           tableCell(row, v)
         ))}
@@ -328,8 +349,8 @@ const RecordsTable = (props: RecordsTableProps) => {
               {
                 table_columns.displayNames.map((attribute, idx) => (
                   <TableCell sx={styles.headerCell} key={idx} align={idx > 0 ? "right" : "left"}>
-                    <p style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx])}>
-                      {table_columns.keyNames[idx] === sorted[0] &&
+                    <p style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx] as SortableColumnKey)}>
+                      {sorted[0].includes(table_columns.keyNames[idx]) &&
                         <IconButton>
                           {
                             sorted[1] === 1 ? 
