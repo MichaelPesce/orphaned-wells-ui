@@ -111,7 +111,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
             name: recordGroupName,
             description: recordGroupDescription,
             history: [],
-            documentType: selectedProcessor.documentType,
+            documentType: selectedProcessor.documentType || selectedProcessor["Processor Name"],
             processorId: selectedProcessor['Processor ID'],
             project_id: project_id,
         };
