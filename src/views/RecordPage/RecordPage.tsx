@@ -34,6 +34,7 @@ const Record = () => {
     const [ subheaderActions, setSubheaderActions ] = useState<SubheaderActions>()
     const [ recordSchema, setRecordSchema ] = useState<RecordSchema>()
     const [ forceEditMode, setForceEditMode ] = useState<number[]>([-1, -1])
+    const [ loading, setLoading ] = useState(true);
     const [locked, setLocked] = useState(false)
     const params = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -74,6 +75,7 @@ const Record = () => {
             filterBy: filterBy,
             sortBy: sorted,
         }
+        setLoading(true);
         callAPI(
             getRecordData,
             [params.id, page_state],
@@ -97,6 +99,7 @@ const Record = () => {
     }, [userPermissions])
 
     const handleFailedFetchRecord = (data: any, response_status?: number) => {
+        setLoading(false);
         if (response_status === 303) {
             handleSuccessfulFetchRecord(data, true)
         } else if (response_status === 403) {
@@ -117,6 +120,7 @@ const Record = () => {
             setErrorMsg("")
             setLocked(false)
         }
+        setLoading(false);
         setRecordData(newRecordData);
         setRecordName(newRecordData.name);
         setRecordSchema(data.recordSchema);
@@ -608,6 +612,7 @@ const Record = () => {
                     showError={showError}
                     reviewStatus={recordData.review_status || ''}
                     updateFieldCoordinates={updateFieldCoordinates}
+                    loading={loading}
                 />
             </Box>
             <Bottombar

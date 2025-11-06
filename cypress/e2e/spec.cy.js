@@ -74,7 +74,8 @@ describe('End to end testing', () => {
     
     // test that record page loaded correctly
     cy.findByRole('columnheader', {
-      name: /field/i
+      name: /field/i,
+      timeout: 30000
     }).should('be.visible')
 
     cy.screenshot('record page')

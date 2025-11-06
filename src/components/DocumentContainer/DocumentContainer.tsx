@@ -9,8 +9,9 @@ import AttributesTable from '../RecordAttributesTable/RecordAttributesTable';
 import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID } from '../../types';
 import { DocumentContainerStyles as styles } from '../../styles';
 import Switch from '@mui/material/Switch';
+import TableLoading from '../TableLoading/TableLoading';
 
-const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates, ...attributeTableProps }: DocumentContainerProps) => {
+const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates, loading, ...attributeTableProps }: DocumentContainerProps) => {
 
     const [imgIndex, setImgIndex] = useState(0);
     const [displayPoints, setDisplayPoints] = useState<number[][] | null>(null);
@@ -337,7 +338,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                                 </p>
                                 
                             </Box>
-                            {attributesList !== undefined && 
+                            {attributesList !== undefined ?
                                 <AttributesTable 
                                     attributesList={attributesList}
                                     handleClickField={handleClickField}
@@ -348,7 +349,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                                     showRawValues={showRawValues}
                                     setUpdateFieldLocationID={setUpdateFieldLocationID}
                                     {...attributeTableProps}
-                                />
+                                /> : loading && <TableLoading/>
                             }
                         </Box>
                     </Grid>
@@ -358,12 +359,6 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                     <Grid item xs={gridWidths[0]}>
                         <Box sx={styles.gridContainer}>
                             <Box sx={styles.containerActions.right}>
-                                {/* <Tooltip title='Zoom in on highlighted fields'>
-                                    <IconButton id='zoom-toggle-button' onClick={handleToggleZoom} sx={zoomOnToken ? styles.zoomToggleActive : {}}>
-                                        <ZoomInIcon/> 
-                                    </IconButton>
-                                </Tooltip> */}
-                                
                                 <IconButton id='fullscreen-image-button' onClick={() => handleSetFullscreen("image")}>
                                     { 
                                         fullscreen === "image" ? <FullscreenExitIcon/> : <FullscreenIcon/> 
