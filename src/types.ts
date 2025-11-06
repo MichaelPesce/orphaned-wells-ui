@@ -287,6 +287,7 @@ export interface DocumentContainerProps {
     deleteField: deleteFieldSignature;
     reviewStatus: string;
     updateFieldCoordinates: updateFieldCoordinatesSignature;
+    loading: boolean;
 }
 
 export interface ColumnSelectDialogProps {
