@@ -378,7 +378,7 @@ const RecordsTable = (props: RecordsTableProps) => {
             <TableFooter>
               <TableRow>
                 <TablePagination
-                  rowsPerPageOptions={[10, 25, 50, 100, { label: 'All', value: -1 }]}
+                  rowsPerPageOptions={[10, 25, 50, 100, 250]}
                   colSpan={3}
                   count={recordCount}
                   rowsPerPage={pageSize}
