@@ -127,6 +127,16 @@ export const getRecordNotes = (record_id: string) => {
     });
 }
 
+export const getDownloadSize = (location: string, _id: string, data: any) => {
+    let endpoint = `${BACKEND_URL}/get_download_size/${location}/${_id}`
+    return fetch(endpoint, {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify(data),
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
 export const downloadRecords = (location: string, _id: string, export_types: { [key: string]: boolean }, output_name: string, data: any) => {
     let endpoint = `${BACKEND_URL}/download_records/${location}/${_id}?export_csv=${export_types['csv']}&export_json=${export_types['json']}&export_images=${export_types['image_files']}&output_name=${output_name}`
     return fetch(endpoint, {
