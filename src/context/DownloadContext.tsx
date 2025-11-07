@@ -14,9 +14,20 @@ interface DownloadContextType {
   ) => Promise<void>;
 }
 
-const DownloadContext = createContext<DownloadContextType | undefined>(undefined);
+// To ensure we never crash
+const defaultValue: DownloadContextType = {
+  downloadedBytes: 0,
+  estimatedTotalBytes: undefined,
+  progress: null,
+  isDownloading: false,
+  downloadWithProgress: async () => {
+    console.warn("downloadWithProgress called without provider");
+  },
+};
 
-export const DownloadProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const DownloadContext = createContext<DownloadContextType>(defaultValue);
+
+export const DownloadProvider = ({ children }: { children: React.ReactNode }) => {
   const [downloadedBytes, setDownloadedBytes] = useState(0);
   const [estimatedTotalBytes, setEstimatedTotalBytes] = useState<number>();
   const [progress, setProgress] = useState<number | null>(null);
