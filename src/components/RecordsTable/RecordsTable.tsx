@@ -26,6 +26,8 @@ import { getRecords } from '../../services/app.service';
 import ColumnSelectDialog from '../ColumnSelectDialog/ColumnSelectDialog';
 import EmptyTable from '../EmptyTable/EmptyTable';
 import TableLoading from '../TableLoading/TableLoading';
+import PopupModal from '../PopupModal/PopupModal';
+import { useDownload } from '../../context/DownloadContext';
 
 const SORTABLE_COLUMNS = {
   dateCreated: "toplevel",
@@ -59,6 +61,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   );
   const [sorted, _setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
   );
+  const { isDownloading } = useDownload();
 
   const setFilterBy = (newFilterBy: any) => {
     _setFilterBy(newFilterBy);
@@ -404,16 +407,32 @@ const RecordsTable = (props: RecordsTableProps) => {
             open={showNotes}
             onClose={handleCloseNotesModal}
         />
-        <ColumnSelectDialog
+        {
+          openColumnSelect && (
+          !isDownloading ? 
+            <ColumnSelectDialog
+              open={openColumnSelect}
+              onClose={() => setOpenColumnSelect(false)}
+              location={location}
+              handleUpdate={handleUpdate}
+              _id={params.id}
+              appliedFilters={filterBy}
+              sortBy={sorted[0]}
+              sortAscending={sorted[1]}
+          /> : 
+          <PopupModal
             open={openColumnSelect}
-            onClose={() => setOpenColumnSelect(false)}
-            location={location}
-            handleUpdate={handleUpdate}
-            _id={params.id}
-            appliedFilters={filterBy}
-            sortBy={sorted[0]}
-            sortAscending={sorted[1]}
+            handleClose={() => setOpenColumnSelect(false)}
+            text="Download in progress. Feel free to navigate the app, but do not refresh page or download will be interrupted."
+            handleSave={() => setOpenColumnSelect(false)}
+            buttonText='Close'
+            buttonColor='primary'
+            buttonVariant='contained'
+            width={600}
         />
+          )
+        }
+        
       </TableContainer>
       {
         loading ? <TableLoading/> :

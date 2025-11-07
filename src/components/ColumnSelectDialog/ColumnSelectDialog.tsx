@@ -4,11 +4,12 @@ import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox
 import CloseIcon from '@mui/icons-material/Close';
 import DownloadIcon from '@mui/icons-material/Download';
 import { callAPI, convertFiltersToMongoFormat } from '../../util';
-import { downloadRecords, getColumnData } from '../../services/app.service';
+import { downloadRecords, getColumnData, getDownloadSize } from '../../services/app.service';
 import { ColumnSelectDialogProps, CheckboxesGroupProps, ExportTypeSelectionProps } from '../../types';
 import CircularProgress from '@mui/material/CircularProgress';
 import ErrorBar from '../ErrorBar/ErrorBar';
 import { useUserContext } from '../../usercontext';
+import { useDownload } from '../../context/DownloadContext';
 
 const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     const { open, onClose, location, handleUpdate, _id, appliedFilters, sortBy, sortAscending } = props;
@@ -16,7 +17,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
 
     const [columns, setColumns] = useState<string[]>([]);
     const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-    const [downloading, setDownloading] = useState(false);
+    const [loadingFileSize, setLoadingFileSize] = useState(false);
     const [objSettings, setObjSettings] = useState<any>()
     const [errorMsg, setErrorMsg] = useState<string | null>("")
     const [ exportTypes, setExportTypes ] = useState<{ [key: string]: boolean }>(
@@ -26,9 +27,14 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             'image_files': false
         }
     )
-    const [name, setName] = useState("")
+    const [name, setName] = useState("");
     const dialogHeight = '85vh';
     const dialogWidth = '60vw';
+
+    const {
+        isDownloading,
+        downloadWithProgress
+    } = useDownload();
 
     useEffect(() => {
         if (open) {
@@ -93,48 +99,38 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
         onClose();
     };
 
-    const handleExport = () => {
+    const handleGetTotalBytes = () => {
         const body = {
             columns: selectedColumns,
             sort: [sortBy, sortAscending],
             filter: convertFiltersToMongoFormat(appliedFilters),
         };
-        setDownloading(true)
+        setLoadingFileSize(true);
         callAPI(
-            downloadRecords,
-            [location, _id, exportTypes, name, body],
-            handleSuccessfulExport,
-            handleFailedExport,
-            false // this argument indicates that the response is NOT json (ie it is blob)
+            getDownloadSize,
+            [location, _id, body],
+            (totalBytes) => fetchedDownloadSize(totalBytes),
+            handleFailedExport
         );
+    }
 
-    };
+    const fetchedDownloadSize = (totalBytes: number) => {
+        setLoadingFileSize(false);
+        handleExport(totalBytes);
+    }
 
-    const handleSuccessfulExport = (data: Blob) => {
-        handleClose();
-        setDownloading(false)
-        const href = window.URL.createObjectURL(data);
-        const link = document.createElement('a');
-        link.href = href;
-        link.setAttribute('download', `${name}_records.zip`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleExport = (totalBytes?: number) => {
+        const body = {
+            columns: selectedColumns,
+            sort: [sortBy, sortAscending],
+            filter: convertFiltersToMongoFormat(appliedFilters),
+        };
+        downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
 
-        // update project settings to include selected columns
-        let settings;
-        if (objSettings)  {
-            settings = objSettings
-            settings["exportColumns"] = selectedColumns
-        } else {
-            settings = {exportColumns: selectedColumns}
-        }
-        if (userPermissions?.includes("manage_project"))
-            handleUpdate({"settings": settings})
     };
 
     const handleFailedExport = (e: string) => {
-        setDownloading(false)
+        setLoadingFileSize(false)
         setErrorMsg("unable to export: " + e)
     };
 
@@ -149,7 +145,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     };
 
     const disableDownload = () => {
-        if (downloading) return true
+        if (isDownloading || loadingFileSize) return true
         for (let each of Object.keys(exportTypes)) {
             if (exportTypes[each]) return false
         }
@@ -159,7 +155,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     return (
         <Dialog
             open={open}
-            onClose={!downloading ? handleClose : undefined} // if downloading, must click x to close dialog
+            onClose={!loadingFileSize ? handleClose : undefined} // if loading file size, must click x to close dialog
             scroll={"paper"}
             aria-labelledby="export-dialog"
             aria-describedby="export-dialog-description"
@@ -177,10 +173,11 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             </IconButton>
             <DialogContent dividers={true}>
                 {
-                    downloading && 
+                    loadingFileSize &&
                     <CircularProgress 
                         sx={styles.loader}
                     />
+                    
                 }
                 
                 <DialogContentText
@@ -192,13 +189,13 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
                     <ExportTypeSelection
                         exportTypes={exportTypes}
                         updateExportTypes={handleChangeExportTypes}
-                        disabled={downloading}
+                        disabled={loadingFileSize || isDownloading}
                     />
                     <CheckboxesGroup
                         columns={columns}
                         selected={selectedColumns}
                         setSelected={setSelectedColumns}
-                        disabled={downloading}
+                        disabled={loadingFileSize || isDownloading}
                     />
                 </DialogContentText>
             </DialogContent>
@@ -211,7 +208,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
                             bottom: 10,
                         }}
                         startIcon={<DownloadIcon/>}
-                        onClick={handleExport}
+                        onClick={handleGetTotalBytes}
                         id='download-button'
                         disabled={disableDownload()}
                     >
