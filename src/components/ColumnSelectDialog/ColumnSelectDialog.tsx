@@ -100,18 +100,23 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     };
 
     const handleGetTotalBytes = () => {
-        const body = {
-            columns: selectedColumns,
-            sort: [sortBy, sortAscending],
-            filter: convertFiltersToMongoFormat(appliedFilters),
-        };
-        setLoadingFileSize(true);
-        callAPI(
-            getDownloadSize,
-            [location, _id, body],
-            (totalBytes) => fetchedDownloadSize(totalBytes),
-            handleFailedExport
-        );
+        if (exportTypes.image_files) {
+            const body = {
+                columns: selectedColumns,
+                sort: [sortBy, sortAscending],
+                filter: convertFiltersToMongoFormat(appliedFilters),
+            };
+            setLoadingFileSize(true);
+            callAPI(
+                getDownloadSize,
+                [location, _id, body],
+                (totalBytes) => fetchedDownloadSize(totalBytes),
+                handleFailedExport
+            );
+        } else {
+            fetchedDownloadSize(0);
+        }
+        
     }
 
     const fetchedDownloadSize = (totalBytes: number) => {
