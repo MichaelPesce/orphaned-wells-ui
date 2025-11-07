@@ -67,7 +67,8 @@ const RecordsTable = (props: RecordsTableProps) => {
   useEffect(() => {
     if (isDownloading) {
       setOpenColumnSelect(false);
-      if ((estimatedTotalBytes || 0) > 1000000 && (progress || 0) < 1) setShowDownloadMessage(true);
+      // If downloda is bigger than 10mb
+      if ((estimatedTotalBytes || 0) > 10000000 && (progress || 0) < 1) setShowDownloadMessage(true);
     } else {
       setShowDownloadMessage(false);
     }
@@ -434,12 +435,12 @@ const RecordsTable = (props: RecordsTableProps) => {
           <PopupModal
             open={showDownloadMessage}
             handleClose={() => setShowDownloadMessage(false)}
-            text="Download in progress. Feel free to navigate the app, but do not refresh page or download will be interrupted."
+            text="Your download is in progress — you can continue using the app while it completes. Please note: refreshing the page or closing this tab will cancel the download."
             handleSave={() => setShowDownloadMessage(false)}
             buttonText='Close'
             buttonColor='primary'
             buttonVariant='contained'
-            width={400}
+            width={500}
           />
         }
           
