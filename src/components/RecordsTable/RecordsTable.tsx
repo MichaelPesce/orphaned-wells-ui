@@ -26,6 +26,8 @@ import { getRecords } from '../../services/app.service';
 import ColumnSelectDialog from '../ColumnSelectDialog/ColumnSelectDialog';
 import EmptyTable from '../EmptyTable/EmptyTable';
 import TableLoading from '../TableLoading/TableLoading';
+import PopupModal from '../PopupModal/PopupModal';
+import { useDownload } from '../../context/DownloadContext';
 
 const SORTABLE_COLUMNS = {
   dateCreated: "toplevel",
@@ -54,11 +56,22 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
+  const [showDownloadMessage, setShowDownloadMessage] = useState(false);
   const [filterBy, _setFilterBy] = useState<any[]>(
     JSON.parse(localStorage.getItem("appliedFilters") || '{}')[params.id || ""] || []
   );
   const [sorted, _setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
   );
+  const { isDownloading, estimatedTotalBytes, progress } = useDownload();
+
+  useEffect(() => {
+    if (isDownloading) {
+      setOpenColumnSelect(false);
+      if ((estimatedTotalBytes || 0) > 1000000 && (progress || 0) < 1) setShowDownloadMessage(true);
+    } else {
+      setShowDownloadMessage(false);
+    }
+  }, [isDownloading])
 
   const setFilterBy = (newFilterBy: any) => {
     _setFilterBy(newFilterBy);
@@ -378,7 +391,7 @@ const RecordsTable = (props: RecordsTableProps) => {
             <TableFooter>
               <TableRow>
                 <TablePagination
-                  rowsPerPageOptions={[10, 25, 50, 100, { label: 'All', value: -1 }]}
+                  rowsPerPageOptions={[10, 25, 50, 100, 250]}
                   colSpan={3}
                   count={recordCount}
                   rowsPerPage={pageSize}
@@ -404,16 +417,33 @@ const RecordsTable = (props: RecordsTableProps) => {
             open={showNotes}
             onClose={handleCloseNotesModal}
         />
-        <ColumnSelectDialog
-            open={openColumnSelect}
-            onClose={() => setOpenColumnSelect(false)}
-            location={location}
-            handleUpdate={handleUpdate}
-            _id={params.id}
-            appliedFilters={filterBy}
-            sortBy={sorted[0]}
-            sortAscending={sorted[1]}
-        />
+        {
+          openColumnSelect && !isDownloading && (
+            <ColumnSelectDialog
+              open={openColumnSelect}
+              onClose={() => setOpenColumnSelect(false)}
+              location={location}
+              handleUpdate={handleUpdate}
+              _id={params.id}
+              appliedFilters={filterBy}
+              sortBy={sorted[0]}
+              sortAscending={sorted[1]}
+          /> 
+        )}
+        {
+          <PopupModal
+            open={showDownloadMessage}
+            handleClose={() => setShowDownloadMessage(false)}
+            text="Download in progress. Feel free to navigate the app, but do not refresh page or download will be interrupted."
+            handleSave={() => setShowDownloadMessage(false)}
+            buttonText='Close'
+            buttonColor='primary'
+            buttonVariant='contained'
+            width={400}
+          />
+        }
+          
+        
       </TableContainer>
       {
         loading ? <TableLoading/> :
