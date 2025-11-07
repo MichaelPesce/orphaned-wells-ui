@@ -68,7 +68,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     if (isDownloading) {
       setOpenColumnSelect(false);
       // If downloda is bigger than 10mb
-      if ((estimatedTotalBytes || 0) > 10000000 && (progress || 0) < 1) setShowDownloadMessage(true);
+      if ((estimatedTotalBytes || 0) > 10000000 && (progress || 0) < 0.01) setShowDownloadMessage(true);
     } else {
       setShowDownloadMessage(false);
     }
