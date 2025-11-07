@@ -11,6 +11,7 @@ import ErrorBar from '../ErrorBar/ErrorBar';
 import { useUserContext } from '../../usercontext';
 import { useDownload } from '../../context/DownloadContext';
 
+
 const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     const { open, onClose, location, handleUpdate, _id, appliedFilters, sortBy, sortAscending } = props;
     const { userPermissions } = useUserContext();
@@ -150,7 +151,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     };
 
     const disableDownload = () => {
-        if (isDownloading || loadingFileSize) return true
+        if (isDownloading || loadingFileSize || !columns?.length) return true
         for (let each of Object.keys(exportTypes)) {
             if (exportTypes[each]) return false
         }
@@ -178,7 +179,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             </IconButton>
             <DialogContent dividers={true}>
                 {
-                    loadingFileSize &&
+                    (loadingFileSize || !columns?.length) &&
                     <CircularProgress 
                         sx={styles.loader}
                     />
