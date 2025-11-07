@@ -346,7 +346,7 @@ const RecordsTable = (props: RecordsTableProps) => {
           <Grid container>
             <Grid item sx={styles.topSectionLeft} xs={6}>
               <TableFilters applyFilters={handleApplyFilters} appliedFilters={filterBy} filter_options={filter_options} />
-              <Button onClick={() => setOpenColumnSelect(true)} startIcon={<IosShareIcon />}>
+              <Button onClick={() => setOpenColumnSelect(true)} startIcon={<IosShareIcon />} disabled={isDownloading}>
                 Export
               </Button>
             </Grid>
