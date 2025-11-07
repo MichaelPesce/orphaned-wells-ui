@@ -179,7 +179,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             </IconButton>
             <DialogContent dividers={true}>
                 {
-                    loadingFileSize &&
+                    (loadingFileSize || !columns?.length) &&
                     <CircularProgress 
                         sx={styles.loader}
                     />
