@@ -323,3 +323,19 @@ export const addContributors = (project_id: string, data: any) => {
         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
     });
 };
+
+export const getSchema = () => {
+    return fetch(BACKEND_URL + '/get_schema', {
+        mode: 'cors',
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
+export const updateSchema = (updated_schema: any) => {
+    return fetch(BACKEND_URL + '/update_schema', {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify(updated_schema),
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
