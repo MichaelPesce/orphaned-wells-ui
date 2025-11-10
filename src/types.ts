@@ -55,6 +55,14 @@ export interface RecordGroup {
     error_amt?: number;
 }
 
+export interface SchemaMeta {
+    schema_name: string;
+    use_airtable: boolean;
+    AIRTABLE_API_TOKEN?: string;
+    AIRTABLE_BASE_ID?: string;
+    AIRTABLE_IFRAME_VIEW_ID?: string;
+}
+
 
 export interface SchemaField {
     name: string;
