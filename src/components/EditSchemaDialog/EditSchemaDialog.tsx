@@ -156,8 +156,8 @@ const EditSchemaDialog = ({ open, onClose, setErrorMsg, schemaData }: EditSchema
                                 setValue={setBaseID}
                             />
                             <HiddenTextInput
-                                key="iframe_view_id"
-                                displayName='Airtable iframe View ID'
+                                key="view_id"
+                                displayName='Airtable View ID'
                                 value={iframeViewID}
                                 setValue={setIframeViewID}
                             />

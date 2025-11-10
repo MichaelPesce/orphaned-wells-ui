@@ -15,6 +15,7 @@ const SchemaView = () => {
     // const [schemaRecords, setSchemaRecords] = useState<SchemaRecord[]>([])
     const [showEditSchema, setShowEditSchema] = useState(false);
     const [schemaData, setSchemaData] = useState<SchemaMeta>()
+    const [loading, setLoading] = useState(true);
     const {
         AIRTABLE_BASE_ID,
         AIRTABLE_IFRAME_VIEW_ID
@@ -37,11 +38,13 @@ const SchemaView = () => {
 
     const fetchedSchema = (schema: SchemaMeta) => {
         setSchemaData(schema);
+        setLoading(false);
     };
 
     const handleError = (e: string) => {
         console.log("handle error:")
         console.log(e)
+        setLoading(false);
     }
 
     const styles = {
@@ -71,7 +74,10 @@ const SchemaView = () => {
                     schemaData={schemaData}
                 />
                 {
-                    AIRTABLE_BASE_ID && AIRTABLE_IFRAME_VIEW_ID && (
+                    loading && "loading..."
+                }
+                {
+                    AIRTABLE_BASE_ID && AIRTABLE_IFRAME_VIEW_ID ? (
                         <iframe
                             className="airtable-embed"
                             src={AIRTABLE_IFRAME_SRC}
@@ -85,6 +91,10 @@ const SchemaView = () => {
                             }}
                             title="Airtable Embed"
                         />
+                    ) : !loading && (
+                        <span>
+                            To view your schema, please add your airtable api token, base id, and view id. For more information, <a href='https://support.airtable.com/docs/embedding-airtable-views' target='_blank'>see here</a>. <p>Airtable embeddings are in the format: https://airtable.com/embed/&#123;BASE_ID&#125;/&#123;VIEW_ID&#125;</p>
+                        </span>
                     )
                 }
                 
