@@ -49,7 +49,8 @@ ROLES = [
             "manage_system",
             "clean_record",
             "system_administration",
-            "developer"
+            "developer",
+            "manage_schema"
         ],
         "includes": [
             "team_lead"
