@@ -63,11 +63,13 @@ export const DownloadProvider = ({ children }: { children: React.ReactNode }) =>
 
           chunks.push(value);
           received += value.length;
-          setDownloadedBytes(received);
+          if (totalBytes && received > totalBytes) setDownloadedBytes(totalBytes)
+          else setDownloadedBytes(received);
 
           if (totalBytes) {
             const pct = (received / totalBytes) * 100;
-            setProgress(pct);
+            if (pct > 100) setProgress(100);
+            else setProgress(pct);
           }
         }
 
