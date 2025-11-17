@@ -25,6 +25,7 @@ const SchemaView = () => {
 
 
     useEffect(() => {
+        navigate("/"); // DISABLE THIS VIEW FOR NOW
         const hasAccess = userPermissions?.includes("system_administration");
         if (!hasAccess) navigate("/");
         callAPI(
