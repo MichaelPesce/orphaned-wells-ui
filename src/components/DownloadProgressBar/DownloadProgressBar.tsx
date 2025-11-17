@@ -42,7 +42,7 @@ export default function DownloadProgressBar() {
       >
         {!isMinimized && (
           <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-            Downloading...
+            Preparing Download
           </Typography>
         )}
         <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
