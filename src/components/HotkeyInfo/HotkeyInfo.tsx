@@ -1,15 +1,7 @@
 import React from 'react';
 import { Box, Typography, Popover } from '@mui/material';
+import { HotkeySection, HotkeyInfoProps } from '../../types';
 
-interface Hotkey {
-  key: string;
-  action: string;
-}
-
-interface HotkeySection {
-  label: string;
-  hotkeys: Hotkey[];
-}
 
 const hotkeySections: HotkeySection[] = [
   {
@@ -31,37 +23,33 @@ const hotkeySections: HotkeySection[] = [
   },
 ];
 
-interface HotkeyInfoProps {
-  anchorEl: HTMLElement | undefined;
-  onClose: () => void;
+const styles = {
+  keycap: {
+    fontWeight: 600,
+    background: 'rgba(255,255,255,0.6)',
+    padding: '4px 8px',
+    borderRadius: 1,
+    border: '1px solid rgba(0,0,0,0.12)',
+    fontFamily: 'ui-monospace, monospace',
+    whiteSpace: 'nowrap',
+  },
+  keyaction: {
+    opacity: 0.9,
+    textAlign: 'right',
+  },
+  popoverPaper: {
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    backdropFilter: 'blur(8px)',
+    padding: 2.5,
+    borderRadius: 2,
+    minWidth: 380,
+    border: '1px solid rgba(0,0,0,0.08)',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+  }
 }
 
 const HotkeyInfo = ({ anchorEl, onClose }: HotkeyInfoProps) => {
   const open = Boolean(anchorEl);
-  const styles = {
-    keycap: {
-      fontWeight: 600,
-      background: 'rgba(255,255,255,0.6)',
-      padding: '4px 8px',
-      borderRadius: 1,
-      border: '1px solid rgba(0,0,0,0.12)',
-      fontFamily: 'ui-monospace, monospace',
-      whiteSpace: 'nowrap',
-    },
-    keyaction: {
-      opacity: 0.9,
-      textAlign: 'right',
-    },
-    popoverPaper: {
-      backgroundColor: 'rgba(255, 255, 255, 0.75)',
-      backdropFilter: 'blur(8px)',
-      padding: 2.5,
-      borderRadius: 2,
-      minWidth: 380,
-      border: '1px solid rgba(0,0,0,0.08)',
-      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-    }
-  }
 
   return (
     <Popover
