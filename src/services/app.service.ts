@@ -331,6 +331,24 @@ export const getSchema = () => {
     });
 };
 
+export const uploadProcessorSchema = (
+        data: FormData,
+        name: string,
+        displayName: string,
+        processorId: string,
+        modelId: string,
+        documentType: string,
+        imageLink: string,
+    ) => {
+    const endpoint = BACKEND_URL + `/upload_processor_schema/?name=${name}&displayName=${displayName}&processorId=${processorId}&modelId=${modelId}&documentType=${documentType}&img=${imageLink}`;
+    return fetch(endpoint, {
+        method: 'POST',
+        mode: 'cors',
+        body: data,
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
 export const updateSchema = (updated_schema: any) => {
     return fetch(BACKEND_URL + '/update_schema', {
         method: 'POST',

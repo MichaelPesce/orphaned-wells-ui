@@ -4,16 +4,16 @@ import { Box } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 import Subheader from '../../components/Subheader/Subheader';
 import { callAPI } from '../../util';
-import { getSchema } from '../../services/app.service';
+import { getSchema, uploadProcessorSchema } from '../../services/app.service';
 import SchemaTable from '../../components/SchemaTable/SchemaTable';
 import { SchemaOverview, MongoProcessor } from '../../types';
 import EditSchemaDialog from '../../components/EditSchemaDialog/EditSchemaDialog';
+import UploadSchemaDialog from '../../components/UploadSchemaDialog/UploadSchemaDialog';
 
 const SchemaView = () => {
     const navigate = useNavigate();
     const { userPermissions} = useUserContext();
-    // const [schemaRecords, setSchemaRecords] = useState<SchemaRecord[]>([])
-    const [showEditSchema, setShowEditSchema] = useState(false);
+    const [showUploadSchema, setShowUploadSchema] = useState(false);
     const [schemaData, setSchemaData] = useState<SchemaOverview>()
     const [loading, setLoading] = useState(true);
 
@@ -28,7 +28,7 @@ const SchemaView = () => {
             handleError
         );
         
-    }, [userPermissions, showEditSchema]);
+    }, [userPermissions]);
 
     const fetchedSchema = (processors: MongoProcessor[]) => {
         // console.log(schema)
@@ -55,16 +55,52 @@ const SchemaView = () => {
         },
     };
 
+    const handleUploadDocument = (
+        file: File,
+        name: string,
+        displayName: string,
+        processorId: string,
+        modelId: string,
+        documentType: string
+    ) => {
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+        callAPI(
+            uploadProcessorSchema,
+            [formData, name, displayName, processorId, modelId, documentType],
+            successfulUpload,
+            failedUpload,
+        )
+    }
+
+    const successfulUpload = (data: any) => {
+        console.log("success:")
+        console.log(data)
+    }
+
+    const failedUpload = (data: any) => {
+        console.log("failure:")
+        console.log(data)
+    }
+
     return (
         <Box sx={styles.outerBox}>
             <Subheader
                 currentPage="Schema"
-                buttonName={"Edit Schema"}
-                handleClickButton={() => setShowEditSchema(true)}
+                buttonName={"Upload Schema"}
+                handleClickButton={() => setShowUploadSchema(true)}
             />
             <Box sx={styles.innerBox}>
                 <SchemaTable schema={schemaData} loading={loading}/>
-            </Box>  
+            </Box>
+            {
+                showUploadSchema && 
+                <UploadSchemaDialog
+                    handleUploadDocument={handleUploadDocument}
+                    setShowModal={setShowUploadSchema}
+                />
+            }
+            
         </Box>
     );
 };

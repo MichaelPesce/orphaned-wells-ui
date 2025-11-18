@@ -282,6 +282,18 @@ export interface UploadDocumentsModalProps {
     handleUploadDocument: (file: File, runCleaningFunctions: boolean, refresh?: boolean) => void;
 }
 
+export interface UploadSchemaProps {
+    setShowModal: (show: boolean) => void;
+    handleUploadDocument: (
+        file: File,
+        name: string,
+        displayName: string,
+        processorId: string,
+        modelId: string,
+        documentType: string
+    ) => void;
+}
+
 export interface UploadDirectoryProps {
     setShowModal: (show: boolean) => void;
     directoryFiles: File[];

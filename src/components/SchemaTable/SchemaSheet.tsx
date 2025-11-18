@@ -14,6 +14,7 @@ interface SchemaSheetProps {
 const SchemaSheet = (props: SchemaSheetProps) => {
   const { processor } = props;
   const { attributes } = processor || { attributes: [] };
+  // console.log(processor)
   const columns = [
     {
       key: "name",
