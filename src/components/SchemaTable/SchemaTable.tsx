@@ -5,12 +5,6 @@ import SchemaOverViewSheet from "./SchemaOverviewSheet";
 import { SchemaOverview } from "../../types";
 import TableLoading from "../TableLoading/TableLoading";
 
-interface SheetData {
-  id: number;
-  name: string;
-  data: any[];
-}
-
 interface SchemaTableProps {
   loading: boolean;
   schema?: SchemaOverview;
@@ -75,8 +69,8 @@ const SchemaTable = (props: SchemaTableProps) => {
           sx={styles.tabs}
         >
           <Tab label="Overview"/>
-          {processors?.map((processor) => (
-            <Tab key={processor.name} label={processor.name} />
+          {processors?.map((processor, idx) => (
+            <Tab key={`${idx}-${processor.name}`} label={processor.name} />
           ))}
         </Tabs>
       </Box>

@@ -1,11 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useParams } from "react-router-dom";
 import { Grid, Box, Modal, IconButton, Button, Stack, TextField } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { FileUploader } from "react-drag-drop-files";
 import { UploadSchemaProps } from '../../types';
-import { callAPI } from '../../util';
 
 const UploadSchemaDialog = (props: UploadSchemaProps) => {
     const params = useParams<{ id: string }>();
@@ -15,7 +14,6 @@ const UploadSchemaDialog = (props: UploadSchemaProps) => {
     const [ file, setFile ] = useState<File | null>(null);
     const maxFileSize = 10;
     const fileTypes: string[] = ["csv"];
-    const inputRef = useRef<HTMLInputElement>(null);
 
     const [name, setName] = useState("");
     const [displayName, setDisplayName] = useState("");

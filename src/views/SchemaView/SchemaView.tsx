@@ -76,6 +76,12 @@ const SchemaView = () => {
     const successfulUpload = (data: any) => {
         console.log("success:")
         console.log(data)
+        callAPI(
+            getSchema,
+            [],
+            fetchedSchema,
+            handleError
+        );
     }
 
     const failedUpload = (data: any) => {
@@ -87,7 +93,7 @@ const SchemaView = () => {
         <Box sx={styles.outerBox}>
             <Subheader
                 currentPage="Schema"
-                buttonName={"Upload Schema"}
+                buttonName={"Upload Processor"}
                 handleClickButton={() => setShowUploadSchema(true)}
             />
             <Box sx={styles.innerBox}>
