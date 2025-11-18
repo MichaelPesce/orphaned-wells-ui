@@ -2,7 +2,8 @@ import React from "react";
 import { Box, Paper, Tabs, Tab, TableContainer } from "@mui/material";
 import SchemaSheet from "./SchemaSheet";
 import SchemaOverViewSheet from "./SchemaOverviewSheet";
-import { MongoProcessor, SchemaOverview } from "../../types";
+import { SchemaOverview } from "../../types";
+import TableLoading from "../TableLoading/TableLoading";
 
 interface SheetData {
   id: number;
@@ -31,6 +32,7 @@ const styles = {
     "& .Mui-selected": {
       background: "#fff",
       boxShadow: "0px 2px 6px rgba(0,0,0,0.15)",
+      fontWeight: "bold",
     },
     "& .MuiTabs-indicator": {
       display: "none",
@@ -47,6 +49,7 @@ const SchemaTable = (props: SchemaTableProps) => {
   const {
     processors
   } = schema || {};
+
 
   return (
     <Paper
@@ -80,13 +83,17 @@ const SchemaTable = (props: SchemaTableProps) => {
         </Tabs>
       </Box>
       <TableContainer sx={{ maxHeight: 600 }}>
-        {
-          tabValue === 0 && (
-             <SchemaOverViewSheet data={processors}/>
+        {loading ? (
+          <TableLoading/>
+        ) : 
+          tabValue === 0 ? (
+             <SchemaOverViewSheet data={processors} setTabValue={setTabValue}/>
+          ) : (
+            <SchemaSheet processor={processors?.[tabValue-1]} />
           )
         }
        
-        {/* <SchemaSheet data={sheets[value].data} /> */}
+        
       </TableContainer>
     </Paper>
   );

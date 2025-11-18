@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Table,
   TableHead,
@@ -6,20 +5,24 @@ import {
   TableCell,
   TableBody,
 } from "@mui/material";
-import { MongoProcessor } from "../../types";
 
 interface SchemaSheetProps {
   data: any;
+  setTabValue : (v: number) => void;
 }
 
 
 
-const SchemaOverViewSheet = ({ data }: SchemaSheetProps) => {
+const SchemaOverViewSheet = ({ data, setTabValue }: SchemaSheetProps) => {
 
 const columns = [
   {
     key: "name",
     displayName: "Processor Name",
+  },
+  {
+    key: "displayName",
+    displayName: "Display Name",
   },
   {
     key: "processorId",
@@ -30,16 +33,12 @@ const columns = [
     displayName: "Model ID",
   },
   {
-    key: "img",
-    displayName: "Image Link",
-  },
-  {
     key: "documentType",
     displayName: "Document Type",
   },
   {
-    key: "displayName",
-    displayName: "Display Name",
+    key: "img",
+    displayName: "Image Link",
   },
 ]
   if (!data || data.length === 0) {
@@ -69,6 +68,10 @@ const columns = [
       <TableBody>
         {data.map((row: any, idx: number) => (
           <TableRow
+            onClick={() => {
+                const newTabValue = idx+1;
+                setTabValue(newTabValue)
+            }}
             key={idx}
             hover
             sx={{
@@ -81,7 +84,11 @@ const columns = [
             }}
           >
             {columns.map((col) => (
-              <TableCell key={col.key}>{row[col.key]}</TableCell>
+                <TableCell
+                    key={col.key}
+                >
+                    {row[col.key]}
+                </TableCell>
             ))}
           </TableRow>
         ))}

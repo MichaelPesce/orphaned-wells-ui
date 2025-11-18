@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Table,
   TableHead,
@@ -6,68 +5,56 @@ import {
   TableCell,
   TableBody,
 } from "@mui/material";
+import { MongoProcessor } from "../../types";
 
 interface SchemaSheetProps {
-  data: any;
+  processor?: MongoProcessor;
 }
 
-const columns = [
-  {
-    key: "name",
-    displayName: "Processor Name",
-  },
-  {
-    key: "processorId",
-    displayName: "Processor ID",
-  },
-  {
-    key: "modelId",
-    displayName: "Model ID",
-  },
-  {
-    key: "img",
-    displayName: "Image Link",
-  },
-  {
-    key: "documentType",
-    displayName: "Document Type",
-  },
-  {
-    key: "displayName",
-    displayName: "Display Name",
-  },
-]
-
-const SchemaSheet = ({ data }: SchemaSheetProps) => {
-  if (!data || data.length === 0) {
-    return (
-      <Table>
-        <TableBody>
-          <TableRow>
-            <TableCell>No data</TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    );
-  }
-
-  // Automatically extract column names based on keys of first row
-  const columns = Object.keys(data[0]);
+const SchemaSheet = (props: SchemaSheetProps) => {
+  const { processor } = props;
+  const { attributes } = processor || { attributes: [] };
+  const columns = [
+    {
+      key: "name",
+      displayName: "Field Name",
+    },
+    {
+      key: "alias",
+      displayName: "Display Name",
+    },
+    {
+      key: "cleaning_function",
+      displayName: "Cleaning function",
+    },
+    {
+      key: "data_type",
+      displayName: "Data Type",
+    },
+    {
+      key: "database_data_type",
+      displayName: "Database DataType",
+    },
+    {
+      key: "page_order_sort",
+      displayName: "Page Order",
+    },
+  ]
 
   return (
     <Table stickyHeader sx={{ minWidth: 650 }}>
       <TableHead>
         <TableRow sx={{ backgroundColor: "#fbfbfb" }}>
           {columns.map((col) => (
-            <TableCell key={col} sx={{ fontWeight: 600 }}>
-              {col}
+            <TableCell key={col.key} sx={{ fontWeight: 600 }}>
+              {col.displayName}
             </TableCell>
           ))}
         </TableRow>
       </TableHead>
 
       <TableBody>
-        {data.map((row: any, idx: number) => (
+        {attributes?.map((row: any, idx: number) => (
           <TableRow
             key={idx}
             hover
@@ -81,7 +68,7 @@ const SchemaSheet = ({ data }: SchemaSheetProps) => {
             }}
           >
             {columns.map((col) => (
-              <TableCell key={col}>{row[col]}</TableCell>
+              <TableCell key={`${col.key}_${idx}`}>{row[col.key]}</TableCell>
             ))}
           </TableRow>
         ))}
