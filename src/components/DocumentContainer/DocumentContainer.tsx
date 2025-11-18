@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Grid, Box, IconButton, Alert, Tooltip } from '@mui/material';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
 import { ImageCropper } from '../ImageCropper/ImageCropper';
 import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage } from '../../util';
 import AttributesTable from '../RecordAttributesTable/RecordAttributesTable';
@@ -10,6 +11,7 @@ import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID } from
 import { DocumentContainerStyles as styles } from '../../styles';
 import Switch from '@mui/material/Switch';
 import TableLoading from '../TableLoading/TableLoading';
+import HotkeyInfo from '../HotkeyInfo/HotkeyInfo';
 
 const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates, loading, ...attributeTableProps }: DocumentContainerProps) => {
 
@@ -28,6 +30,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
     const [ hasErrors, setHasErrors ] = useState(false)
     const [ zoomOnToken, setZoomOnToken ] = useState(JSON.parse(localStorage.getItem('zoomOnToken') || 'false'))
     const [updateFieldLocationID, setUpdateFieldLocationID] = useState<FieldID>()
+    const [hotkeysAnchor, setHotkeysAnchor] = useState<HTMLElement>();
 
     const imageDivStyle = {
         width: width,
@@ -100,6 +103,7 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
     }, [imageFiles]);
 
     useEffect(() => {
+        setHotkeysAnchor(undefined);
         setDisplayPoints(null);
         setDisplayKeyIndex(-1);
     }, [params.id]);
@@ -308,6 +312,10 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
         }, 0)
     }
 
+    const handleToggleHotkeys = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setHotkeysAnchor(event.currentTarget)
+    }
+
     return (
         <Box style={styles.outerBox}>
             {
@@ -335,6 +343,10 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                                             fullscreen === "table" ? <FullscreenExitIcon/> : <FullscreenIcon/> 
                                         }
                                     </IconButton>
+                                    <IconButton id='hotkey-info-button' onClick={handleToggleHotkeys}>
+                                        <KeyboardIcon/>
+                                    </IconButton>
+                                    <HotkeyInfo anchorEl={hotkeysAnchor} onClose={() => setHotkeysAnchor(undefined)}/>
                                 </p>
                                 
                             </Box>
