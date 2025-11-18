@@ -13,6 +13,7 @@ interface UserContextObject {
   userName: string;
   userPhoto: string;
   userPermissions: any;
+  databaseEnvironment: string;
 }
 
 const UserContext = createContext({} as UserContextObject);
@@ -31,6 +32,7 @@ export const UserContextProvider = ({ children }: any) => {
   const [userPermissions, setUserPermissions] = useState<any>(undefined);
   const [loading, setLoading] = useState(true)
   const [authenticated, setAuthenticated] = useState(false);
+  const [databaseEnvironment, setDatabaseEnvironment] = useState("");
 
   useEffect(() => {
     if (!authenticated) {
@@ -49,7 +51,11 @@ export const UserContextProvider = ({ children }: any) => {
     
   },[location]);
 
-  const handlePassedAuthentication = (user_data: User) => {
+  const handlePassedAuthentication = (data: any) => {
+    const {
+      user_data,
+      environment,
+    } = data || {};
     setAuthenticated(true)
     setUser(user_data)
     setUserEmail(user_data.email)
@@ -60,6 +66,7 @@ export const UserContextProvider = ({ children }: any) => {
       navigate('/projects', { replace: true })
     }
     setLoading(false)
+    setDatabaseEnvironment(environment);
   }
 
   const handleFailedAuthentication = () => {
@@ -86,7 +93,8 @@ export const UserContextProvider = ({ children }: any) => {
     userEmail,
     userName,
     userPhoto,
-    userPermissions
+    userPermissions,
+    databaseEnvironment,
   };
 
   return (

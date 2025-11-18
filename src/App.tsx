@@ -11,8 +11,12 @@ import SchemaView from './views/SchemaView/SchemaView';
 import './App.css';
 import { DownloadProvider } from './context/DownloadContext';
 import DownloadProgressBar from './components/DownloadProgressBar/DownloadProgressBar';
+import { useUserContext } from './usercontext';
+import StagingBanner from './components/StagingBanner/StagingBanner';
 
 function App() {
+
+    const { databaseEnvironment } = useUserContext();
 
   return (
     <DownloadProvider>
@@ -20,6 +24,7 @@ function App() {
             {!window.location.href.includes("login") && 
                 <Header/>
             }
+            <StagingBanner isStaging={databaseEnvironment === "staging"}/>
             
             <Routes> 
             <Route 
