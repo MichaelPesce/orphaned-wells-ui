@@ -570,7 +570,10 @@ const Record = () => {
     }
 
     const handleSuccessfulStatusUpdate = (data: any, new_status: string) => {
-        if (new_status === "reviewed") navigateToRecord({recordData: {_id: recordData.next_id}})
+        if (new_status === "reviewed") {
+            setRecordData({} as RecordData);
+            navigateToRecord({recordData: {_id: recordData.next_id}})
+        }
         else window.location.reload()
     }
 

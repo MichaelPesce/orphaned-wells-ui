@@ -182,6 +182,16 @@ export interface SchemaRecord {
   createdTime: string;
 }
 
+export interface Hotkey {
+  key: string;
+  action: string;
+}
+
+export interface HotkeySection {
+  label: string;
+  hotkeys: Hotkey[];
+}
+
 /*
 props interfaces
 */
@@ -389,4 +399,9 @@ export interface deleteFieldSignature {
     (
         fieldID: FieldID,
     ): void;
+}
+
+export interface HotkeyInfoProps {
+  anchorEl: HTMLElement | undefined;
+  onClose: () => void;
 }
