@@ -83,13 +83,20 @@ const columns = [
               },
             }}
           >
-            {columns.map((col) => (
-                <TableCell
-                    key={col.key}
-                >
-                    {row[col.key]}
-                </TableCell>
-            ))}
+            {columns.map((col) => {
+                let content;
+                let val = row[col.key]
+                if (col.key === "img") content = <img style={{height: "16px"}} src={val}></img>
+                else content = val;
+                return (
+                    <TableCell
+                        key={col.key}
+                    >
+                        {content}
+                    </TableCell>
+                )
+                
+            })}
           </TableRow>
         ))}
       </TableBody>

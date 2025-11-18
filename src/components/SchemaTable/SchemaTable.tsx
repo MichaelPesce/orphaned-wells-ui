@@ -64,8 +64,6 @@ const SchemaTable = (props: SchemaTableProps) => {
       <Box
         sx={{
           borderBottom: "1px solid #e0e0e0",
-          px: 2,
-          // pt: 1.5,
           background: "#fafafa",
         }}
       >
