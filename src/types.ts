@@ -108,7 +108,7 @@ export interface Attribute {
     user_provided_coordinates?: number[][];
 }
 
-export interface Processor {
+export interface RepoProcessor {
     "Processor Name": string;
     "Model Name": string;
     "Processor ID": string;

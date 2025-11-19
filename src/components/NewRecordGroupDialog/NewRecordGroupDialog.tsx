@@ -197,26 +197,29 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
                         </Grid>
                         <Grid item xs={12}>
                             <Grid container>
-                                {processors.map((processorData, idx) => (
-                                    <Grid key={idx} item xs={4} sx={styles.processorGridItem}>
-                                        <p style={styles.processorTextBox}>
-                                            {idx + 1}. {processorData['name']}
-                                        </p>
-                                        <Box sx={styles.processorImageBox} onClick={() => handleSelectProcessor(processorData)}>
-                                            <Tooltip title={processorData.documentType}>
-                                                <img 
-                                                    id={`processor_${idx}`}
-                                                    src={`${process.env.PUBLIC_URL}/img/${processorData['name']}.png`}
-                                                    style={getImageStyle(processorData['processorId'])}
-                                                    onError={(e) => {
-                                                        const target = e.target as HTMLImageElement;
-                                                        target.src = defaultProcessorPath;
-                                                    }}
-                                                />
-                                            </Tooltip>
-                                        </Box>
-                                    </Grid>
-                                ))}
+                                {processors.map((processorData, idx) => {
+                                    if (processorData.processorId && processorData.modelId)
+                                    return (
+                                        <Grid key={idx} item xs={4} sx={styles.processorGridItem}>
+                                            <p style={styles.processorTextBox}>
+                                                {idx + 1}. {processorData['name']}
+                                            </p>
+                                            <Box sx={styles.processorImageBox} onClick={() => handleSelectProcessor(processorData)}>
+                                                <Tooltip title={processorData.documentType}>
+                                                    <img 
+                                                        id={`processor_${idx}`}
+                                                        src={`${process.env.PUBLIC_URL}/img/${processorData['name']}.png`}
+                                                        style={getImageStyle(processorData['processorId'])}
+                                                        onError={(e) => {
+                                                            const target = e.target as HTMLImageElement;
+                                                            target.src = defaultProcessorPath;
+                                                        }}
+                                                    />
+                                                </Tooltip>
+                                            </Box>
+                                        </Grid>
+                                    )
+                                })}
                             </Grid>
                         </Grid>
                     </Grid>
