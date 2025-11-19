@@ -16,6 +16,11 @@ interface UserContextObject {
   databaseEnvironment: string;
 }
 
+interface AuthResponse {
+  user_data: User;
+  environment: string;
+}
+
 const UserContext = createContext({} as UserContextObject);
 
 export const useUserContext = () => {
@@ -51,7 +56,7 @@ export const UserContextProvider = ({ children }: any) => {
     
   },[location]);
 
-  const handlePassedAuthentication = (data: any) => {
+  const handlePassedAuthentication = (data: AuthResponse) => {
     const {
       user_data,
       environment,

@@ -51,10 +51,10 @@ function App() {
                 path="users" 
                 element={<AdminPage/>}
             />
-            {/* <Route
+            <Route
                 path="schema" 
                 element={<SchemaView/>}
-            /> */}
+            />
             <Route
                 path="*" 
                 element={<Navigate replace to="projects" />}

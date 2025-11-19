@@ -1,3 +1,5 @@
+import { MongoProcessor } from "../types";
+
 let BACKEND_URL = process.env.REACT_APP_BACKEND_URL as string;
 
 export const getProjects = () => {
@@ -331,11 +333,60 @@ export const getSchema = () => {
     });
 };
 
-export const updateSchema = (updated_schema: any) => {
-    return fetch(BACKEND_URL + '/update_schema', {
+export const uploadProcessorSchema = (
+        data: FormData,
+        name: string,
+        displayName: string,
+        processorId: string,
+        modelId: string,
+        documentType: string,
+        imageLink?: string,
+    ) => {
+    let endpoint = BACKEND_URL + `/upload_processor_schema/?name=${name}&displayName=${displayName}&processorId=${processorId}&modelId=${modelId}&documentType=${documentType}`;
+    let img = imageLink;
+    if (imageLink === undefined) img = "";
+    endpoint+= `&img=${img}`;
+    return fetch(endpoint, {
         method: 'POST',
         mode: 'cors',
-        body: JSON.stringify(updated_schema),
+        body: data,
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
+export const uploadSampleImage = (
+        data: FormData,
+        name: string,
+    ) => {
+    let endpoint = BACKEND_URL + `/upload_sample_image/${name}`;
+    return fetch(endpoint, {
+        method: 'POST',
+        mode: 'cors',
+        body: data,
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
+export const updateProcessor = (updated_processor: MongoProcessor) => {
+    return fetch(BACKEND_URL + '/update_processor', {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify(updated_processor),
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
+export const getSampleImage = (processorName: string) => {
+    return fetch(BACKEND_URL + '/get_image_url/'+processorName, {
+        mode: 'cors',
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
+export const deleteProcessorSchema = (processor_name: string) => {
+    return fetch(BACKEND_URL + `/delete_processor/${processor_name}`, {
+        method: 'POST',
+        mode: 'cors',
         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
     });
 };

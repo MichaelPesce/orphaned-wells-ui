@@ -63,6 +63,11 @@ export interface SchemaMeta {
     AIRTABLE_IFRAME_VIEW_ID?: string;
 }
 
+export interface SchemaOverview {
+    processors: MongoProcessor[];
+    name?: number;
+    last_updated?: number;
+}
 
 export interface SchemaField {
     name: string;
@@ -103,21 +108,27 @@ export interface Attribute {
     user_provided_coordinates?: number[][];
 }
 
-export interface Processor {
-    "Processor Type": string;
+export interface RepoProcessor {
     "Processor Name": string;
     "Model Name": string;
-    "F1 Score": number;
-    "Primary Model in Processor": string;
-    "Training Documents": number;
-    "Testing Documents": number;
-    "Date Trained": number;
-    "Foundation Model": string;
     "Processor ID": string;
     "Model ID": string;
+    "lastUpdated": string;
+    "img"?: string;
     "documentType"?: string;
     "displayName"?: string;
-    "attributes": Attribute[];
+    "attributes"?: Attribute[];
+}
+
+export interface MongoProcessor {
+    "name": string;
+    "processorId": string;
+    "modelId": string;
+    "lastUpdated": string;
+    "img"?: string;
+    "documentType"?: string;
+    "displayName"?: string;
+    "attributes"?: SchemaField[];
 }
 
 export interface FilterOption {
@@ -269,6 +280,18 @@ export interface TableFiltersProps {
 export interface UploadDocumentsModalProps {
     setShowModal: (show: boolean) => void;
     handleUploadDocument: (file: File, runCleaningFunctions: boolean, refresh?: boolean) => void;
+}
+
+export interface UploadProcessorProps {
+    setShowModal: (show: boolean) => void;
+    handleUploadDocument: (
+        file: File,
+        name: string,
+        displayName: string,
+        processorId: string,
+        modelId: string,
+        documentType: string
+    ) => void;
 }
 
 export interface UploadDirectoryProps {

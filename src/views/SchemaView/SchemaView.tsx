@@ -4,29 +4,21 @@ import { Box } from '@mui/material';
 import { useNavigate } from "react-router-dom";
 import Subheader from '../../components/Subheader/Subheader';
 import { callAPI } from '../../util';
-import { getSchema } from '../../services/app.service';
+import { getSchema, uploadProcessorSchema } from '../../services/app.service';
 import SchemaTable from '../../components/SchemaTable/SchemaTable';
-import { SchemaRecord, SchemaMeta } from '../../types';
-import EditSchemaDialog from '../../components/EditSchemaDialog/EditSchemaDialog';
+import { SchemaOverview, MongoProcessor } from '../../types';
+import UploadProcessorDialog from '../../components/UploadProcessorDialog/UploadProcessorDialog';
 
 const SchemaView = () => {
     const navigate = useNavigate();
     const { userPermissions} = useUserContext();
-    // const [schemaRecords, setSchemaRecords] = useState<SchemaRecord[]>([])
-    const [showEditSchema, setShowEditSchema] = useState(false);
-    const [schemaData, setSchemaData] = useState<SchemaMeta>()
+    const [showUploadProcessor, setShowUploadProcessor] = useState(false);
+    const [schemaData, setSchemaData] = useState<SchemaOverview>()
     const [loading, setLoading] = useState(true);
-    const {
-        AIRTABLE_BASE_ID,
-        AIRTABLE_IFRAME_VIEW_ID
-    } = schemaData || {};
-
-    const AIRTABLE_IFRAME_SRC = `https://airtable.com/embed/${AIRTABLE_BASE_ID}/${AIRTABLE_IFRAME_VIEW_ID}`
 
 
     useEffect(() => {
-        navigate("/"); // DISABLE THIS VIEW FOR NOW
-        const hasAccess = userPermissions?.includes("system_administration");
+        const hasAccess = userPermissions?.includes("manage_schema");
         if (!hasAccess) navigate("/");
         callAPI(
             getSchema,
@@ -35,10 +27,13 @@ const SchemaView = () => {
             handleError
         );
         
-    }, [userPermissions, showEditSchema]);
+    }, [userPermissions]);
 
-    const fetchedSchema = (schema: SchemaMeta) => {
-        setSchemaData(schema);
+    const fetchedSchema = (processors: MongoProcessor[]) => {
+        // console.log(schema)
+        setSchemaData({
+            processors: processors
+        });
         setLoading(false);
     };
 
@@ -59,47 +54,58 @@ const SchemaView = () => {
         },
     };
 
+    const handleUploadDocument = (
+        file: File,
+        name: string,
+        displayName: string,
+        processorId: string,
+        modelId: string,
+        documentType: string
+    ) => {
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+        callAPI(
+            uploadProcessorSchema,
+            [formData, name, displayName, processorId, modelId, documentType],
+            successfulUpload,
+            failedUpload,
+        )
+    }
+
+    const successfulUpload = (data: any) => {
+        console.log("success:")
+        console.log(data)
+        callAPI(
+            getSchema,
+            [],
+            fetchedSchema,
+            handleError
+        );
+    }
+
+    const failedUpload = (data: any) => {
+        console.log("failure:")
+        console.log(data)
+    }
+
     return (
         <Box sx={styles.outerBox}>
             <Subheader
                 currentPage="Schema"
-                buttonName={"Edit Schema"}
-                handleClickButton={() => setShowEditSchema(true)}
-                // disableButton={!(userPermissions.includes("manage_schema"))}
+                buttonName={"Upload Processor"}
+                handleClickButton={() => setShowUploadProcessor(true)}
             />
             <Box sx={styles.innerBox}>
-                <EditSchemaDialog
-                    open={showEditSchema}
-                    onClose={() => setShowEditSchema(false)}
-                    setErrorMsg={() => {}}
-                    schemaData={schemaData}
+                <SchemaTable schema={schemaData} loading={loading}/>
+            </Box>
+            {
+                showUploadProcessor && 
+                <UploadProcessorDialog
+                    handleUploadDocument={handleUploadDocument}
+                    setShowModal={setShowUploadProcessor}
                 />
-                {
-                    loading && "loading..."
-                }
-                {
-                    AIRTABLE_BASE_ID && AIRTABLE_IFRAME_VIEW_ID ? (
-                        <iframe
-                            className="airtable-embed"
-                            src={AIRTABLE_IFRAME_SRC}
-                            // frameBorder="0"
-                            onWheel={() => {}}
-                            width="100%"
-                            height="533"
-                            style={{
-                                background: "transparent",
-                                border: "1px solid #ccc",
-                            }}
-                            title="Airtable Embed"
-                        />
-                    ) : !loading && (
-                        <span>
-                            To view your schema, please add your airtable api token, base id, and view id. For more information, <a href='https://support.airtable.com/docs/embedding-airtable-views' target='_blank'>see here</a>. <p>Airtable embeddings are in the format: https://airtable.com/embed/&#123;BASE_ID&#125;/&#123;VIEW_ID&#125;</p>
-                        </span>
-                    )
-                }
-                
-            </Box>  
+            }
+            
         </Box>
     );
 };

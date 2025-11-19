@@ -5,7 +5,7 @@ import { Dialog, DialogTitle, DialogContent, DialogContentText } from '@mui/mate
 import CloseIcon from '@mui/icons-material/Close';
 import { addRecordGroup, getProcessors } from '../../services/app.service';
 import { callAPI } from '../../util';
-import { Processor } from '../../types';
+import { MongoProcessor as Processor } from '../../types';
 import ErrorBar from '../ErrorBar/ErrorBar';
 
 interface NewRecordGroupDialogProps {
@@ -37,9 +37,9 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
     }, [open]);
 
     useEffect(() => {
-        if (recordGroupName !== "" && selectedProcessor['Processor ID'] && disableCreateButton) {
+        if (recordGroupName !== "" && selectedProcessor['processorId'] && disableCreateButton) {
             setDisableCreateButton(false);
-        } else if ((recordGroupName === "" || !selectedProcessor['Processor ID']) && !disableCreateButton) {
+        } else if ((recordGroupName === "" || !selectedProcessor['processorId']) && !disableCreateButton) {
             setDisableCreateButton(true);
         }
     }, [recordGroupName, selectedProcessor]);
@@ -92,7 +92,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
     };
 
     const handleSelectProcessor = (processorData: Processor) => {
-        if (selectedProcessor['Processor ID'] === processorData['Processor ID']) setSelectedProcessor({ } as Processor);
+        if (selectedProcessor['processorId'] === processorData['processorId']) setSelectedProcessor({ } as Processor);
         else {
             setSelectedProcessor(processorData);
         }
@@ -100,7 +100,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
 
     const getImageStyle = (processorId: string): React.CSSProperties => {
         let styling: React.CSSProperties = { ...styles.processorImage };
-        if (selectedProcessor['Processor ID'] === processorId) {
+        if (selectedProcessor['processorId'] === processorId) {
             styling["border"] = "1px solid #2196F3";
         }
         return styling;
@@ -111,8 +111,8 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
             name: recordGroupName,
             description: recordGroupDescription,
             history: [],
-            documentType: selectedProcessor.documentType || selectedProcessor["Processor Name"],
-            processorId: selectedProcessor['Processor ID'],
+            documentType: selectedProcessor.documentType || selectedProcessor["name"],
+            processorId: selectedProcessor['processorId'],
             project_id: project_id,
         };
         callAPI(
@@ -197,26 +197,29 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
                         </Grid>
                         <Grid item xs={12}>
                             <Grid container>
-                                {processors.map((processorData, idx) => (
-                                    <Grid key={idx} item xs={4} sx={styles.processorGridItem}>
-                                        <p style={styles.processorTextBox}>
-                                            {idx + 1}. {processorData['Processor Name']}
-                                        </p>
-                                        <Box sx={styles.processorImageBox} onClick={() => handleSelectProcessor(processorData)}>
-                                            <Tooltip title={processorData.documentType}>
-                                                <img 
-                                                    id={`processor_${idx}`}
-                                                    src={`${process.env.PUBLIC_URL}/img/${processorData['Processor Name']}.png`}
-                                                    style={getImageStyle(processorData['Processor ID'])}
-                                                    onError={(e) => {
-                                                        const target = e.target as HTMLImageElement;
-                                                        target.src = defaultProcessorPath;
-                                                    }}
-                                                />
-                                            </Tooltip>
-                                        </Box>
-                                    </Grid>
-                                ))}
+                                {processors.map((processorData, idx) => {
+                                    if (processorData.processorId && processorData.modelId)
+                                    return (
+                                        <Grid key={idx} item xs={4} sx={styles.processorGridItem}>
+                                            <p style={styles.processorTextBox}>
+                                                {idx + 1}. {processorData['name']}
+                                            </p>
+                                            <Box sx={styles.processorImageBox} onClick={() => handleSelectProcessor(processorData)}>
+                                                <Tooltip title={processorData.documentType}>
+                                                    <img 
+                                                        id={`processor_${idx}`}
+                                                        src={`${process.env.PUBLIC_URL}/img/${processorData['name']}.png`}
+                                                        style={getImageStyle(processorData['processorId'])}
+                                                        onError={(e) => {
+                                                            const target = e.target as HTMLImageElement;
+                                                            target.src = defaultProcessorPath;
+                                                        }}
+                                                    />
+                                                </Tooltip>
+                                            </Box>
+                                        </Grid>
+                                    )
+                                })}
                             </Grid>
                         </Grid>
                     </Grid>

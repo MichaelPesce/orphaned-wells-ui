@@ -26,8 +26,8 @@ const Header = (props: any) => {
       setTabValue(1);
     } else if (window.location.href.includes("users")) {
       setTabValue(2);
-    // } else if (window.location.href.includes("schema")) {
-    //   setTabValue(3);
+    } else if (window.location.href.includes("schema")) {
+      setTabValue(3);
     } else {
       setTabValue(0);
     }
@@ -50,7 +50,7 @@ const Header = (props: any) => {
       if (newValue === 0) newLocation = "projects";
       else if (newValue === 1) newLocation = "records";
       else if (newValue === 2) newLocation = "users";
-      // else if (newValue === 3) newLocation = "schema";
+      else if (newValue === 3) newLocation = "schema";
       else newLocation = "/"
       navigate(newLocation, { replace: true });
     }
@@ -89,9 +89,9 @@ const Header = (props: any) => {
             {userPermissions && userPermissions.includes("manage_team") &&
               <Tab label="Users" {...a11yProps(2)} />
             }
-            {/* {userPermissions?.includes("system_administration") &&
+            {userPermissions?.includes("manage_schema") &&
               <Tab label="Schema" {...a11yProps(3)} />
-            } */}
+            }
           </Tabs>
         </div>
 
