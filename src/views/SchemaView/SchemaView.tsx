@@ -18,7 +18,7 @@ const SchemaView = () => {
 
 
     useEffect(() => {
-        const hasAccess = userPermissions?.includes("system_administration");
+        const hasAccess = userPermissions?.includes("manage_schema");
         if (!hasAccess) navigate("/");
         callAPI(
             getSchema,

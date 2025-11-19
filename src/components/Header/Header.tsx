@@ -89,7 +89,7 @@ const Header = (props: any) => {
             {userPermissions && userPermissions.includes("manage_team") &&
               <Tab label="Users" {...a11yProps(2)} />
             }
-            {userPermissions?.includes("system_administration") &&
+            {userPermissions?.includes("manage_schema") &&
               <Tab label="Schema" {...a11yProps(3)} />
             }
           </Tabs>
