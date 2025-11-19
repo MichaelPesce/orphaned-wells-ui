@@ -143,7 +143,7 @@ export const schemaOverviewColumns = [
   },
   {
     key: "img",
-    displayName: "Image Link",
+    displayName: "Sample Image",
   },
 ]
 

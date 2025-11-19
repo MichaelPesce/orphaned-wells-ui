@@ -246,15 +246,16 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                                 onChange={(event) => setDocumentType(event.target.value)}
                                 id="document-type-textbox"
                             />
-                            <TextField
+                            {/* <TextField
+                                disabled
                                 sx={styles.textbox}
                                 fullWidth
-                                label="Image Link"
+                                label="Sample Image"
                                 variant="outlined"
                                 value={imageLink}
                                 onChange={(event) => setImageLink(event.target.value)}
                                 id="image-link-textbox"
-                            />
+                            /> */}
                         </Stack>
                         
 

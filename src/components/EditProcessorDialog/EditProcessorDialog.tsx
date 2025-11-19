@@ -146,7 +146,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                             />
                             <TextField
                                 fullWidth
-                                label="Image Link"
+                                label="Sample Image"
                                 variant="outlined"
                                 value={imageLink}
                                 onChange={(event) => setImageLink(event.target.value)}
