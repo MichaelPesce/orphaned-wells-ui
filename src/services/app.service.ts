@@ -360,8 +360,8 @@ export const updateProcessor = (updated_processor: MongoProcessor) => {
     });
 };
 
-export const deleteProcessorSchema = (processor_id: string, model_id: string) => {
-    return fetch(BACKEND_URL + `/delete_processor/${processor_id}/${model_id}`, {
+export const deleteProcessorSchema = (processor_name: string) => {
+    return fetch(BACKEND_URL + `/delete_processor/${processor_name}`, {
         method: 'POST',
         mode: 'cors',
         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }

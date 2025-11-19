@@ -61,6 +61,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
     const updatedProcessor = (data: any) => {
         console.log("updated processor successfully")
         console.log(data)
+        window.location.reload()
         onClose()
     };
 
@@ -107,15 +108,6 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                 >
                     <Grid container>
                         <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Processor Name"
-                                variant="outlined"
-                                value={processorName}
-                                onChange={(event) => setProcessorName(event.target.value)}
-                                sx={styles.projectName}
-                                id="processor-name-textbox"
-                            />
                             <TextField
                                 fullWidth
                                 label="Display Name"

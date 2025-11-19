@@ -52,12 +52,11 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: S
     if (pendingDelete !== undefined) {
       const processor = processors[pendingDelete];
       const {
-        processorId,
-        modelId
+        name
       } = processor;
       callAPI(
         deleteProcessorSchema,
-        [processorId, modelId],
+        [name],
         successfulDelete,
         failedlDelete
       )
