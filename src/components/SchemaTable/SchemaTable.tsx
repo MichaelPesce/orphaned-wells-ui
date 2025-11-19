@@ -79,7 +79,7 @@ const SchemaTable = (props: SchemaTableProps) => {
           <TableLoading/>
         ) : 
           tabValue === 0 ? (
-             <SchemaOverViewSheet data={processors} setTabValue={setTabValue}/>
+             <SchemaOverViewSheet processors={processors} setTabValue={setTabValue}/>
           ) : (
             <SchemaSheet processor={processors?.[tabValue-1]} />
           )

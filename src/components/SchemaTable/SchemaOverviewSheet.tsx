@@ -1,47 +1,35 @@
+import { useState } from "react";
 import {
   Table,
   TableHead,
   TableRow,
   TableCell,
   TableBody,
+  IconButton,
 } from "@mui/material";
+import { deleteProcessorSchema } from "../../services/app.service";
+import { schemaOverviewColumns as columns, callAPI } from "../../util";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PopupModal from "../PopupModal/PopupModal";
 
 interface SchemaSheetProps {
-  data: any;
+  processors: any;
   setTabValue : (v: number) => void;
 }
 
+const styles = {
+  iconButton: {
+    padding: "4px",
+    margin: 0
+  }
+}
 
+const SchemaOverViewSheet = ({ processors, setTabValue }: SchemaSheetProps) => {
+  const [showDeleteProcessorModal, setShowDeleteProcessorModal] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<number>()
 
-const SchemaOverViewSheet = ({ data, setTabValue }: SchemaSheetProps) => {
-
-const columns = [
-  {
-    key: "name",
-    displayName: "Processor Name",
-  },
-  {
-    key: "displayName",
-    displayName: "Display Name",
-  },
-  {
-    key: "processorId",
-    displayName: "Processor ID",
-  },
-  {
-    key: "modelId",
-    displayName: "Model ID",
-  },
-  {
-    key: "documentType",
-    displayName: "Document Type",
-  },
-  {
-    key: "img",
-    displayName: "Image Link",
-  },
-]
-  if (!data || data.length === 0) {
+  if (!processors || processors.length === 0) {
     return (
       <Table>
         <TableBody>
@@ -53,6 +41,39 @@ const columns = [
     );
   }
 
+  const handleClickDeleteIcon = (idx: number) => {
+    setPendingDelete(idx);
+    setShowDeleteProcessorModal(true);
+  }
+
+  const handleDeleteProcessor = () => {
+    setShowDeleteProcessorModal(false);
+    if (pendingDelete !== undefined) {
+      const processor = processors[pendingDelete];
+      const {
+        processorId,
+        modelId
+      } = processor;
+      callAPI(
+        deleteProcessorSchema,
+        [processorId, modelId],
+        successfulDelete,
+        failedlDelete
+      )
+    } else {
+      console.error("processor idx is not found in list")
+    }
+  }
+
+  const successfulDelete = (data: any) => {
+    window.location.reload();
+  }
+
+  const failedlDelete = (data: any) => {
+    console.log("failed to delete processor")
+    console.log(data)
+  }
+
   return (
     <Table stickyHeader sx={{ minWidth: 650 }}>
       <TableHead>
@@ -62,11 +83,12 @@ const columns = [
               {col.displayName}
             </TableCell>
           ))}
+          <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
         </TableRow>
       </TableHead>
 
       <TableBody>
-        {data.map((row: any, idx: number) => (
+        {processors.map((row: any, idx: number) => (
           <TableRow
             onClick={() => {
                 const newTabValue = idx+1;
@@ -97,9 +119,27 @@ const columns = [
                 )
                 
             })}
+            <TableCell onClick={(e) => e.stopPropagation()}>
+              <IconButton sx={styles.iconButton}>
+                <EditIcon/>
+              </IconButton>
+              <IconButton sx={styles.iconButton} onClick={() => handleClickDeleteIcon(idx)}>
+                <DeleteIcon/>
+              </IconButton>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
+      <PopupModal
+          open={showDeleteProcessorModal}
+          handleClose={() => setShowDeleteProcessorModal(false)}
+          text={`Are you sure you would like to remove ${processors[pendingDelete || 0].name}?`}
+          handleSave={handleDeleteProcessor}
+          buttonText='Remove'
+          buttonColor='error'
+          buttonVariant='contained'
+          width={400}
+      />
     </Table>
   );
 };

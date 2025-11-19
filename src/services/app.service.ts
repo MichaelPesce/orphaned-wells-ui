@@ -357,3 +357,11 @@ export const updateSchema = (updated_schema: any) => {
         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
     });
 };
+
+export const deleteProcessorSchema = (processor_id: string, model_id: string) => {
+    return fetch(BACKEND_URL + `/delete_processor/${processor_id}/${model_id}`, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
