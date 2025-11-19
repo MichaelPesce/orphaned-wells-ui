@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState } from 'react';
 import { TextField, IconButton, Grid, Button, Dialog, DialogTitle, DialogContent, DialogContentText } from '@mui/material';
 import { Stack, Box } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -41,7 +41,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
         onClose();
     };
 
-    const hanldeSaveChanges = () => {
+    const handleSaveChanges = () => {
         let body = {
             name: processorName,
             displayName,
@@ -163,7 +163,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                     <Button
                         variant="contained"
                         disabled={disableSaveButton}
-                        onClick={hanldeSaveChanges}
+                        onClick={handleSaveChanges}
                     >
                         Save changes
                     </Button>

@@ -282,7 +282,7 @@ export interface UploadDocumentsModalProps {
     handleUploadDocument: (file: File, runCleaningFunctions: boolean, refresh?: boolean) => void;
 }
 
-export interface UploadSchemaProps {
+export interface UploadProcessorProps {
     setShowModal: (show: boolean) => void;
     handleUploadDocument: (
         file: File,

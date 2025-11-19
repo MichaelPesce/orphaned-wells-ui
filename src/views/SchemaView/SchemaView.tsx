@@ -7,12 +7,12 @@ import { callAPI } from '../../util';
 import { getSchema, uploadProcessorSchema } from '../../services/app.service';
 import SchemaTable from '../../components/SchemaTable/SchemaTable';
 import { SchemaOverview, MongoProcessor } from '../../types';
-import UploadSchemaDialog from '../../components/UploadSchemaDialog/UploadSchemaDialog';
+import UploadProcessorDialog from '../../components/UploadProcessorDialog/UploadProcessorDialog';
 
 const SchemaView = () => {
     const navigate = useNavigate();
     const { userPermissions} = useUserContext();
-    const [showUploadSchema, setShowUploadSchema] = useState(false);
+    const [showUploadProcessor, setShowUploadProcessor] = useState(false);
     const [schemaData, setSchemaData] = useState<SchemaOverview>()
     const [loading, setLoading] = useState(true);
 
@@ -93,16 +93,16 @@ const SchemaView = () => {
             <Subheader
                 currentPage="Schema"
                 buttonName={"Upload Processor"}
-                handleClickButton={() => setShowUploadSchema(true)}
+                handleClickButton={() => setShowUploadProcessor(true)}
             />
             <Box sx={styles.innerBox}>
                 <SchemaTable schema={schemaData} loading={loading}/>
             </Box>
             {
-                showUploadSchema && 
-                <UploadSchemaDialog
+                showUploadProcessor && 
+                <UploadProcessorDialog
                     handleUploadDocument={handleUploadDocument}
-                    setShowModal={setShowUploadSchema}
+                    setShowModal={setShowUploadProcessor}
                 />
             }
             

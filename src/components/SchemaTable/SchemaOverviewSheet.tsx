@@ -121,7 +121,8 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: S
                         onClick={(e) => {
                           if (col.key === "img") {
                             e.stopPropagation();
-                            setPreviewImage(val)
+                            if (val)
+                              setPreviewImage(val);
                           }
                         }}
                         align={col.key === "img" ? "center" : "left"}

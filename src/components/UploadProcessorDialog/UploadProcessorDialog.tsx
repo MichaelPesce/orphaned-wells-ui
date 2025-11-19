@@ -4,9 +4,9 @@ import { Grid, Box, Modal, IconButton, Button, Stack, TextField } from '@mui/mat
 import CloseIcon from '@mui/icons-material/Close';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { FileUploader } from "react-drag-drop-files";
-import { UploadSchemaProps } from '../../types';
+import { UploadProcessorProps } from '../../types';
 
-const UploadSchemaDialog = (props: UploadSchemaProps) => {
+const UploadProcessorDialog = (props: UploadProcessorProps) => {
     const params = useParams<{ id: string }>();
     const { setShowModal, handleUploadDocument } = props;
     const [ showWarning, setShowWarning ] = useState(false);
@@ -276,5 +276,5 @@ const UploadSchemaDialog = (props: UploadSchemaProps) => {
     );
 };
 
-export default UploadSchemaDialog;
+export default UploadProcessorDialog;
 
