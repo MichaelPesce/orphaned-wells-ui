@@ -76,7 +76,7 @@ const SchemaTable = (props: SchemaTableProps) => {
           ))}
         </Tabs>
       </Box>
-      <TableContainer sx={{ maxHeight: 600 }}>
+      <TableContainer sx={{ maxHeight: 600, paddingBottom: 2 }}>
         {loading ? (
           <TableLoading/>
         ) : 
