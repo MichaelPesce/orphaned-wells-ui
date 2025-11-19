@@ -1,3 +1,5 @@
+import { MongoProcessor } from "../types";
+
 let BACKEND_URL = process.env.REACT_APP_BACKEND_URL as string;
 
 export const getProjects = () => {
@@ -349,11 +351,11 @@ export const uploadProcessorSchema = (
     });
 };
 
-export const updateSchema = (updated_schema: any) => {
-    return fetch(BACKEND_URL + '/update_schema', {
+export const updateProcessor = (updated_processor: MongoProcessor) => {
+    return fetch(BACKEND_URL + '/update_processor', {
         method: 'POST',
         mode: 'cors',
-        body: JSON.stringify(updated_schema),
+        body: JSON.stringify(updated_processor),
         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
     });
 };

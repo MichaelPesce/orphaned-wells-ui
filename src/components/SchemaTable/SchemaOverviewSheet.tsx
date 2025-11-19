@@ -15,7 +15,8 @@ import PopupModal from "../PopupModal/PopupModal";
 
 interface SchemaSheetProps {
   processors: any;
-  setTabValue : (v: number) => void;
+  setTabValue: (v: number) => void;
+  setEditingProcessor: (i: number) => void;
 }
 
 const styles = {
@@ -25,7 +26,7 @@ const styles = {
   }
 }
 
-const SchemaOverViewSheet = ({ processors, setTabValue }: SchemaSheetProps) => {
+const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: SchemaSheetProps) => {
   const [showDeleteProcessorModal, setShowDeleteProcessorModal] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number>()
 
@@ -79,11 +80,15 @@ const SchemaOverViewSheet = ({ processors, setTabValue }: SchemaSheetProps) => {
       <TableHead>
         <TableRow sx={{ backgroundColor: "#fbfbfb" }}>
           {columns.map((col) => (
-            <TableCell key={col.key} sx={{ fontWeight: 600 }}>
+            <TableCell
+              key={col.key}
+              sx={{ fontWeight: 600 }}
+              align={col.key === "img" ? "center" : "left"}
+            >
               {col.displayName}
             </TableCell>
           ))}
-          <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+          <TableCell sx={{ fontWeight: 600 }} align="center">Actions</TableCell>
         </TableRow>
       </TableHead>
 
@@ -112,6 +117,12 @@ const SchemaOverViewSheet = ({ processors, setTabValue }: SchemaSheetProps) => {
                 else content = val;
                 return (
                     <TableCell
+                        onClick={(e) => {
+                          if (col.key === "img") {
+                            e.stopPropagation();
+                          }
+                        }}
+                        align={col.key === "img" ? "center" : "left"}
                         key={col.key}
                     >
                         {content}
@@ -119,8 +130,8 @@ const SchemaOverViewSheet = ({ processors, setTabValue }: SchemaSheetProps) => {
                 )
                 
             })}
-            <TableCell onClick={(e) => e.stopPropagation()}>
-              <IconButton sx={styles.iconButton}>
+            <TableCell onClick={(e) => e.stopPropagation()} align="center">
+              <IconButton sx={styles.iconButton} onClick={() => setEditingProcessor(idx)}>
                 <EditIcon/>
               </IconButton>
               <IconButton sx={styles.iconButton} onClick={() => handleClickDeleteIcon(idx)}>

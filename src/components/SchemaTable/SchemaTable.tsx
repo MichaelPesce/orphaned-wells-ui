@@ -1,9 +1,10 @@
-import React from "react";
+import { useState } from "react";
 import { Box, Paper, Tabs, Tab, TableContainer } from "@mui/material";
 import SchemaSheet from "./SchemaSheet";
 import SchemaOverViewSheet from "./SchemaOverviewSheet";
 import { SchemaOverview } from "../../types";
 import TableLoading from "../TableLoading/TableLoading";
+import EditProcessorDialog from "../EditProcessorDialog/EditProcessorDialog";
 
 interface SchemaTableProps {
   loading: boolean;
@@ -35,7 +36,8 @@ const styles = {
 }
 
 const SchemaTable = (props: SchemaTableProps) => {
-  const [tabValue, setTabValue] = React.useState(0);
+  const [tabValue, setTabValue] = useState(0);
+  const [editingProcessor, setEditingProcessor] = useState<number>()
   const {
     schema,
     loading
@@ -79,7 +81,11 @@ const SchemaTable = (props: SchemaTableProps) => {
           <TableLoading/>
         ) : 
           tabValue === 0 ? (
-             <SchemaOverViewSheet processors={processors} setTabValue={setTabValue}/>
+             <SchemaOverViewSheet
+              processors={processors}
+              setTabValue={setTabValue}
+              setEditingProcessor={setEditingProcessor}
+            />
           ) : (
             <SchemaSheet processor={processors?.[tabValue-1]} />
           )
@@ -87,6 +93,14 @@ const SchemaTable = (props: SchemaTableProps) => {
        
         
       </TableContainer>
+      {editingProcessor !== undefined && processors && (
+        <EditProcessorDialog
+          open={editingProcessor !== undefined}
+          onClose={() => setEditingProcessor(undefined)}
+          setErrorMsg={(e) => console.error(e)}
+          processorData={processors[editingProcessor]}
+        />
+      )}
     </Paper>
   );
 };

@@ -7,7 +7,6 @@ import { callAPI } from '../../util';
 import { getSchema, uploadProcessorSchema } from '../../services/app.service';
 import SchemaTable from '../../components/SchemaTable/SchemaTable';
 import { SchemaOverview, MongoProcessor } from '../../types';
-import EditSchemaDialog from '../../components/EditSchemaDialog/EditSchemaDialog';
 import UploadSchemaDialog from '../../components/UploadSchemaDialog/UploadSchemaDialog';
 
 const SchemaView = () => {
