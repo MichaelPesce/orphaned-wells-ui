@@ -354,11 +354,31 @@ export const uploadProcessorSchema = (
     });
 };
 
+export const uploadSampleImage = (
+        data: FormData,
+        name: string,
+    ) => {
+    let endpoint = BACKEND_URL + `/upload_sample_image/${name}`;
+    return fetch(endpoint, {
+        method: 'POST',
+        mode: 'cors',
+        body: data,
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
 export const updateProcessor = (updated_processor: MongoProcessor) => {
     return fetch(BACKEND_URL + '/update_processor', {
         method: 'POST',
         mode: 'cors',
         body: JSON.stringify(updated_processor),
+        headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+    });
+};
+
+export const getSampleImage = (processorName: string) => {
+    return fetch(BACKEND_URL + '/get_image_url/'+processorName, {
+        mode: 'cors',
         headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
     });
 };

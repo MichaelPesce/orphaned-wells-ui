@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableHead,
@@ -13,9 +13,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PopupModal from "../PopupModal/PopupModal";
 import QuickLook from "../QuickLook/QuickLook";
+import { MongoProcessor } from "../../types";
 
 interface SchemaSheetProps {
-  processors: any;
+  processors: MongoProcessor[];
   setTabValue: (v: number) => void;
   setEditingProcessor: (i: number) => void;
 }

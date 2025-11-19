@@ -82,7 +82,7 @@ const SchemaTable = (props: SchemaTableProps) => {
         ) : 
           tabValue === 0 ? (
              <SchemaOverViewSheet
-              processors={processors}
+              processors={processors || []}
               setTabValue={setTabValue}
               setEditingProcessor={setEditingProcessor}
             />

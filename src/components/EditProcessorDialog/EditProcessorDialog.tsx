@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { TextField, IconButton, Grid, Button, Dialog, DialogTitle, DialogContent, DialogContentText } from '@mui/material';
 import { Stack, Box } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { updateProcessor } from '../../services/app.service';
+import { updateProcessor, uploadSampleImage } from '../../services/app.service';
 import { callAPI } from '../../util';
 import { MongoProcessor } from '../../types';
+import ImageField from './ImageField';
 
 interface EditProcessorDialogProps {
     open: boolean;
@@ -31,7 +32,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
             minHeight: dialogHeight,
             minWidth: dialogWidth,
         },
-        projectName: {
+        textfield: {
             marginBottom: 2
         },
     };
@@ -70,6 +71,30 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
         console.log(e)
         setErrorMsg(e)
         onClose()
+    }
+
+    const handleUploadSampleImage = (file: File) => {
+        console.log("uploading")
+        console.log(file)
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+        callAPI(
+            uploadSampleImage,
+            [formData, processorName],
+            successfulUpload,
+            failedUpload,
+        )
+    }
+
+    const successfulUpload = (data: any) => {
+        console.log("success:")
+        console.log(data)
+        setImageLink(data.url)
+    }
+
+    const failedUpload = (data: any) => {
+        console.log("error on upload")
+        console.log(data)
     }
 
     return (
@@ -114,7 +139,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                                 variant="outlined"
                                 value={displayName}
                                 onChange={(event) => setDisplayName(event.target.value)}
-                                sx={styles.projectName}
+                                sx={styles.textfield}
                                 id="processor-name-textbox"
                             />
                             <TextField
@@ -123,7 +148,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                                 variant="outlined"
                                 value={processorId}
                                 onChange={(event) => setProcessorId(event.target.value)}
-                                sx={styles.projectName}
+                                sx={styles.textfield}
                                 id="processor-name-textbox"
                             />
                             <TextField
@@ -132,7 +157,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                                 variant="outlined"
                                 value={modelId}
                                 onChange={(event) => setModelId(event.target.value)}
-                                sx={styles.projectName}
+                                sx={styles.textfield}
                                 id="processor-name-textbox"
                             />
                             <TextField
@@ -141,18 +166,23 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                                 variant="outlined"
                                 value={documentType}
                                 onChange={(event) => setDocumentType(event.target.value)}
-                                sx={styles.projectName}
+                                sx={styles.textfield}
                                 id="processor-name-textbox"
                             />
-                            <TextField
+                            <ImageField
+                                label="Sample Image"
+                                value={imageLink}
+                                onChange={handleUploadSampleImage}
+                            />
+                            {/* <TextField
                                 fullWidth
                                 label="Sample Image"
                                 variant="outlined"
                                 value={imageLink}
                                 onChange={(event) => setImageLink(event.target.value)}
-                                sx={styles.projectName}
+                                sx={styles.textfield}
                                 id="processor-name-textbox"
-                            />
+                            /> */}
                         </Grid>
 
                         
