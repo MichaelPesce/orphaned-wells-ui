@@ -12,6 +12,7 @@ import { schemaOverviewColumns as columns, callAPI } from "../../util";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PopupModal from "../PopupModal/PopupModal";
+import QuickLook from "../QuickLook/QuickLook";
 
 interface SchemaSheetProps {
   processors: any;
@@ -28,7 +29,8 @@ const styles = {
 
 const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: SchemaSheetProps) => {
   const [showDeleteProcessorModal, setShowDeleteProcessorModal] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<number>()
+  const [pendingDelete, setPendingDelete] = useState<number>();
+  const [previewImage, setPreviewImage] = useState<string>();
 
   if (!processors || processors.length === 0) {
     return (
@@ -119,6 +121,7 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: S
                         onClick={(e) => {
                           if (col.key === "img") {
                             e.stopPropagation();
+                            setPreviewImage(val)
                           }
                         }}
                         align={col.key === "img" ? "center" : "left"}
@@ -150,6 +153,14 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: S
           buttonVariant='contained'
           width={400}
       />
+      {
+        previewImage && 
+        <QuickLook
+          open={previewImage !== undefined}
+          onClose={() => setPreviewImage(undefined)}
+          imageUrl={previewImage}
+        />
+      }
     </Table>
   );
 };
