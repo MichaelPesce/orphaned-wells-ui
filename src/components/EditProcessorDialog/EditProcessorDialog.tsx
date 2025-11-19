@@ -14,7 +14,6 @@ interface EditProcessorDialogProps {
 }
 
 const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: EditProcessorDialogProps) => {
-    // const [disableSaveButton, setDisableSaveButton] = useState(false);
     const [processorName, setProcessorName] = useState(processorData.name);
     const [displayName, setDisplayName] = useState(processorData.displayName);
     const [processorId, setProcessorId] = useState(processorData.processorId);
@@ -44,12 +43,23 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
 
     const hanldeSaveChanges = () => {
         let body = {
-            name: processorName
+            name: processorName,
+            displayName,
+            processorId,
+            modelId,
+            documentType,
+            img: imageLink,
         };
+        callAPI(
+            updateProcessor,
+            [body],
+            updatedProcessor,
+            handleError
+        )
     };
 
-    const updatedSchema = (data: any) => {
-        console.log("updated schema successfully")
+    const updatedProcessor = (data: any) => {
+        console.log("updated processor successfully")
         console.log(data)
         onClose()
     };
