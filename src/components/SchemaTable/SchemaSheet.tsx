@@ -6,6 +6,7 @@ import {
   TableBody,
 } from "@mui/material";
 import { MongoProcessor } from "../../types";
+import { schemaProcessorColumns as columns } from "../../util";
 
 interface SchemaSheetProps {
   processor?: MongoProcessor;
@@ -15,32 +16,7 @@ const SchemaSheet = (props: SchemaSheetProps) => {
   const { processor } = props;
   const { attributes } = processor || { attributes: [] };
   // console.log(processor)
-  const columns = [
-    {
-      key: "name",
-      displayName: "Field Name",
-    },
-    {
-      key: "alias",
-      displayName: "Display Name",
-    },
-    {
-      key: "cleaning_function",
-      displayName: "Cleaning function",
-    },
-    {
-      key: "data_type",
-      displayName: "Data Type",
-    },
-    {
-      key: "database_data_type",
-      displayName: "Database DataType",
-    },
-    {
-      key: "page_order_sort",
-      displayName: "Page Order",
-    },
-  ]
+  
 
   return (
     <Table stickyHeader sx={{ minWidth: 650 }}>

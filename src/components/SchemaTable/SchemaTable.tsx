@@ -9,6 +9,7 @@ import EditProcessorDialog from "../EditProcessorDialog/EditProcessorDialog";
 interface SchemaTableProps {
   loading: boolean;
   schema?: SchemaOverview;
+  setErrorMessage: (v: string | null) => void;
 }
 
 const styles = {
@@ -40,7 +41,8 @@ const SchemaTable = (props: SchemaTableProps) => {
   const [editingProcessor, setEditingProcessor] = useState<number>()
   const {
     schema,
-    loading
+    loading,
+    setErrorMessage
   } = props;
   const {
     processors
@@ -85,6 +87,7 @@ const SchemaTable = (props: SchemaTableProps) => {
               processors={processors || []}
               setTabValue={setTabValue}
               setEditingProcessor={setEditingProcessor}
+              setErrorMessage={setErrorMessage}
             />
           ) : (
             <SchemaSheet processor={processors?.[tabValue-1]} />
@@ -97,7 +100,7 @@ const SchemaTable = (props: SchemaTableProps) => {
         <EditProcessorDialog
           open={editingProcessor !== undefined}
           onClose={() => setEditingProcessor(undefined)}
-          setErrorMsg={(e) => console.error(e)}
+          setErrorMsg={(e) => setErrorMessage(e)}
           processorData={processors[editingProcessor]}
         />
       )}

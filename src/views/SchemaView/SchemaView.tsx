@@ -8,6 +8,7 @@ import { getSchema, uploadProcessorSchema } from '../../services/app.service';
 import SchemaTable from '../../components/SchemaTable/SchemaTable';
 import { SchemaOverview, MongoProcessor } from '../../types';
 import UploadProcessorDialog from '../../components/UploadProcessorDialog/UploadProcessorDialog';
+import ErrorBar from '../../components/ErrorBar/ErrorBar';
 
 const SchemaView = () => {
     const navigate = useNavigate();
@@ -15,6 +16,7 @@ const SchemaView = () => {
     const [showUploadProcessor, setShowUploadProcessor] = useState(false);
     const [schemaData, setSchemaData] = useState<SchemaOverview>()
     const [loading, setLoading] = useState(true);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 
     useEffect(() => {
@@ -30,7 +32,6 @@ const SchemaView = () => {
     }, [userPermissions]);
 
     const fetchedSchema = (processors: MongoProcessor[]) => {
-        // console.log(schema)
         setSchemaData({
             processors: processors
         });
@@ -38,8 +39,7 @@ const SchemaView = () => {
     };
 
     const handleError = (e: string) => {
-        console.log("handle error:")
-        console.log(e)
+        setErrorMsg(`Error: ${e}`)
         setLoading(false);
     }
 
@@ -73,8 +73,6 @@ const SchemaView = () => {
     }
 
     const successfulUpload = (data: any) => {
-        console.log("success:")
-        console.log(data)
         callAPI(
             getSchema,
             [],
@@ -84,8 +82,7 @@ const SchemaView = () => {
     }
 
     const failedUpload = (data: any) => {
-        console.log("failure:")
-        console.log(data)
+        setErrorMsg(`Failed to upload: ${data}`)
     }
 
     return (
@@ -96,7 +93,11 @@ const SchemaView = () => {
                 handleClickButton={() => setShowUploadProcessor(true)}
             />
             <Box sx={styles.innerBox}>
-                <SchemaTable schema={schemaData} loading={loading}/>
+                <SchemaTable 
+                    schema={schemaData} 
+                    loading={loading}
+                    setErrorMessage={setErrorMsg}
+                />
             </Box>
             {
                 showUploadProcessor && 
@@ -105,6 +106,10 @@ const SchemaView = () => {
                     setShowModal={setShowUploadProcessor}
                 />
             }
+        <ErrorBar
+            errorMessage={errorMsg}
+            setErrorMessage={setErrorMsg}
+        />
             
         </Box>
     );

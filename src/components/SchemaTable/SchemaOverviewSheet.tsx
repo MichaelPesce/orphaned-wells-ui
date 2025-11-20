@@ -14,11 +14,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PopupModal from "../PopupModal/PopupModal";
 import QuickLook from "../QuickLook/QuickLook";
 import { MongoProcessor } from "../../types";
+import { useKeyDown } from "../../util";
 
 interface SchemaSheetProps {
   processors: MongoProcessor[];
   setTabValue: (v: number) => void;
   setEditingProcessor: (i: number) => void;
+  setErrorMessage: (v: string | null) => void;
 }
 
 const styles = {
@@ -28,10 +30,38 @@ const styles = {
   }
 }
 
-const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: SchemaSheetProps) => {
+const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, setErrorMessage }: SchemaSheetProps) => {
   const [showDeleteProcessorModal, setShowDeleteProcessorModal] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number>();
   const [previewImage, setPreviewImage] = useState<string>();
+
+  const handleCycleThroughPreviewImage = (direction: string = "next") => {
+    if (previewImage) {
+      const lastIndex = processors.length - 1;
+      let newProcessorPreview;
+      let idx = processors.findIndex((element) => element.img === previewImage);
+      if (direction === "next") {
+        if (idx === lastIndex) {
+          newProcessorPreview = processors[0]
+        } else {
+          newProcessorPreview = processors[idx + 1]
+        }
+      }
+      else if (direction === "previous") {
+        if (idx === 0) {
+          newProcessorPreview = processors[lastIndex]
+        } else {
+          newProcessorPreview = processors[idx - 1]
+        }
+      }
+      setPreviewImage(newProcessorPreview?.img);
+    }
+  }
+
+  useKeyDown("ArrowLeft", () => handleCycleThroughPreviewImage("previous"), undefined, undefined, undefined, false);
+  useKeyDown("ArrowUp", () => handleCycleThroughPreviewImage("previous"), undefined, undefined, undefined, false);
+  useKeyDown("ArrowRight", () => handleCycleThroughPreviewImage("next"), undefined, undefined, undefined, false);
+  useKeyDown("ArrowDown", () => handleCycleThroughPreviewImage("next"), undefined, undefined, undefined, false);
 
   if (!processors || processors.length === 0) {
     return (
@@ -64,7 +94,7 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: S
         failedlDelete
       )
     } else {
-      console.error("processor idx is not found in list")
+      setErrorMessage("processor idx is not found in list")
     }
   }
 
@@ -73,8 +103,7 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: S
   }
 
   const failedlDelete = (data: any) => {
-    console.log("failed to delete processor")
-    console.log(data)
+    setErrorMessage(`Unable to delete: ${data}`)
   }
 
   return (
