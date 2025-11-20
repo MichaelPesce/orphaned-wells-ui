@@ -58,6 +58,30 @@ ROLES = [
         "category": "system"
     },
     {
+        "id": "developer",
+        "name": "Developer",
+        "permissions": [
+            "create_project",
+            "create_record_group",
+            "create_team",
+            "upload_document",
+            "add_user",
+            "manage_team",
+            "manage_project",
+            "review_record",
+            "view_project",
+            "verify_record",
+            "manage_system",
+            "clean_record",
+            "manage_schema",
+            "developer",
+        ],
+        "includes": [
+            "team_lead"
+        ],
+        "category": "system"
+    },
+    {
         "id": "team_lead",
         "name": "Team Lead",
         "permissions": [

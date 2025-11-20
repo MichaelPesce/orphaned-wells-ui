@@ -147,6 +147,33 @@ export const schemaOverviewColumns = [
   },
 ]
 
+export const schemaProcessorColumns  = [
+    {
+      key: "name",
+      displayName: "Field Name",
+    },
+    {
+      key: "alias",
+      displayName: "Display Name",
+    },
+    {
+      key: "cleaning_function",
+      displayName: "Cleaning function",
+    },
+    {
+      key: "data_type",
+      displayName: "Data Type",
+    },
+    {
+      key: "database_data_type",
+      displayName: "Database DataType",
+    },
+    {
+      key: "page_order_sort",
+      displayName: "Page Order",
+    },
+  ]
+
 export const deleteCommentFromNotes = (recordNotes: RecordNote[], deleteIdx?: number) => {
   let tempNotes = structuredClone(recordNotes)
   if (deleteIdx === undefined) {

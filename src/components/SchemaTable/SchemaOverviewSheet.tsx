@@ -19,6 +19,7 @@ interface SchemaSheetProps {
   processors: MongoProcessor[];
   setTabValue: (v: number) => void;
   setEditingProcessor: (i: number) => void;
+  setErrorMessage: (v: string | null) => void;
 }
 
 const styles = {
@@ -28,7 +29,7 @@ const styles = {
   }
 }
 
-const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: SchemaSheetProps) => {
+const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, setErrorMessage }: SchemaSheetProps) => {
   const [showDeleteProcessorModal, setShowDeleteProcessorModal] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number>();
   const [previewImage, setPreviewImage] = useState<string>();
@@ -64,7 +65,7 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: S
         failedlDelete
       )
     } else {
-      console.error("processor idx is not found in list")
+      setErrorMessage("processor idx is not found in list")
     }
   }
 
@@ -73,8 +74,7 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor }: S
   }
 
   const failedlDelete = (data: any) => {
-    console.log("failed to delete processor")
-    console.log(data)
+    setErrorMessage(`Unable to delete: ${data}`)
   }
 
   return (
