@@ -353,6 +353,7 @@ export interface ExportTypeSelectionProps {
     exportTypes: { [key: string]: boolean };
     updateExportTypes: (exportType: string) => void;
     disabled?: boolean;
+    location?: string;
 }
 
 export interface ErrorBarProps {
