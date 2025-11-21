@@ -40,12 +40,6 @@ jobs:
         run: |
             echo REACT_APP_ENVIRONMENT=isgs >> .env
 
-      - name: Add airtable variables to .env file
-        run: |
-            echo REACT_APP_AIRTABLE_API_TOKEN=${{ secrets.AIRTABLE_API_TOKEN }} >> .env
-            echo REACT_APP_AIRTABLE_BASE_ID=${{ secrets.AIRTABLE_BASE_ID }} >> .env
-            echo REACT_APP_AIRTABLE_PROCESSORS_VIEW_ID=${{ secrets.AIRTABLE_PROCESSORS_VIEW_ID }} >> .env
-
       - name: Build frontend
         env:
           CI: false
