@@ -23,8 +23,8 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     const [errorMsg, setErrorMsg] = useState<string | null>("")
     const [ exportTypes, setExportTypes ] = useState<{ [key: string]: boolean }>(
         {
-            'csv': true,
-            'json': false,
+            'csv': false,
+            'json': true,
             'image_files': false
         }
     )
@@ -196,6 +196,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
                         exportTypes={exportTypes}
                         updateExportTypes={handleChangeExportTypes}
                         disabled={loadingFileSize || isDownloading}
+                        location={location}
                     />
                     <CheckboxesGroup
                         columns={columns}
@@ -231,7 +232,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
 };
 
 const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
-    const { exportTypes, updateExportTypes, disabled } = props;
+    const { exportTypes, updateExportTypes, disabled, location } = props;
 
     const handleChangeExportTypes = (event: React.ChangeEvent<HTMLInputElement>) => {
         let name = event.target.name
@@ -249,7 +250,7 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
                         <FormControlLabel
                             key={export_type}
                             control={
-                                <Checkbox checked={is_selected} onChange={handleChangeExportTypes} name={export_type} />
+                                <Checkbox disabled={export_type === "csv" && (location === "team" || location === "project")} checked={is_selected} onChange={handleChangeExportTypes} name={export_type} />
                             }
                             label={export_type.replace('_', ' ')}
                         />
