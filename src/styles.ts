@@ -1,4 +1,4 @@
-export const ERROR_TEXT_COLOR = '#B33E3b'
+export const ERROR_TEXT_COLOR = "#B33E3b";
 
 export const styles = {
   headerRow: {
@@ -11,20 +11,20 @@ export const styles = {
     },
   },
   topSection: {
-      marginTop: 2, 
-      marginRight: 2,
-      paddingX: 3,
+    marginTop: 2, 
+    marginRight: 2,
+    paddingX: 3,
   },
   topSectionLeft: {
-      display: "flex",
-      justifyContent: "flex-start",
+    display: "flex",
+    justifyContent: "flex-start",
   },
   topSectionRight: {
-      display: "flex",
-      justifyContent: "flex-end",
+    display: "flex",
+    justifyContent: "flex-end",
   },
   headerCell: {
-      fontWeight: "bold"
+    fontWeight: "bold"
   },
   fieldsTable: {
     width: "100%",
@@ -33,80 +33,80 @@ export const styles = {
     paddingBottom: "10px",
   },
   tableHead: {
-      backgroundColor: "#EDF2FA",
-      fontWeight: "bold",
+    backgroundColor: "#EDF2FA",
+    fontWeight: "bold",
   }, 
   fieldKey: {
-      cursor: "pointer",
+    cursor: "pointer",
   },
   subattributesTable: {
-      backgroundColor: "#FAFAFA",
+    backgroundColor: "#FAFAFA",
   },
   rowIconButton: {
-      padding: 0.5,
-      marginTop: -0.5
+    padding: 0.5,
+    marginTop: -0.5
   },
   rowIcon: {
-      fontSize: "16px"
+    fontSize: "16px"
   },
   flaggedConfidence: {
-      padding: 0,
-      margin: 0,
-      color: "#9E0101",
+    padding: 0,
+    margin: 0,
+    color: "#9E0101",
   },
   unflaggedConfidence: {
-      padding: 0,
-      margin: 0,
+    padding: 0,
+    margin: 0,
   },
   ocrRawText: {
-    color: 'grey',
-    fontSize: '12px',
-    fontStyle: 'italic'
+    color: "grey",
+    fontSize: "12px",
+    fontStyle: "italic"
   },
   errorParagraph: {
     margin: 8,
   },
   errorText: {
     color: ERROR_TEXT_COLOR,
-    fontSize: '14px',
-    fontWeight: 'bold'
+    fontSize: "14px",
+    fontWeight: "bold"
   },
   errorSpan: {
-    backgroundColor: '#FECDD3',
+    backgroundColor: "#FECDD3",
     borderRadius: 4,
-    border: '2px solid '+ERROR_TEXT_COLOR
+    border: "2px solid "+ERROR_TEXT_COLOR
   },
   noErrorParagraph: {
     margin:0
   },
   infoIcon: {
-    fontSize: '12px',
-    padding: '2px',
+    fontSize: "12px",
+    padding: "2px",
   },
   errorInfoIcon: {
-    fontSize: '12px',
-    padding: '2px',
+    fontSize: "12px",
+    padding: "2px",
     color: ERROR_TEXT_COLOR
   },
   errorTextField: {
-    '& .MuiOutlinedInput-root': {
-        // Default border
-        '& fieldset': {
-            border: '0px'
-        },
-        // On hover
-        '&:hover fieldset': {
-            borderWidth: '1.5px',
-            borderColor: 'black'
-        },
-        // On focus
-        '&.Mui-focused fieldset': {
-            borderWidth: '2px',
-            borderColor: 'black'
-        },
+    "& .MuiOutlinedInput-root": {
+      // Default border
+      "& fieldset": {
+        border: "0px"
+      },
+      // On hover
+      "&:hover fieldset": {
+        borderWidth: "1.5px",
+        borderColor: "black"
+      },
+      // On focus
+      "&.Mui-focused fieldset": {
+        borderWidth: "2px",
+        borderColor: "black"
+      },
     },
   },
-}
+};
 
 export const HeaderStyles = {
   iconLeft: {
@@ -144,42 +144,42 @@ export const HeaderStyles = {
     paper: {
       elevation: 0,
       sx: {
-        overflow: 'visible',
-        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+        overflow: "visible",
+        filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
         mt: 1.5,
-        '& .MuiAvatar-root': {
+        "& .MuiAvatar-root": {
           width: 32,
           height: 32,
           ml: -0.5,
           mr: 1,
         },
-        '&::before': {
-          content: '""',
-          display: 'block',
-          position: 'absolute',
+        "&::before": {
+          content: "\"\"",
+          display: "block",
+          position: "absolute",
           top: 0,
           right: 14,
           width: 10,
           height: 10,
-          bgcolor: 'background.paper',
-          transform: 'translateY(-50%) rotate(45deg)',
+          bgcolor: "background.paper",
+          transform: "translateY(-50%) rotate(45deg)",
           zIndex: 0,
         },
       },
     },
   }
-}
+};
 
 export const BottomBarStyles = {
   button: {
     marginX: 1,
   },
   paper: {
-    position: 'fixed',
+    position: "fixed",
     bottom: 0, 
-    left: '0px',
+    left: "0px",
     right: 0,
-    height: '60px',
+    height: "60px",
     zIndex: 2,
   }
 };
@@ -190,64 +190,64 @@ export const SubheaderStyles = {
     color: "black",
   },
   icon: {
-      fontSize: "15px"
+    fontSize: "15px"
   },
   box: {
-      paddingTop: 1,
-      paddingBottom: 1,
-      backgroundColor: "white",
-      width: "100%",
-      boxShadow: 1
+    paddingTop: 1,
+    paddingBottom: 1,
+    backgroundColor: "white",
+    width: "100%",
+    boxShadow: 1
   },
   gridContainer: {
-      margin: 0,
-      padding: 0,
+    margin: 0,
+    padding: 0,
   },
   directoryDisplay: {
-      display: "flex",
-      justifyContent: "flex-start",
-      marginLeft: 40,
-      overflow: "auto",
-      width: "80vw"
+    display: "flex",
+    justifyContent: "flex-start",
+    marginLeft: 40,
+    overflow: "auto",
+    width: "80vw"
   },
   pageName: {
-      display: "flex",
-      justifyContent: "flex-start",
-      marginLeft: 50,
-      fontSize: "25px"
+    display: "flex",
+    justifyContent: "flex-start",
+    marginLeft: 50,
+    fontSize: "25px"
   },
   newProjectColumn: {
-      display: "flex",
-      justifyContent: "flex-end",
-      marginRight: 5,
-      marginTop: 3
+    display: "flex",
+    justifyContent: "flex-end",
+    marginRight: 5,
+    marginTop: 3
   },
   subtext: {
-      marginTop: 2,
-      display: "flex",
-      justifyContent: "flex-start",
-      marginLeft: 50,
-      fontSize: "15px"
+    marginTop: 2,
+    display: "flex",
+    justifyContent: "flex-start",
+    marginLeft: 50,
+    fontSize: "15px"
   }
-}
+};
 
 export const TableFiltersStyles = {
   tableFilter: {
-      paddingBottom: 2,
+    paddingBottom: 2,
   },
   box: {
-      width: '50vw',
-      display: 'flex',
-      justifyContent: 'space-between',
-      paddingTop: 5
+    width: "50vw",
+    display: "flex",
+    justifyContent: "space-between",
+    paddingTop: 5
   },
   closeIcon: {
-      position: 'absolute',
-      right: 0,
-      top: 8,
-      mb: 2,
+    position: "absolute",
+    right: 0,
+    top: 8,
+    mb: 2,
   }
-}
+};
 
 export const LoginPageStyles = {
   outerBox: {
@@ -255,84 +255,84 @@ export const LoginPageStyles = {
     height: "100vh"
   },
   innerBox: {
-      paddingY: 5,
-      paddingX: 5,
+    paddingY: 5,
+    paddingX: 5,
   },
   modalBox: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: 500,
-      maxHeight: 340,
-      backgroundColor: "#FAFAFA",
-      boxShadow: 24,
-      px: 4,
-      pb: 8,
-      pt: 4, 
-      borderRadius: 4,
-      "&:focus": {
-          outline: "none"
-      },
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 500,
+    maxHeight: 340,
+    backgroundColor: "#FAFAFA",
+    boxShadow: 24,
+    px: 4,
+    pb: 8,
+    pt: 4, 
+    borderRadius: 4,
+    "&:focus": {
+      outline: "none"
+    },
   },
   modalLogo: {
     display: "flex",
     justifyContent: "center",
   },
   modalTitle: {
-      display: "flex",
-      justifyContent: "center",
-      fontWeight: "bold"
+    display: "flex",
+    justifyContent: "center",
+    fontWeight: "bold"
   },
   modalBody: {
-      display: "flex",
-      justifyContent: "center",
-      mt: 4
+    display: "flex",
+    justifyContent: "center",
+    mt: 4
   },
   unauthorized: {
-      pt: 5,
-      color: "red"
+    pt: 5,
+    color: "red"
   }
-}
+};
 
 export const DocumentContainerStyles = {
   imageBox: {
-      height: "70vh",
-      overflowX: "scroll",
+    height: "70vh",
+    overflowX: "scroll",
   },
   image: {
-      height: "50vh"
+    height: "50vh"
   },
   gridContainer: {
-      backgroundColor: "white",
+    backgroundColor: "white",
   },
   containerActions: {
     left: {
-      display: 'flex',
-      justifyContent: 'flex-start',
-      marginleft: '20px',
+      display: "flex",
+      justifyContent: "flex-start",
+      marginleft: "20px",
     },
     right: {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      marginRight: '10px',
+      display: "flex",
+      justifyContent: "flex-end",
+      marginRight: "10px",
     },
     both: {
-      display: 'flex',
-      justifyContent: 'space-between',
+      display: "flex",
+      justifyContent: "space-between",
       paddingX: 4,
     }
       
   },
   outerBox: {
-      paddingBottom: "65px"
+    paddingBottom: "65px"
   },
   errorAlert: {
-    backgroundColor: '#FFECED',
-    marginBottom: '16px'
+    backgroundColor: "#FFECED",
+    marginBottom: "16px"
   },
   zoomToggleActive: {
-    color: 'black',
-    backgroundColor: '#EBEBEB'
+    color: "black",
+    backgroundColor: "#EBEBEB"
   }
-}
+};

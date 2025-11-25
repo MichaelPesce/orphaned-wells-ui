@@ -1,33 +1,33 @@
-import React, { useEffect, Fragment, useState } from 'react';
+import React, { useEffect, Fragment, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter, TablePagination } from '@mui/material';
-import { Button, Box, Paper, IconButton, Grid, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import IosShareIcon from '@mui/icons-material/IosShare';
-import ErrorIcon from '@mui/icons-material/Error';
-import CachedIcon from '@mui/icons-material/Cached';
-import WarningIcon from '@mui/icons-material/Warning';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import StickyNote2Icon from '@mui/icons-material/StickyNote2';
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
-import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import LastPageIcon from '@mui/icons-material/LastPage';
-import PublishedWithChangesOutlinedIcon from '@mui/icons-material/PublishedWithChangesOutlined';
-import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES } from '../../util';
-import { styles } from '../../styles';
-import RecordNotesDialog from '../RecordNotesDialog/RecordNotesDialog';
-import TableFilters from '../TableFilters/TableFilters';
-import { RecordData, RecordsTableProps, RecordNote } from '../../types';
-import { getRecords } from '../../services/app.service';
-import ColumnSelectDialog from '../ColumnSelectDialog/ColumnSelectDialog';
-import EmptyTable from '../EmptyTable/EmptyTable';
-import TableLoading from '../TableLoading/TableLoading';
-import PopupModal from '../PopupModal/PopupModal';
-import { useDownload } from '../../context/DownloadContext';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter, TablePagination } from "@mui/material";
+import { Button, Box, Paper, IconButton, Grid, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import IosShareIcon from "@mui/icons-material/IosShare";
+import ErrorIcon from "@mui/icons-material/Error";
+import CachedIcon from "@mui/icons-material/Cached";
+import WarningIcon from "@mui/icons-material/Warning";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import StickyNote2Icon from "@mui/icons-material/StickyNote2";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import PublishedWithChangesOutlinedIcon from "@mui/icons-material/PublishedWithChangesOutlined";
+import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES } from "../../util";
+import { styles } from "../../styles";
+import RecordNotesDialog from "../RecordNotesDialog/RecordNotesDialog";
+import TableFilters from "../TableFilters/TableFilters";
+import { RecordData, RecordsTableProps, RecordNote } from "../../types";
+import { getRecords } from "../../services/app.service";
+import ColumnSelectDialog from "../ColumnSelectDialog/ColumnSelectDialog";
+import EmptyTable from "../EmptyTable/EmptyTable";
+import TableLoading from "../TableLoading/TableLoading";
+import PopupModal from "../PopupModal/PopupModal";
+import { useDownload } from "../../context/DownloadContext";
 
 const SORTABLE_COLUMNS = {
   dateCreated: "toplevel",
@@ -58,9 +58,9 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [pageSize, setPageSize] = useState(100);
   const [showDownloadMessage, setShowDownloadMessage] = useState(false);
   const [filterBy, _setFilterBy] = useState<any[]>(
-    JSON.parse(localStorage.getItem("appliedFilters") || '{}')[params.id || ""] || []
+    JSON.parse(localStorage.getItem("appliedFilters") || "{}")[params.id || ""] || []
   );
-  const [sorted, _setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || '{}')[params.id || ""] || ['dateCreated', 1]
+  const [sorted, _setSorted] = useState(JSON.parse(localStorage.getItem("sorted") || "{}")[params.id || ""] || ["dateCreated", 1]
   );
   const { isDownloading, estimatedTotalBytes, progress } = useDownload();
 
@@ -72,22 +72,22 @@ const RecordsTable = (props: RecordsTableProps) => {
     } else {
       setShowDownloadMessage(false);
     }
-  }, [isDownloading])
+  }, [isDownloading]);
 
   const setFilterBy = (newFilterBy: any) => {
     _setFilterBy(newFilterBy);
     setCurrentPage(0);
-  }
+  };
 
   const setSorted = (newSorted: any) => {
     _setSorted(newSorted);
     setCurrentPage(0);
-  }
+  };
 
   const table_columns = 
     process.env.REACT_APP_COLLABORATOR === "isgs" ? ISGS_TABLE_ATTRIBUTES[location] : 
-    process.env.REACT_APP_COLLABORATOR === "osage" ? OSAGE_TABLE_ATTRIBUTES[location] :
-    TABLE_ATTRIBUTES[location];
+      process.env.REACT_APP_COLLABORATOR === "osage" ? OSAGE_TABLE_ATTRIBUTES[location] :
+        TABLE_ATTRIBUTES[location];
 
   useEffect(() => {
     setRecords([]);
@@ -103,27 +103,27 @@ const RecordsTable = (props: RecordsTableProps) => {
     };
     const args = [location, body, currentPage, pageSize];
     callAPI(
-        getRecords,
-        args,
-        handleSuccess,
-        handleAPIError,
+      getRecords,
+      args,
+      handleSuccess,
+      handleAPIError,
     );
   };
 
   const handleSuccess = (data: { records: any[], record_count: number }) => {
-    setLoading(false)
+    setLoading(false);
     setRecords(data.records);
     setRecordCount(data.record_count);
   };
 
   const handleAPIError = (e: Error) => {
-    setLoading(false)
-    console.error('error getting record group data: ', e);
-  }
+    setLoading(false);
+    console.error("error getting record group data: ", e);
+  };
 
   const handleClickRecord = (record_id: string) => {
     navigate("/record/" + record_id, { state: {group_id: params.id, location: location}});
-  }
+  };
 
   const handleApplyFilters = (appliedFilters: any) => {
     setFilterBy(appliedFilters);
@@ -133,7 +133,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     else newAppliedFilters = JSON.parse(currentAppliedFilters);
     newAppliedFilters[params.id || ""] = appliedFilters;
     localStorage.setItem("appliedFilters", JSON.stringify(newAppliedFilters));
-  }
+  };
 
   const calculateAverageConfidence = (attributes: Array<{ confidence?: number }>) => {
     let confidences: number[] = [];
@@ -145,7 +145,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     } catch (e) {
       return null;
     }
-  }
+  };
 
   const calculateLowestConfidence = (attributes: Array<{ confidence?: number }>) => {
     let lowestConfidence = 1;
@@ -155,14 +155,14 @@ const RecordsTable = (props: RecordsTableProps) => {
       }
     }
     return formatConfidence(lowestConfidence);
-  }
+  };
 
   const handleClickNotes = (event: React.MouseEvent<HTMLButtonElement>, row: RecordData) => {
     event.stopPropagation();
     setShowNotes(true);
     setNotesRecordId(row._id);
     // setNotes(row.record_notes);
-  }
+  };
 
   const handleCloseNotesModal = (record_id?: string, newNotes?: RecordNote[]) => {
     setShowNotes(false);
@@ -178,24 +178,24 @@ const RecordsTable = (props: RecordsTableProps) => {
         setRecords(tempRecords);
       }
     }
-  }
+  };
 
   const handleChangePage = (newPage: any) => {
     setCurrentPage(newPage);
-  }
+  };
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     let newSize = parseInt(event.target.value);
     setPageSize(newSize);
-  }
+  };
 
   const handleSort = (key: SortableColumnKey) => {
     if (Object.keys(SORTABLE_COLUMNS).includes(key)) {
       let new_sort_key = `${key}`;
       const sort_by_key = sorted[0];
       const sort_direction = sorted[1];
-      const new_sorted = []
-      if (SORTABLE_COLUMNS[key] === "attribute") new_sort_key = `attributesList.${key}`
+      const new_sorted = [];
+      if (SORTABLE_COLUMNS[key] === "attribute") new_sort_key = `attributesList.${key}`;
       if (sort_by_key === new_sort_key) { // change direction, keep key the same
         new_sorted.push(sort_by_key);
         new_sorted.push((sort_direction || 1) * -1);
@@ -212,105 +212,105 @@ const RecordsTable = (props: RecordsTableProps) => {
       new_saved_sort[params.id || ""] = new_sorted;
       localStorage.setItem("sorted", JSON.stringify(new_saved_sort));
     }
-  }
+  };
 
   const getParagraphStyle = (key: string) => {
     let paragraphStyle: React.CSSProperties = { margin: 0 };
-    if (Object.keys(SORTABLE_COLUMNS).includes(key)) paragraphStyle['cursor'] = 'pointer';
+    if (Object.keys(SORTABLE_COLUMNS).includes(key)) paragraphStyle["cursor"] = "pointer";
     return paragraphStyle;
-  }
+  };
 
   const getRecordGroupName = (rg_id: string) => {
-    const tempRecordGroups = recordGroups || []
+    const tempRecordGroups = recordGroups || [];
     const rg = tempRecordGroups.find((element) => element._id === rg_id);
-    if (rg) return rg.name
-    else return ""
-  }
+    if (rg) return rg.name;
+    else return "";
+  };
 
   const getDocumentType = (rg_id: string) => {
-    const tempRecordGroups = recordGroups || []
+    const tempRecordGroups = recordGroups || [];
     const rg = tempRecordGroups.find((element) => element._id === rg_id);
-    if (rg) return rg.documentType
-    else return ""
-  }
+    if (rg) return rg.documentType;
+    else return "";
+  };
 
   const tableCell = (row: any, key: string) => {
     // determine colors of status icons. this is getting more and more complicated...
-    let digitizationStatusIconColor = row.has_errors ? '#B71D1C' : 'green'
-    let reviewStatusIconColor = row.has_errors ? '#B71D1C' : 'green'
-    if (row.status === 'processing') digitizationStatusIconColor = '#EF6C0B'
-    if (row.verification_status === 'required' || row.review_status === 'incomplete') reviewStatusIconColor = '#E3B62E'
-    else if (row.review_status === "defective") reviewStatusIconColor = '#9F0100'
-    else if (row.review_status === 'unreviewed') reviewStatusIconColor = 'grey'
+    let digitizationStatusIconColor = row.has_errors ? "#B71D1C" : "green";
+    let reviewStatusIconColor = row.has_errors ? "#B71D1C" : "green";
+    if (row.status === "processing") digitizationStatusIconColor = "#EF6C0B";
+    if (row.verification_status === "required" || row.review_status === "incomplete") reviewStatusIconColor = "#E3B62E";
+    else if (row.review_status === "defective") reviewStatusIconColor = "#9F0100";
+    else if (row.review_status === "unreviewed") reviewStatusIconColor = "grey";
     
-    if (key === "name") return <TableCell key={key}>{row.name}</TableCell>
-    else if (key === "dateCreated") return <TableCell key={key} align="right">{formatDate(row.dateCreated)}</TableCell>
-    else if (key === "api_number") return <TableCell key={key} align="right">{row.api_number}</TableCell>
-    else if (key === "confidence_median") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateAverageConfidence(row.attributesList)}</TableCell>
-    else if (key === "confidence_lowest") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateLowestConfidence(row.attributesList)}</TableCell>
+    if (key === "name") return <TableCell key={key}>{row.name}</TableCell>;
+    else if (key === "dateCreated") return <TableCell key={key} align="right">{formatDate(row.dateCreated)}</TableCell>;
+    else if (key === "api_number") return <TableCell key={key} align="right">{row.api_number}</TableCell>;
+    else if (key === "confidence_median") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateAverageConfidence(row.attributesList)}</TableCell>;
+    else if (key === "confidence_lowest") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateLowestConfidence(row.attributesList)}</TableCell>;
     else if (key === "notes") return (
       <TableCell key={key} align="right">
-          <IconButton sx={(!row.record_notes || row.record_notes?.length === 0) ? {} : { color: "#F2DB6F" }} onClick={(e) => handleClickNotes(e, row)}>
+        <IconButton sx={(!row.record_notes || row.record_notes?.length === 0) ? {} : { color: "#F2DB6F" }} onClick={(e) => handleClickNotes(e, row)}>
           <StickyNote2Icon />
         </IconButton>
       </TableCell>
-    )
+    );
     else if (key === "status") return (
-        <TableCell key={key} align="right">
-          <Typography variant='inherit' noWrap>
-            <IconButton sx={{ color: digitizationStatusIconColor }}>
+      <TableCell key={key} align="right">
+        <Typography variant='inherit' noWrap>
+          <IconButton sx={{ color: digitizationStatusIconColor }}>
             {
               row.status === "processing" ? 
                 <CachedIcon /> :
-              row.status === "digitized" ? 
-                <CheckCircleOutlineIcon /> :
-              row.status === "redigitized" ?
-                <PublishedWithChangesOutlinedIcon /> :
-              row.status === "error" ?
-                <ErrorIcon color="error" /> :
-              null
+                row.status === "digitized" ? 
+                  <CheckCircleOutlineIcon /> :
+                  row.status === "redigitized" ?
+                    <PublishedWithChangesOutlinedIcon /> :
+                    row.status === "error" ?
+                      <ErrorIcon color="error" /> :
+                      null
             }
-            </IconButton>
+          </IconButton>
           
           {
             row.has_errors ? `${row.status} with errors`:
-            row.status
+              row.status
           }
-          </Typography>
-        </TableCell>
-    )
+        </Typography>
+      </TableCell>
+    );
 
     else if (key === "review_status") return (
-        <TableCell key={key} align="right">
-          <Typography variant='inherit' noWrap>
+      <TableCell key={key} align="right">
+        <Typography variant='inherit' noWrap>
           <IconButton sx={{ color: reviewStatusIconColor }}>
             {
-              row.verification_status === 'required' ? 
+              row.verification_status === "required" ? 
                 <ErrorIcon  /> 
-              :
-              row.review_status === "unreviewed" ? 
-                <ErrorIcon /> 
-              :
-              row.review_status === "incomplete" ? 
-                <ErrorIcon /> 
-              :
-              row.review_status === "defective" ? 
-                <WarningIcon /> 
-              :
-              row.review_status === "reviewed" ?
-                <CheckCircleIcon /> 
-              :
-              null
+                :
+                row.review_status === "unreviewed" ? 
+                  <ErrorIcon /> 
+                  :
+                  row.review_status === "incomplete" ? 
+                    <ErrorIcon /> 
+                    :
+                    row.review_status === "defective" ? 
+                      <WarningIcon /> 
+                      :
+                      row.review_status === "reviewed" ?
+                        <CheckCircleIcon /> 
+                        :
+                        null
             }
           </IconButton>
           {
-            row.verification_status === 'required' ? 'Awaiting Verification' :
-            row.verification_status === 'verified' ? `${row.review_status}-${row.verification_status}` :
-            row.review_status
+            row.verification_status === "required" ? "Awaiting Verification" :
+              row.verification_status === "verified" ? `${row.review_status}-${row.verification_status}` :
+                row.review_status
           }
-          </Typography>
-        </TableCell>
-    )
+        </Typography>
+      </TableCell>
+    );
     else if (key === "record_group") return (
       <TableCell key={key} align='right'>
         <Typography variant='inherit' noWrap>
@@ -318,10 +318,10 @@ const RecordsTable = (props: RecordsTableProps) => {
         </Typography>
         
       </TableCell>
-    )
-    else if (key === "documentType") return <TableCell key={key} align='right'>{getDocumentType(row.record_group_id)}</TableCell>
-    else return <TableCell key={key} align='right'>{row[key]}</TableCell>
-  }
+    );
+    else if (key === "documentType") return <TableCell key={key} align='right'>{getDocumentType(row.record_group_id)}</TableCell>;
+    else return <TableCell key={key} align='right'>{row[key]}</TableCell>;
+  };
 
   const tableRow = (row: RecordData, idx: number) => {
     return (
@@ -338,7 +338,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         ))}
       </TableRow>
     );
-  }
+  };
 
   return (
     <React.Fragment>
@@ -369,7 +369,7 @@ const RecordsTable = (props: RecordsTableProps) => {
                           {
                             sorted[1] === 1 ? 
                               <KeyboardArrowUpIcon /> :
-                            sorted[1] === -1 &&
+                              sorted[1] === -1 &&
                               <KeyboardArrowDownIcon />
                           }
                         </IconButton>
@@ -400,7 +400,7 @@ const RecordsTable = (props: RecordsTableProps) => {
                   slotProps={{
                     select: {
                       inputProps: {
-                        'aria-label': 'rows per page',
+                        "aria-label": "rows per page",
                       },
                       native: true,
                     },
@@ -414,9 +414,9 @@ const RecordsTable = (props: RecordsTableProps) => {
           }
         </Table>
         <RecordNotesDialog
-            record_id={notesRecordId}
-            open={showNotes}
-            onClose={handleCloseNotesModal}
+          record_id={notesRecordId}
+          open={showNotes}
+          onClose={handleCloseNotesModal}
         />
         {
           openColumnSelect && !isDownloading && (
@@ -429,8 +429,8 @@ const RecordsTable = (props: RecordsTableProps) => {
               appliedFilters={filterBy}
               sortBy={sorted[0]}
               sortAscending={sorted[1]}
-          /> 
-        )}
+            /> 
+          )}
         {
           <PopupModal
             open={showDownloadMessage}
@@ -448,12 +448,12 @@ const RecordsTable = (props: RecordsTableProps) => {
       </TableContainer>
       {
         loading ? <TableLoading/> :
-        !records?.length ? <EmptyTable/> :
-        null
+          !records?.length ? <EmptyTable/> :
+            null
       }
     </React.Fragment>
   );
-}
+};
 
 const TablePaginationActions = (props: any) => {
   const theme = useTheme();
@@ -482,31 +482,31 @@ const TablePaginationActions = (props: any) => {
         disabled={page === 0}
         aria-label="first page"
       >
-        {theme.direction === 'rtl' ? <LastPageIcon /> : <FirstPageIcon />}
+        {theme.direction === "rtl" ? <LastPageIcon /> : <FirstPageIcon />}
       </IconButton>
       <IconButton
         onClick={handleBackButtonClick}
         disabled={page === 0}
         aria-label="previous page"
       >
-        {theme.direction === 'rtl' ? <KeyboardArrowRight /> : <KeyboardArrowLeft />}
+        {theme.direction === "rtl" ? <KeyboardArrowRight /> : <KeyboardArrowLeft />}
       </IconButton>
       <IconButton
         onClick={handleNextButtonClick}
         disabled={page >= Math.ceil(count / rowsPerPage) - 1}
         aria-label="next page"
       >
-        {theme.direction === 'rtl' ? <KeyboardArrowLeft /> : <KeyboardArrowRight />}
+        {theme.direction === "rtl" ? <KeyboardArrowLeft /> : <KeyboardArrowRight />}
       </IconButton>
       <IconButton
         onClick={handleLastPageButtonClick}
         disabled={page >= Math.ceil(count / rowsPerPage) - 1}
         aria-label="last page"
       >
-        {theme.direction === 'rtl' ? <FirstPageIcon /> : <LastPageIcon />}
+        {theme.direction === "rtl" ? <FirstPageIcon /> : <LastPageIcon />}
       </IconButton>
     </Box>
   );
-}
+};
 
 export default RecordsTable;

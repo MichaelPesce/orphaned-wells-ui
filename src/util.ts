@@ -1,55 +1,55 @@
-import { refreshAuth, revokeToken } from "./services/app.service"
-import { useEffect, useRef } from 'react';
+import { refreshAuth, revokeToken } from "./services/app.service";
+import { useEffect, useRef } from "react";
 import { FilterOption, TableColumns, RecordNote, SchemaField } from "./types";
 
 export const DEFAULT_FILTER_OPTIONS: {
   [key: string]: FilterOption;
 } = {
   review_status: {
-      key: 'review_status',
-      displayName: "Review Status",
-      type: "checkbox",
-      operator: 'equals',
-      options: [
-          { name: "reviewed", checked: true, value: "reviewed" },
-          { name: "unreviewed", checked: true, value: "unreviewed" },
-          { name: "incomplete", checked: true, value: "incomplete" },
-          { name: "defective", checked: true, value: "defective" },
-      ],
-      selectedOptions: ["reviewed", "unreviewed", "incomplete", "defective"]
+    key: "review_status",
+    displayName: "Review Status",
+    type: "checkbox",
+    operator: "equals",
+    options: [
+      { name: "reviewed", checked: true, value: "reviewed" },
+      { name: "unreviewed", checked: true, value: "unreviewed" },
+      { name: "incomplete", checked: true, value: "incomplete" },
+      { name: "defective", checked: true, value: "defective" },
+    ],
+    selectedOptions: ["reviewed", "unreviewed", "incomplete", "defective"]
   },
   verification_status: {
-    key: 'verification_status',
+    key: "verification_status",
     displayName: "Verification Status",
     type: "checkbox",
-    operator: 'equals',
+    operator: "equals",
     options: [
-        { name: "unverified", checked: true, value: null },
-        { name: "awaiting verification", checked: true, value: "required" },
-        { name: "verified", checked: true, value: "verified" },
+      { name: "unverified", checked: true, value: null },
+      { name: "awaiting verification", checked: true, value: "required" },
+      { name: "verified", checked: true, value: "verified" },
     ],
     selectedOptions: ["unverified", "awaiting verification", "verified"]
   },
   status: {
-    key: 'status',
+    key: "status",
     displayName: "Digitization Status",
     type: "checkbox",
-    operator: 'equals',
+    operator: "equals",
     options: [
-        { name: "digitized", checked: true, value: "digitized" },
-        { name: "processing", checked: true, value: "processing" },
-        { name: "error", checked: true, value: "error" },
+      { name: "digitized", checked: true, value: "digitized" },
+      { name: "processing", checked: true, value: "processing" },
+      { name: "error", checked: true, value: "error" },
     ],
     selectedOptions: ["digitized", "processing", "error"]
   },
   error_status: {
-    key: 'error_status',
+    key: "error_status",
     displayName: "Error Status",
     type: "checkbox",
-    operator: 'equals',
+    operator: "equals",
     options: [
-        { name: "has cleaning errors", checked: true, value: 'true' },
-        { name: "no cleaning errors", checked: true, value: 'false' },
+      { name: "has cleaning errors", checked: true, value: "true" },
+      { name: "no cleaning errors", checked: true, value: "false" },
     ],
     selectedOptions: ["has cleaning errors", "no cleaning errors"]
   },
@@ -57,24 +57,24 @@ export const DEFAULT_FILTER_OPTIONS: {
     key: "name",
     displayName: "Record Name",
     type: "string",
-    operator: 'equals',
-    value: ''
+    operator: "equals",
+    value: ""
   },
   dateCreated: {
     key: "dateCreated",
     displayName: "Date Uploaded",
     type: "date",
-    operator: 'is',
-    value: ''
+    operator: "is",
+    value: ""
   }
-}
+};
 
 export const TABLE_ATTRIBUTES: {
   [key: string]: TableColumns;
 } = {
   record_group: {
-      displayNames: ["Record Name", "Date Uploaded", "API Number", "Mean Confidence", "Lowest Confidence", "Notes", "Digitization Status", "Review Status"],
-      keyNames: ["name", "dateCreated", "api_number", "confidence_median", "confidence_lowest", "notes", "status", "review_status"],
+    displayNames: ["Record Name", "Date Uploaded", "API Number", "Mean Confidence", "Lowest Confidence", "Notes", "Digitization Status", "Review Status"],
+    keyNames: ["name", "dateCreated", "api_number", "confidence_median", "confidence_lowest", "notes", "status", "review_status"],
   },
   project: {
     displayNames: ["Record Name", "Record Group", "Date Uploaded", "API Number", "Notes", "Digitization Status", "Review Status"],
@@ -84,14 +84,14 @@ export const TABLE_ATTRIBUTES: {
     displayNames: ["Record Name", "Date Uploaded", "API Number", "Notes", "Digitization Status", "Review Status"],
     keyNames: ["name", "dateCreated", "api_number", "notes", "status", "review_status"],
   }
-}
+};
 
 export const ISGS_TABLE_ATTRIBUTES: {
   [key: string]: TableColumns;
 } = {
   record_group: {
-      displayNames: ["Record Name", "Date Uploaded", "API Number", "Mean Confidence", "Lowest Confidence", "Notes", "Digitization Status", "Review Status"],
-      keyNames: ["name", "dateCreated", "api_number", "confidence_median", "confidence_lowest", "notes", "status", "review_status"],
+    displayNames: ["Record Name", "Date Uploaded", "API Number", "Mean Confidence", "Lowest Confidence", "Notes", "Digitization Status", "Review Status"],
+    keyNames: ["name", "dateCreated", "api_number", "confidence_median", "confidence_lowest", "notes", "status", "review_status"],
   },
   project: {
     displayNames: ["Record Name", "Record Group", "Date Uploaded", "API Number", "Notes", "Digitization Status", "Review Status"],
@@ -101,14 +101,14 @@ export const ISGS_TABLE_ATTRIBUTES: {
     displayNames: ["Record Name", "Date Uploaded", "API Number", "Notes", "Digitization Status", "Review Status"],
     keyNames: ["name", "dateCreated", "api_number", "notes", "status", "review_status"],
   }
-}
+};
 
 export const OSAGE_TABLE_ATTRIBUTES: {
   [key: string]: TableColumns;
 } = {
   record_group: {
-      displayNames: ["Record Name", "Date Uploaded", "Section", "Township", "Mean Confidence", "Lowest Confidence", "Notes", "Digitization Status", "Review Status"],
-      keyNames: ["name", "dateCreated", "Sec", "T", "confidence_median", "confidence_lowest", "notes", "status", "review_status"],
+    displayNames: ["Record Name", "Date Uploaded", "Section", "Township", "Mean Confidence", "Lowest Confidence", "Notes", "Digitization Status", "Review Status"],
+    keyNames: ["name", "dateCreated", "Sec", "T", "confidence_median", "confidence_lowest", "notes", "status", "review_status"],
   },
   project: {
     displayNames: ["Record Name", "Record Group", "Date Uploaded", "Section", "Township", "Notes", "Digitization Status", "Review Status"],
@@ -118,7 +118,7 @@ export const OSAGE_TABLE_ATTRIBUTES: {
     displayNames: ["Record Name", "Date Uploaded", "Section", "Township", "Notes", "Digitization Status", "Review Status"],
     keyNames: ["name", "dateCreated", "Sec", "T", "notes", "status", "review_status"],
   }
-}
+};
 
 export const schemaOverviewColumns = [
   {
@@ -145,50 +145,50 @@ export const schemaOverviewColumns = [
     key: "img",
     displayName: "Sample Image",
   },
-]
+];
 
 export const schemaProcessorColumns  = [
-    {
-      key: "name",
-      displayName: "Field Name",
-    },
-    {
-      key: "alias",
-      displayName: "Display Name",
-    },
-    {
-      key: "cleaning_function",
-      displayName: "Cleaning function",
-    },
-    {
-      key: "data_type",
-      displayName: "Data Type",
-    },
-    {
-      key: "database_data_type",
-      displayName: "Database DataType",
-    },
-    {
-      key: "page_order_sort",
-      displayName: "Page Order",
-    },
-  ]
+  {
+    key: "name",
+    displayName: "Field Name",
+  },
+  {
+    key: "alias",
+    displayName: "Display Name",
+  },
+  {
+    key: "cleaning_function",
+    displayName: "Cleaning function",
+  },
+  {
+    key: "data_type",
+    displayName: "Data Type",
+  },
+  {
+    key: "database_data_type",
+    displayName: "Database DataType",
+  },
+  {
+    key: "page_order_sort",
+    displayName: "Page Order",
+  },
+];
 
 export const deleteCommentFromNotes = (recordNotes: RecordNote[], deleteIdx?: number) => {
-  let tempNotes = structuredClone(recordNotes)
+  let tempNotes = structuredClone(recordNotes);
   if (deleteIdx === undefined) {
-    console.log('could not delete note')
-    return tempNotes
+    console.log("could not delete note");
+    return tempNotes;
   }
   
-  let isReply, repliesTo
-  let currentNote = tempNotes[deleteIdx]
-  isReply = currentNote.isReply || false
-  repliesTo = currentNote.repliesTo
-  let replies = currentNote.replies || []
+  let isReply, repliesTo;
+  let currentNote = tempNotes[deleteIdx];
+  isReply = currentNote.isReply || false;
+  repliesTo = currentNote.repliesTo;
+  let replies = currentNote.replies || [];
   replies.sort(function(a,b){ return b - a; });
   for (let reply of replies) {
-      tempNotes.splice(reply, 1);
+    tempNotes.splice(reply, 1);
   }
   tempNotes.splice(deleteIdx, 1);
 
@@ -196,13 +196,13 @@ export const deleteCommentFromNotes = (recordNotes: RecordNote[], deleteIdx?: nu
   /*
     if this note was a reply, remove it from the replies of the parent note
   */
- if (isReply && repliesTo !== undefined) {
-  const replyIdx = tempNotes[repliesTo].replies?.indexOf(deleteIdx);
-  if (replyIdx !== undefined && replyIdx > -1) {
-    tempNotes[repliesTo].replies?.splice(replyIdx, 1);
-  }
+  if (isReply && repliesTo !== undefined) {
+    const replyIdx = tempNotes[repliesTo].replies?.indexOf(deleteIdx);
+    if (replyIdx !== undefined && replyIdx > -1) {
+      tempNotes[repliesTo].replies?.splice(replyIdx, 1);
+    }
   
- }
+  }
 
   /*
     compare indexes from before and after
@@ -210,60 +210,60 @@ export const deleteCommentFromNotes = (recordNotes: RecordNote[], deleteIdx?: nu
   */
   let idxesAfter: {
     [key: number]: number;
-  } = {}
-  let nextIdx = 0
+  } = {};
+  let nextIdx = 0;
 
   for (let note of tempNotes) {
-    idxesAfter[note.timestamp] = nextIdx
-    nextIdx += 1
+    idxesAfter[note.timestamp] = nextIdx;
+    nextIdx += 1;
   }
 
   let newIndexes: {
     [key: number]: number;
-  } = {}
+  } = {};
 
-  nextIdx = 0
+  nextIdx = 0;
   for (let note of recordNotes) {
-    newIndexes[nextIdx] = idxesAfter[note.timestamp]
-    nextIdx += 1
+    newIndexes[nextIdx] = idxesAfter[note.timestamp];
+    nextIdx += 1;
   }
 
   /*
     update reply indexes
   */
   for (let note of tempNotes) {
-    let replies = note.replies
+    let replies = note.replies;
     if (replies) {
-      let newReplies = []
+      let newReplies = [];
       for (let reply of replies) {
-        if (newIndexes[reply] !== undefined) newReplies.push(newIndexes[reply])
+        if (newIndexes[reply] !== undefined) newReplies.push(newIndexes[reply]);
       }
-      note.replies = newReplies
+      note.replies = newReplies;
     }
 
     if (note.isReply && note.repliesTo !== undefined) {
       if (newIndexes[note.repliesTo] === undefined) {
-        console.log('newIndexes[note.repliesTo] === undefined, this should never happen')
-        console.log(note)
+        console.log("newIndexes[note.repliesTo] === undefined, this should never happen");
+        console.log(note);
       }
-      note.repliesTo = newIndexes[note.repliesTo] 
+      note.repliesTo = newIndexes[note.repliesTo]; 
     }
   }
-  return tempNotes
-}
+  return tempNotes;
+};
 
 export const round = (num: number, scale: number): number => {
   if(!("" + num).includes("e")) {
     return +(Math.round(parseFloat(num + "e+" + scale))  + "e-" + scale);
   } else {
     const arr: string[] = ("" + num).split("e");
-    let sig: string = ""
+    let sig: string = "";
     if(+arr[1] + scale > 0) {
       sig = "+";
     }
     return +(Math.round(parseFloat(+arr[0] + "e" + sig + (+arr[1] + scale))) + "e-" + scale);
   }
-}
+};
 
 export const formatDate = (timestamp: number | null): string | null => {
   if (timestamp !== null) {
@@ -274,11 +274,11 @@ export const formatDate = (timestamp: number | null): string | null => {
     const formattedDate: string = `${month + 1}/${day}/${year}`;
     return formattedDate;
   } else return String(timestamp);
-}
+};
 
 export function formatDateTime(timestamp?: number): string {
-  if (timestamp === undefined) return 'unknown'
-  if (timestamp === -1) return 'unknown'
+  if (timestamp === undefined) return "unknown";
+  if (timestamp === -1) return "unknown";
   if (timestamp > 1e12) {
     timestamp = Math.floor(timestamp / 1000); // Convert milliseconds to seconds
   }
@@ -301,13 +301,13 @@ export function formatDateTime(timestamp?: number): string {
 }
 
 export const findCenter = (points: number[][]) => {
-  let center = []
+  let center = [];
   if (points) {
-      center.push((points[0][0] + points[1][0]) / 2)
-      center.push((points[0][1] + points[2][1]) / 2)
-  } else center = [50,50]
-  return center
-}
+    center.push((points[0][0] + points[1][0]) / 2);
+    center.push((points[0][1] + points[2][1]) / 2);
+  } else center = [50,50];
+  return center;
+};
 
 
 export const median = (numbers: number[]): number => {
@@ -315,26 +315,26 @@ export const median = (numbers: number[]): number => {
   const middle: number = Math.floor(sorted.length / 2);
 
   if (sorted.length % 2 === 0) {
-      return (sorted[middle - 1] + sorted[middle]) / 2;
+    return (sorted[middle - 1] + sorted[middle]) / 2;
   }
 
   return sorted[middle];
-}
+};
 
 export const average = (array: number[]): number => array.reduce((a, b) => a + b) / array.length;
 
 export const formatConfidence = (value: number | null): string => {
   if (value === null) return "";
-  const percentageValue: string = (value * 100).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const percentageValue: string = (value * 100).toLocaleString("en-US", { maximumFractionDigits: 0 });
   return `${percentageValue} %`;
-}
+};
 
 export const formatAttributeValue = (value: string | number | boolean | null): string | number => {
   if (value === null) return "";
-  else if (value === true) return 'true'
-  else if (value === false) return 'false'
-  else return value
-}
+  else if (value === true) return "true";
+  else if (value === false) return "false";
+  else return value;
+};
 
 export const useKeyDown = (
   key: string, 
@@ -363,9 +363,9 @@ export const useKeyDown = (
     }
   };
   useEffect(() => {
-    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener("keydown", onKeyDown);
     };
   }, [onKeyDown]);
 };
@@ -378,10 +378,10 @@ export const useOutsideClick = (callback: () => void): React.RefObject<HTMLTable
       callback();
     };
 
-    document.addEventListener('click', handleClick);
+    document.addEventListener("click", handleClick);
 
     return () => {
-      document.removeEventListener('click', handleClick);
+      document.removeEventListener("click", handleClick);
     };
   }, []);
 
@@ -393,117 +393,117 @@ export const logout = (): void => {
   console.log("logging out");
   localStorage.clear();
   window.location.replace("/");
-}
+};
 
 export const convertFiltersToMongoFormat = (filters: FilterOption[]): object => {
   let filterBy: { [key: string]: any } = {};
   for (let filter of filters) {
-      let nextFilter: any;
-      if (filter.key === 'error_status') {
-        if (filter.selectedOptions?.length == 2 || filter.selectedOptions?.length == 0) {
-        }
-        else if (filter.selectedOptions?.includes('has cleaning errors')) {
-          filterBy['$or'] = [
-            {
-                "attributesList": {
-                    "$elemMatch": {
-                        "$and": [
-                            {"cleaning_error": {"$ne": false}},
-                            {"cleaning_error": {"$exists": true}},
-                        ]
-                    }
-                }
-            },
-            {
-                "attributesList.subattributes": {
-                    "$elemMatch": {
-                        "$and": [
-                            {"cleaning_error": {"$ne": false}},
-                            {"cleaning_error": {"$exists": true}},
-                        ]
-                    }
-                }
-            },
-          ]
-        }
-        else if (filter.selectedOptions?.includes('no cleaning errors')) {
-          filterBy['$nor'] = [
-            {
-                "attributesList": {
-                    "$elemMatch": {
-                        "$and": [
-                            {"cleaning_error": {"$ne": false}},
-                            {"cleaning_error": {"$exists": true}},
-                        ]
-                    }
-                }
-            },
-            {
-                "attributesList.subattributes": {
-                    "$elemMatch": {
-                        "$and": [
-                            {"cleaning_error": {"$ne": false}},
-                            {"cleaning_error": {"$exists": true}},
-                        ]
-                    }
-                }
-            },
-          ]
-        }
-        continue
+    let nextFilter: any;
+    if (filter.key === "error_status") {
+      if (filter.selectedOptions?.length == 2 || filter.selectedOptions?.length == 0) {
       }
-      else if (filter.type === 'checkbox') {
-          nextFilter = { "$in": [] };
-          for (let each of filter.options || []) {
-              if (each.checked) nextFilter["$in"].push(each.value);
-          }
+      else if (filter.selectedOptions?.includes("has cleaning errors")) {
+        filterBy["$or"] = [
+          {
+            "attributesList": {
+              "$elemMatch": {
+                "$and": [
+                  {"cleaning_error": {"$ne": false}},
+                  {"cleaning_error": {"$exists": true}},
+                ]
+              }
+            }
+          },
+          {
+            "attributesList.subattributes": {
+              "$elemMatch": {
+                "$and": [
+                  {"cleaning_error": {"$ne": false}},
+                  {"cleaning_error": {"$exists": true}},
+                ]
+              }
+            }
+          },
+        ];
       }
-      else if (filter.type === 'date') {
-          let date_value: string = filter.value || '';
-          let date_start: number = Math.floor(new Date(date_value).getTime() / 1000);
-          let date_end: number = date_start + (24 * 3600);
-          if (filter.operator === 'is') {
-              nextFilter = { "$gte": date_start, "$lt": date_end };
-          } else if (filter.operator === 'before') {
-              nextFilter = { "$lt": date_start };
-          } else if (filter.operator === 'after') {
-              nextFilter = { "$gt": date_end };
-          }
+      else if (filter.selectedOptions?.includes("no cleaning errors")) {
+        filterBy["$nor"] = [
+          {
+            "attributesList": {
+              "$elemMatch": {
+                "$and": [
+                  {"cleaning_error": {"$ne": false}},
+                  {"cleaning_error": {"$exists": true}},
+                ]
+              }
+            }
+          },
+          {
+            "attributesList.subattributes": {
+              "$elemMatch": {
+                "$and": [
+                  {"cleaning_error": {"$ne": false}},
+                  {"cleaning_error": {"$exists": true}},
+                ]
+              }
+            }
+          },
+        ];
       }
-      else if (filter.type === 'string') {
-          if (filter.operator === 'equals') nextFilter = filter.value;
-          else if (filter.operator === 'contains') nextFilter = { "$regex": filter.value };
+      continue;
+    }
+    else if (filter.type === "checkbox") {
+      nextFilter = { "$in": [] };
+      for (let each of filter.options || []) {
+        if (each.checked) nextFilter["$in"].push(each.value);
       }
+    }
+    else if (filter.type === "date") {
+      let date_value: string = filter.value || "";
+      let date_start: number = Math.floor(new Date(date_value).getTime() / 1000);
+      let date_end: number = date_start + (24 * 3600);
+      if (filter.operator === "is") {
+        nextFilter = { "$gte": date_start, "$lt": date_end };
+      } else if (filter.operator === "before") {
+        nextFilter = { "$lt": date_start };
+      } else if (filter.operator === "after") {
+        nextFilter = { "$gt": date_end };
+      }
+    }
+    else if (filter.type === "string") {
+      if (filter.operator === "equals") nextFilter = filter.value;
+      else if (filter.operator === "contains") nextFilter = { "$regex": filter.value };
+    }
 
-      if (Object.keys(filterBy).includes(filter.key)) {
-          filterBy[filter.key] = { ...filterBy[filter.key], ...nextFilter };
-      } else {
-          filterBy[filter.key] = nextFilter;
-      }
+    if (Object.keys(filterBy).includes(filter.key)) {
+      filterBy[filter.key] = { ...filterBy[filter.key], ...nextFilter };
+    } else {
+      filterBy[filter.key] = nextFilter;
+    }
   }
   return filterBy;
-}
+};
 
 export function scrollIntoView(element: HTMLElement | null, container: HTMLElement | null) {
-    if (element && container) {
-        const containerTop = container.scrollTop;
-        const containerBottom = containerTop + container.clientHeight; 
-        const elemTop = element.offsetTop;
-        const elemBottom = elemTop + element.clientHeight;
-        if (elemTop < containerTop) {
-            container.scrollTo({
-                // add -45 to give ensure element comes fully into view
-                top: elemTop - 45,
-                behavior: "smooth",
-            });
-        } else if (elemBottom > containerBottom) {
-            container.scrollTo({
-                // add +45 to give ensure element comes fully into view
-                top: elemBottom - container.clientHeight + 25,
-                behavior: "smooth",
-            });
-        }
+  if (element && container) {
+    const containerTop = container.scrollTop;
+    const containerBottom = containerTop + container.clientHeight; 
+    const elemTop = element.offsetTop;
+    const elemBottom = elemTop + element.clientHeight;
+    if (elemTop < containerTop) {
+      container.scrollTo({
+        // add -45 to give ensure element comes fully into view
+        top: elemTop - 45,
+        behavior: "smooth",
+      });
+    } else if (elemBottom > containerBottom) {
+      container.scrollTo({
+        // add +45 to give ensure element comes fully into view
+        top: elemBottom - container.clientHeight + 25,
+        behavior: "smooth",
+      });
     }
+  }
 }
 
 export function coordinatesDecimalsToPercentage(coords: number[][]) {
@@ -511,22 +511,22 @@ export function coordinatesDecimalsToPercentage(coords: number[][]) {
 }
 
 export const scrollToAttribute = (boxId: string, heightId: string, top: number, imageFiles: any) => {
-    try{
-        const imageContainerId = boxId;
-        const imageContainerElement = document.getElementById(imageContainerId);
-        const imageElement = document.getElementById(heightId);
-        const scrollAmount = top * imageElement!.clientHeight * imageFiles.length - 100;
-        if (imageContainerElement) {
-            imageContainerElement.scrollTo({
-                top: scrollAmount,
-                behavior: "smooth",
-            });
-        }
-    } catch(e) {
-        // this likely only occurs when table is in fullscreen mode and image is note displayed
-        console.error('failed to scroll')
+  try{
+    const imageContainerId = boxId;
+    const imageContainerElement = document.getElementById(imageContainerId);
+    const imageElement = document.getElementById(heightId);
+    const scrollAmount = top * imageElement!.clientHeight * imageFiles.length - 100;
+    if (imageContainerElement) {
+      imageContainerElement.scrollTo({
+        top: scrollAmount,
+        behavior: "smooth",
+      });
     }
-}
+  } catch(e) {
+    // this likely only occurs when table is in fullscreen mode and image is note displayed
+    console.error("failed to scroll");
+  }
+};
 
 export const callAPI = async (
   apiFunc: (...args: any[]) => Promise<Response>, 

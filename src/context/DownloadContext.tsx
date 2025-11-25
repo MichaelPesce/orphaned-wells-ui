@@ -1,5 +1,5 @@
 // DownloadContext.tsx
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from "react";
 
 interface DownloadContextType {
   downloadedBytes: number;
@@ -63,7 +63,7 @@ export const DownloadProvider = ({ children }: { children: React.ReactNode }) =>
 
           chunks.push(value);
           received += value.length;
-          if (totalBytes && received > totalBytes) setDownloadedBytes(totalBytes)
+          if (totalBytes && received > totalBytes) setDownloadedBytes(totalBytes);
           else setDownloadedBytes(received);
 
           if (totalBytes) {
@@ -75,7 +75,7 @@ export const DownloadProvider = ({ children }: { children: React.ReactNode }) =>
 
         // Create a blob and trigger browser download
         const blob = new Blob(chunks);
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = filename;
         document.body.appendChild(link);

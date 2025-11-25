@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import SearchIcon from '@mui/icons-material/Search';
+import SearchIcon from "@mui/icons-material/Search";
 
 
 interface EmptyTableProps {
@@ -9,9 +9,9 @@ interface EmptyTableProps {
 }
 
 export default function EmptyTable(props: EmptyTableProps) {
-    const defaultTitle = "No records found."
-    const defaultMessage = "Please create a new record or contact a team lead to get started."
-    const { title = defaultTitle, message = defaultMessage } = props;
+  const defaultTitle = "No records found.";
+  const defaultMessage = "Please create a new record or contact a team lead to get started.";
+  const { title = defaultTitle, message = defaultMessage } = props;
 
   return (
     <Box

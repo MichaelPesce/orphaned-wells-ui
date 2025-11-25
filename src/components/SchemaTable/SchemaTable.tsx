@@ -5,7 +5,7 @@ import SchemaOverViewSheet from "./SchemaOverviewSheet";
 import { MongoProcessor, SchemaOverview } from "../../types";
 import TableLoading from "../TableLoading/TableLoading";
 import EditProcessorDialog from "../EditProcessorDialog/EditProcessorDialog";
-import { SxProps } from '@mui/material';
+import { SxProps } from "@mui/material";
 
 interface SchemaTableProps {
   loading: boolean;
@@ -40,11 +40,11 @@ const styles = {
   tableContainer: {
     maxHeight: 600, paddingBottom: 2
   }
-}
+};
 
 const SchemaTable = (props: SchemaTableProps) => {
   const [tabValue, setTabValue] = useState(0);
-  const [editingProcessor, setEditingProcessor] = useState<number>()
+  const [editingProcessor, setEditingProcessor] = useState<number>();
   const {
     schema,
     loading,
@@ -59,7 +59,7 @@ const SchemaTable = (props: SchemaTableProps) => {
   const tableContainerStyle: SxProps = {...styles.tableContainer};
   if (updating) {
     tableContainerStyle["opacity"] = 0.5;
-    tableContainerStyle["pointerEvents"] = 'none';
+    tableContainerStyle["pointerEvents"] = "none";
   }
 
   return (
@@ -96,7 +96,7 @@ const SchemaTable = (props: SchemaTableProps) => {
           <TableLoading/>
         ) : 
           tabValue === 0 ? (
-             <SchemaOverViewSheet
+            <SchemaOverViewSheet
               processors={processors || []}
               setTabValue={setTabValue}
               setEditingProcessor={setEditingProcessor}

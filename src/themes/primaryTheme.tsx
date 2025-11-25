@@ -1,5 +1,5 @@
 
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
 export const ogrre_theme = createTheme({
   palette: {
@@ -35,7 +35,7 @@ export const ogrre_theme = createTheme({
           },
         },
         outlinedSecondary: {
-          color: '#45D074',
+          color: "#45D074",
           "&:hover": {
             borderColor: "#3EBB68",
             color: "3EBB68",

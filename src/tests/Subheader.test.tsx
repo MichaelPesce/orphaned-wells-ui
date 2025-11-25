@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import Subheader from "../components/Subheader/Subheader"
+import { render, screen } from "@testing-library/react";
+import Subheader from "../components/Subheader/Subheader";
 import { HashRouter } from "react-router-dom";
 
 
-test('test Subheader', (): void => {
+test("Subheader", (): void => {
 
-    render( <HashRouter><Subheader currentPage={""} buttonName="New Project"/> </HashRouter>)
+  render( <HashRouter><Subheader currentPage={""} buttonName="New Project"/> </HashRouter>);
 
-    //test for component elements
+  //test for component elements
     
-})
+});
