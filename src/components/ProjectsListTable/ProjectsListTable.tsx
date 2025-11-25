@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
-import { formatDate } from '../../util';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
+import { formatDate } from "../../util";
 import { ProjectData } from "../../types";
 import { styles } from "../../styles";
 import EmptyTable from "../EmptyTable/EmptyTable";
@@ -16,7 +16,7 @@ const ProjectsListTable = ({ projects, loading }: ProjectsListTableProps) => {
 
   const handleClickProject = (project_id: string) => {
     navigate("/project/" + project_id);
-  }
+  };
   
   return (
     <>
@@ -51,15 +51,15 @@ const ProjectsListTable = ({ projects, loading }: ProjectsListTableProps) => {
       </TableContainer>
       {
         loading ? <TableLoading/> :
-        !projects.length ? 
-        <EmptyTable
-          title="No projects found"
-          message="Please create a new project or contact a team lead to get started."
-        />
-        : null
+          !projects.length ? 
+            <EmptyTable
+              title="No projects found"
+              message="Please create a new project or contact a team lead to get started."
+            />
+            : null
       }
     </>
   );
-}
+};
 
 export default ProjectsListTable;

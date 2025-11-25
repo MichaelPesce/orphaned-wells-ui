@@ -15,7 +15,7 @@ const ImageField: React.FC<ImageFieldProps> = ({ label, value, onChange, sx }) =
 
   const handleFile = (file: File | null) => {
     if (!file) return;
-    onChange(file)
+    onChange(file);
     // const reader = new FileReader();
     // reader.onload = () => {
     //   if (typeof reader.result === "string") onChange(reader.result);

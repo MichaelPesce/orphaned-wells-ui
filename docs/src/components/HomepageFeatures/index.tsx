@@ -1,17 +1,17 @@
-import clsx from 'clsx';
-import Heading from '@theme/Heading';
-import styles from './styles.module.css';
+import clsx from "clsx";
+import Heading from "@theme/Heading";
+import styles from "./styles.module.css";
 
 type FeatureItem = {
   title: string;
-  Svg: React.ComponentType<React.ComponentProps<'svg'>>;
+  Svg: React.ComponentType<React.ComponentProps<"svg">>;
   description: JSX.Element;
 };
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Digitize Documents',
-    Svg: require('@site/static/img/ogrre-digitize.svg').default,
+    title: "Digitize Documents",
+    Svg: require("@site/static/img/ogrre-digitize.svg").default,
     description: (
       <>
       Use advanced AI/ML (e.g. Google DocAI) to extract fields from scanned documents.
@@ -19,8 +19,8 @@ const FeatureList: FeatureItem[] = [
     ),
   },
   {
-    title: 'Review Documents',
-    Svg: require('@site/static/img/ogrre-review-document.svg').default,
+    title: "Review Documents",
+    Svg: require("@site/static/img/ogrre-review-document.svg").default,
     description: (
       <>
       Review and correct digitized data with an intuitive user interface.
@@ -28,8 +28,8 @@ const FeatureList: FeatureItem[] = [
     ),
   },
   {
-    title: 'Export Results',
-    Svg: require('@site/static/img/ogrre-db.svg').default,
+    title: "Export Results",
+    Svg: require("@site/static/img/ogrre-db.svg").default,
     description: (
       <>
       Export resulting data in convenient forms for integration with your database.
@@ -40,7 +40,7 @@ const FeatureList: FeatureItem[] = [
 
 function Feature({title, Svg, description}: FeatureItem) {
   return (
-    <div className={clsx('col col--4')}>
+    <div className={clsx("col col--4")}>
       <div className="text--center">
         <Svg className={styles.featureSvg} role="img" />
       </div>

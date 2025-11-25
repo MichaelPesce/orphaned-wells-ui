@@ -1,5 +1,5 @@
-import * as React from 'react';
-import { Tabs, Tab, Box } from '@mui/material';
+import * as React from "react";
+import { Tabs, Tab, Box } from "@mui/material";
 
 interface ProjectTabProps {
   options: string[];
@@ -10,17 +10,17 @@ interface ProjectTabProps {
 function a11yProps(index: number) {
   return {
     id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
+    "aria-controls": `simple-tabpanel-${index}`,
   };
 }
 
 const styles = {
   tab: {
     "&:hover": {
-        background: "#efefef"
-      },
+      background: "#efefef"
+    },
   },
-}
+};
 
 export default function ProjectTabs({ options, value, setValue }: ProjectTabProps) {
 
@@ -29,8 +29,8 @@ export default function ProjectTabs({ options, value, setValue }: ProjectTabProp
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+    <Box sx={{ width: "100%" }}>
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs value={value} onChange={handleChange} aria-label="project tabs" centered variant="fullWidth">
           {options.map((v, idx) => (
             <Tab sx={styles.tab} key={v} label={options[idx]} {...a11yProps(idx)} />

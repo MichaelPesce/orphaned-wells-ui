@@ -240,7 +240,7 @@ export interface PopupModalProps {
     text: string | null | undefined;
     handleEditText?: (event: React.ChangeEvent<HTMLInputElement>) => void;
     handleSave: () => void;
-    buttonVariant: 'text' | 'outlined' | 'contained';
+    buttonVariant: "text" | "outlined" | "contained";
     buttonColor: "inherit" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
     buttonText: string;
     input?: boolean;
@@ -250,7 +250,7 @@ export interface PopupModalProps {
     iconTwo?: React.ReactNode;
     hasTwoButtons?: boolean;
     handleButtonTwoClick?: () => void;
-    buttonTwoVariant?: 'text' | 'outlined' | 'contained';
+    buttonTwoVariant?: "text" | "outlined" | "contained";
     buttonTwoColor?: "inherit" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
     buttonTwoText?: string;
     disableSubmit?: boolean;
@@ -283,7 +283,8 @@ export interface UploadDocumentsModalProps {
 }
 
 export interface UploadProcessorProps {
-    setShowModal: (show: boolean) => void;
+    onClose: () => void;
+    updatingProcessor?: MongoProcessor;
     handleUploadDocument: (
         file: File,
         name: string,

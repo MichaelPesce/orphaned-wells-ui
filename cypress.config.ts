@@ -1,7 +1,7 @@
 import { defineConfig } from "cypress";
-declare let require: any
-declare let process: any
-require('dotenv').config()
+declare let require: any;
+declare let process: any;
+require("dotenv").config();
 
 export default defineConfig({
   e2e: {

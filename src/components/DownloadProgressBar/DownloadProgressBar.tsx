@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useDownload } from '../../context/DownloadContext';
-import { Box, LinearProgress, Typography, Paper, IconButton, Tooltip } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import React, { useState } from "react";
+import { useDownload } from "../../context/DownloadContext";
+import { Box, LinearProgress, Typography, Paper, IconButton, Tooltip } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 export default function DownloadProgressBar() {
   const { isDownloading, progress, downloadedBytes, estimatedTotalBytes } = useDownload();
@@ -17,31 +17,31 @@ export default function DownloadProgressBar() {
     <Paper
       elevation={6}
       sx={{
-        position: 'fixed',
+        position: "fixed",
         bottom: 20,
         right: 20,
         width: isMinimized ? 200 : 300,
         padding: isMinimized ? 1 : 2,
         borderRadius: 2,
-        backgroundColor: '#fff',
-        boxShadow: '0px 3px 10px rgba(0,0,0,0.2)',
+        backgroundColor: "#fff",
+        boxShadow: "0px 3px 10px rgba(0,0,0,0.2)",
         zIndex: 9999,
-        transition: 'all 0.3s ease',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start'
+        transition: "all 0.3s ease",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start"
       }}
     >
       <Box 
         sx={{ 
-          width: '100%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between'
+          width: "100%", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "space-between"
         }}
       >
         {!isMinimized && (
-          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+          <Typography variant="body1" sx={{ fontWeight: "bold" }}>
             Preparing Download
           </Typography>
         )}
@@ -49,15 +49,15 @@ export default function DownloadProgressBar() {
           <IconButton size="small" onClick={toggleMinimize}>
             <ExpandMoreIcon
               sx={{
-                transform: isMinimized ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.3s ease'
+                transform: isMinimized ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform 0.3s ease"
               }}
             />
           </IconButton>
         </Tooltip>
       </Box>
 
-      <Box sx={{ width: '100%', mt: isMinimized ? 0.5 : 1 }}>
+      <Box sx={{ width: "100%", mt: isMinimized ? 0.5 : 1 }}>
         <LinearProgress
           variant={estimatedTotalBytes ? "determinate" : "indeterminate"}
           value={progress || 0}
@@ -65,7 +65,7 @@ export default function DownloadProgressBar() {
             height: isMinimized ? 6 : 10,
             borderRadius: 5,
             mb: isMinimized ? 0 : 1,
-            transition: 'all 0.3s ease'
+            transition: "all 0.3s ease"
           }}
         />
 
@@ -82,7 +82,7 @@ export default function DownloadProgressBar() {
         ) : (
           <Typography 
             variant="caption" 
-            sx={{ display: 'block', textAlign: 'center', mt: 0.5 }}
+            sx={{ display: "block", textAlign: "center", mt: 0.5 }}
           >
             {estimatedTotalBytes 
               ? `${progress?.toFixed(0)}%`

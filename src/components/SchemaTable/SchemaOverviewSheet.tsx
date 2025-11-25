@@ -9,8 +9,8 @@ import {
 } from "@mui/material";
 import { deleteProcessorSchema } from "../../services/app.service";
 import { schemaOverviewColumns as columns, callAPI } from "../../util";
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import PopupModal from "../PopupModal/PopupModal";
 import QuickLook from "../QuickLook/QuickLook";
 import { MongoProcessor } from "../../types";
@@ -28,7 +28,7 @@ const styles = {
     padding: "4px",
     margin: 0
   }
-}
+};
 
 const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, setErrorMessage }: SchemaSheetProps) => {
   const [showDeleteProcessorModal, setShowDeleteProcessorModal] = useState(false);
@@ -42,21 +42,21 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
       let idx = processors.findIndex((element) => element.img === previewImage);
       if (direction === "next") {
         if (idx === lastIndex) {
-          newProcessorPreview = processors[0]
+          newProcessorPreview = processors[0];
         } else {
-          newProcessorPreview = processors[idx + 1]
+          newProcessorPreview = processors[idx + 1];
         }
       }
       else if (direction === "previous") {
         if (idx === 0) {
-          newProcessorPreview = processors[lastIndex]
+          newProcessorPreview = processors[lastIndex];
         } else {
-          newProcessorPreview = processors[idx - 1]
+          newProcessorPreview = processors[idx - 1];
         }
       }
       setPreviewImage(newProcessorPreview?.img);
     }
-  }
+  };
 
   useKeyDown("ArrowLeft", () => handleCycleThroughPreviewImage("previous"), undefined, undefined, undefined, false);
   useKeyDown("ArrowUp", () => handleCycleThroughPreviewImage("previous"), undefined, undefined, undefined, false);
@@ -78,7 +78,7 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
   const handleClickDeleteIcon = (idx: number) => {
     setPendingDelete(idx);
     setShowDeleteProcessorModal(true);
-  }
+  };
 
   const handleDeleteProcessor = () => {
     setShowDeleteProcessorModal(false);
@@ -92,19 +92,19 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
         [name],
         successfulDelete,
         failedlDelete
-      )
+      );
     } else {
-      setErrorMessage("processor idx is not found in list")
+      setErrorMessage("processor idx is not found in list");
     }
-  }
+  };
 
   const successfulDelete = (data: any) => {
     window.location.reload();
-  }
+  };
 
   const failedlDelete = (data: any) => {
-    setErrorMessage(`Unable to delete: ${data}`)
-  }
+    setErrorMessage(`Unable to delete: ${data}`);
+  };
 
   return (
     <Table stickyHeader sx={{ minWidth: 650 }}>
@@ -127,8 +127,8 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
         {processors.map((row: any, idx: number) => (
           <TableRow
             onClick={() => {
-                const newTabValue = idx+1;
-                setTabValue(newTabValue)
+              const newTabValue = idx+1;
+              setTabValue(newTabValue);
             }}
             key={idx}
             hover
@@ -142,25 +142,25 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
             }}
           >
             {columns.map((col) => {
-                let content;
-                let val = row[col.key]
-                if (col.key === "img") content = <img style={{height: "16px"}} src={val}></img>
-                else content = val;
-                return (
-                    <TableCell
-                        onClick={(e) => {
-                          if (col.key === "img") {
-                            e.stopPropagation();
-                            if (val)
-                              setPreviewImage(val);
-                          }
-                        }}
-                        align={col.key === "img" ? "center" : "left"}
-                        key={col.key}
-                    >
-                        {content}
-                    </TableCell>
-                )
+              let content;
+              let val = row[col.key];
+              if (col.key === "img") content = <img style={{height: "16px"}} src={val}></img>;
+              else content = val;
+              return (
+                <TableCell
+                  onClick={(e) => {
+                    if (col.key === "img") {
+                      e.stopPropagation();
+                      if (val)
+                        setPreviewImage(val);
+                    }
+                  }}
+                  align={col.key === "img" ? "center" : "left"}
+                  key={col.key}
+                >
+                  {content}
+                </TableCell>
+              );
                 
             })}
             <TableCell onClick={(e) => e.stopPropagation()} align="center">
@@ -175,14 +175,14 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
         ))}
       </TableBody>
       <PopupModal
-          open={showDeleteProcessorModal}
-          handleClose={() => setShowDeleteProcessorModal(false)}
-          text={`Are you sure you would like to remove ${processors[pendingDelete || 0].name}?`}
-          handleSave={handleDeleteProcessor}
-          buttonText='Remove'
-          buttonColor='error'
-          buttonVariant='contained'
-          width={400}
+        open={showDeleteProcessorModal}
+        handleClose={() => setShowDeleteProcessorModal(false)}
+        text={`Are you sure you would like to remove ${processors[pendingDelete || 0].name}?`}
+        handleSave={handleDeleteProcessor}
+        buttonText='Remove'
+        buttonColor='error'
+        buttonVariant='contained'
+        width={400}
       />
       {
         previewImage && 
