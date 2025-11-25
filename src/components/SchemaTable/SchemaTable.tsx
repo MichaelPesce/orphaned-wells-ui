@@ -2,14 +2,17 @@ import { useState } from "react";
 import { Box, Paper, Tabs, Tab, TableContainer } from "@mui/material";
 import SchemaSheet from "./SchemaSheet";
 import SchemaOverViewSheet from "./SchemaOverviewSheet";
-import { SchemaOverview } from "../../types";
+import { MongoProcessor, SchemaOverview } from "../../types";
 import TableLoading from "../TableLoading/TableLoading";
 import EditProcessorDialog from "../EditProcessorDialog/EditProcessorDialog";
+import { SxProps } from '@mui/material';
 
 interface SchemaTableProps {
   loading: boolean;
+  updating?: boolean;
   schema?: SchemaOverview;
   setErrorMessage: (v: string | null) => void;
+  clickUpdateFields: (v: MongoProcessor) => void;
 }
 
 const styles = {
@@ -33,6 +36,9 @@ const styles = {
     "& .MuiTabs-indicator": {
       display: "none",
     },
+  },
+  tableContainer: {
+    maxHeight: 600, paddingBottom: 2
   }
 }
 
@@ -42,12 +48,19 @@ const SchemaTable = (props: SchemaTableProps) => {
   const {
     schema,
     loading,
-    setErrorMessage
+    setErrorMessage,
+    clickUpdateFields,
+    updating,
   } = props;
   const {
     processors
   } = schema || {};
 
+  const tableContainerStyle: SxProps = {...styles.tableContainer};
+  if (updating) {
+    tableContainerStyle["opacity"] = 0.5;
+    tableContainerStyle["pointerEvents"] = 'none';
+  }
 
   return (
     <Paper
@@ -78,7 +91,7 @@ const SchemaTable = (props: SchemaTableProps) => {
           ))}
         </Tabs>
       </Box>
-      <TableContainer sx={{ maxHeight: 600, paddingBottom: 2 }}>
+      <TableContainer sx={tableContainerStyle}>
         {loading ? (
           <TableLoading/>
         ) : 
@@ -102,6 +115,7 @@ const SchemaTable = (props: SchemaTableProps) => {
           onClose={() => setEditingProcessor(undefined)}
           setErrorMsg={(e) => setErrorMessage(e)}
           processorData={processors[editingProcessor]}
+          clickUpdateFields={clickUpdateFields}
         />
       )}
     </Paper>

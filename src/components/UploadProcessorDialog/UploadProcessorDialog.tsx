@@ -8,22 +8,23 @@ import { UploadProcessorProps } from '../../types';
 
 const UploadProcessorDialog = (props: UploadProcessorProps) => {
     const params = useParams<{ id: string }>();
-    const { setShowModal, handleUploadDocument } = props;
+    const { onClose, handleUploadDocument, updatingProcessor } = props;
     const [ showWarning, setShowWarning ] = useState(false);
     const [ warningMessage, setWarningMessage ] = useState("");
     const [ file, setFile ] = useState<File | null>(null);
     const maxFileSize = 10;
     const fileTypes: string[] = ["csv"];
 
-    const [name, setName] = useState("");
-    const [displayName, setDisplayName] = useState("");
-    const [processorId, setProcessorId] = useState("");
-    const [modelId, setModelId] = useState("");
-    const [documentType, setDocumentType] = useState("");
-    const [imageLink, setImageLink] = useState("");
+    const [name, setName] = useState(updatingProcessor?.name || "");
+    const [displayName, setDisplayName] = useState(updatingProcessor?.displayName || "");
+    const [processorId, setProcessorId] = useState(updatingProcessor?.processorId || "");
+    const [modelId, setModelId] = useState(updatingProcessor?.modelId || "");
+    const [documentType, setDocumentType] = useState(updatingProcessor?.documentType || "");
 
 
-    const disabled = !file || !modelId || !processorId || !name || !displayName || !documentType;
+    const disableButton = !file || !modelId || !processorId || !name || !displayName || !documentType;
+
+    const disableTextBoxes = !!updatingProcessor;
 
     const styles = {
         modalStyle: {
@@ -83,7 +84,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
     };
 
     const handleClose = () => {
-        setShowModal(false);
+        onClose();
     };
 
     const handleClickUpload = () => {
@@ -96,7 +97,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
         } else {
             handleUploadDocument(file, name, displayName, processorId, modelId, documentType);
             setShowWarning(false);
-            setShowModal(false);
+            onClose();
         }
     };
 
@@ -179,7 +180,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 </Grid>
                 <Grid item xs={6}>
                     <Box sx={{display: 'flex', justifyContent: 'center'}}>
-                        <h2 style={styles.header}>Upload processor</h2>
+                        <h2 style={styles.header}>{updatingProcessor ? "Update" : "Upload"} processor</h2>
                     </Box>
                 </Grid>
                 <Grid item xs={3}>
@@ -198,6 +199,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                     <Stack direction={'column'}>
                         <Stack direction={'row'}>
                             <TextField
+                                disabled={disableTextBoxes}
                                 sx={styles.textbox}
                                 fullWidth
                                 label="Processor Name"
@@ -207,6 +209,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                                 id="processor-name-textbox"
                             />
                             <TextField
+                                disabled={disableTextBoxes}
                                 sx={styles.textbox}
                                 fullWidth
                                 label="Processor Display Name"
@@ -218,6 +221,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                         </Stack>
                         <Stack direction={'row'}>
                             <TextField
+                                disabled={disableTextBoxes}
                                 sx={styles.textbox}
                                 fullWidth
                                 label="Google Processor ID"
@@ -227,6 +231,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                                 id="processor-id-textbox"
                             />
                             <TextField
+                                disabled={disableTextBoxes}
                                 sx={styles.textbox}
                                 fullWidth
                                 label="Primary Model ID"
@@ -238,6 +243,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                         </Stack>
                         <Stack direction={'row'}>
                             <TextField
+                                disabled={disableTextBoxes}
                                 sx={styles.textbox}
                                 fullWidth
                                 label="Document Type"
@@ -264,8 +270,8 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                     </Grid>
                     <Grid item xs={12}>
                         <Box sx={{display: "flex", justifyContent: "space-around"}}>
-                            <Button variant="contained" style={styles.button} onClick={handleClickUpload} disabled={disabled}>
-                                Upload File
+                            <Button variant="contained" style={styles.button} onClick={handleClickUpload} disabled={disableButton}>
+                                Submit
                             </Button>
                         </Box>
                     </Grid>

@@ -283,7 +283,8 @@ export interface UploadDocumentsModalProps {
 }
 
 export interface UploadProcessorProps {
-    setShowModal: (show: boolean) => void;
+    onClose: () => void;
+    updatingProcessor?: MongoProcessor;
     handleUploadDocument: (
         file: File,
         name: string,

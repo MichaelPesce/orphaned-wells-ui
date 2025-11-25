@@ -16,7 +16,9 @@ const SchemaView = () => {
     const [showUploadProcessor, setShowUploadProcessor] = useState(false);
     const [schemaData, setSchemaData] = useState<SchemaOverview>()
     const [loading, setLoading] = useState(true);
+    const [updating, setUpdating] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [updateProcessorCSV, setUpdateProcessorCSV] = useState<MongoProcessor>();
 
 
     useEffect(() => {
@@ -64,6 +66,7 @@ const SchemaView = () => {
     ) => {
         const formData = new FormData();
         formData.append('file', file, file.name);
+        setUpdating(true);
         callAPI(
             uploadProcessorSchema,
             [formData, name, displayName, processorId, modelId, documentType],
@@ -73,6 +76,8 @@ const SchemaView = () => {
     }
 
     const successfulUpload = (data: any) => {
+        setUpdating(false);
+        setUpdateProcessorCSV(undefined);
         callAPI(
             getSchema,
             [],
@@ -82,7 +87,19 @@ const SchemaView = () => {
     }
 
     const failedUpload = (data: any) => {
+        setUpdating(false);
+        setUpdateProcessorCSV(undefined);
         setErrorMsg(`Failed to upload: ${data}`)
+    }
+
+    const clickUpdateFields = (proc: MongoProcessor) => {
+        setUpdateProcessorCSV(proc);
+        setShowUploadProcessor(true);
+    }
+
+    const handleCloseUploadDialog = () => {
+        setUpdateProcessorCSV(undefined);
+        setShowUploadProcessor(false);
     }
 
     return (
@@ -97,13 +114,16 @@ const SchemaView = () => {
                     schema={schemaData} 
                     loading={loading}
                     setErrorMessage={setErrorMsg}
+                    clickUpdateFields={clickUpdateFields}
+                    updating={updating}
                 />
             </Box>
             {
                 showUploadProcessor && 
                 <UploadProcessorDialog
                     handleUploadDocument={handleUploadDocument}
-                    setShowModal={setShowUploadProcessor}
+                    onClose={handleCloseUploadDialog}
+                    updatingProcessor={updateProcessorCSV}
                 />
             }
         <ErrorBar

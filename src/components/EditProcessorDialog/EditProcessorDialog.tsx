@@ -11,10 +11,11 @@ interface EditProcessorDialogProps {
     open: boolean;
     onClose: () => void;
     setErrorMsg: (msg: string) => void;
-    processorData: MongoProcessor
+    processorData: MongoProcessor;
+  clickUpdateFields: (v: MongoProcessor) => void;
 }
 
-const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: EditProcessorDialogProps) => {
+const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickUpdateFields }: EditProcessorDialogProps) => {
     const [processorName, setProcessorName] = useState(processorData.name);
     const [displayName, setDisplayName] = useState(processorData.displayName);
     const [processorId, setProcessorId] = useState(processorData.processorId);
@@ -60,22 +61,16 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
     };
 
     const updatedProcessor = (data: any) => {
-        console.log("updated processor successfully")
-        console.log(data)
         window.location.reload()
         onClose()
     };
 
     const handleError = (e: string) => {
-        console.log("handle error:")
-        console.log(e)
         setErrorMsg(e)
         onClose()
     }
 
     const handleUploadSampleImage = (file: File) => {
-        console.log("uploading")
-        console.log(file)
         const formData = new FormData();
         formData.append('file', file, file.name);
         callAPI(
@@ -87,14 +82,17 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
     }
 
     const successfulUpload = (data: any) => {
-        console.log("success:")
-        console.log(data)
         setImageLink(data.url)
     }
 
     const failedUpload = (data: any) => {
         console.log("error on upload")
         console.log(data)
+    }
+
+    const handleClickUpdateFields = () => {
+        onClose();
+        clickUpdateFields(processorData);
     }
 
     return (
@@ -174,15 +172,6 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                                 value={imageLink}
                                 onChange={handleUploadSampleImage}
                             />
-                            {/* <TextField
-                                fullWidth
-                                label="Sample Image"
-                                variant="outlined"
-                                value={imageLink}
-                                onChange={(event) => setImageLink(event.target.value)}
-                                sx={styles.textfield}
-                                id="processor-name-textbox"
-                            /> */}
                         </Grid>
 
                         
@@ -190,6 +179,13 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData }: Edit
                 </DialogContentText>
                 <Box sx={{ p: 2 }}>
                     <Stack direction="row" justifyContent="space-around">
+                    <Button
+                        variant="outlined"
+                        disabled={disableSaveButton}
+                        onClick={handleClickUpdateFields}
+                    >
+                        Update Fields
+                    </Button>
                     <Button
                         variant="contained"
                         disabled={disableSaveButton}
