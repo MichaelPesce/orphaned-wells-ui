@@ -4,8 +4,8 @@ import { Box, TextField, IconButton, Grid, Button, Tooltip } from "@mui/material
 import { Dialog, DialogTitle, DialogContent, DialogContentText } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { addRecordGroup, getProcessors } from "../../services/app.service";
-import { callAPI } from "../../util";
-import { MongoProcessor as Processor } from "../../types";
+import { callAPI, convertToMongoProcessor } from "../../util";
+import { MongoProcessor, MongoProcessor as Processor } from "../../types";
 import ErrorBar from "../ErrorBar/ErrorBar";
 
 interface NewRecordGroupDialogProps {
@@ -83,8 +83,12 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
     }
   };
 
-  const handleSuccessGetProcessors = (processor_data: Processor[]) => {
-    setProcessors(processor_data);
+  const handleSuccessGetProcessors = (
+    processor_data: { processor_list: Processor[] | MongoProcessor[]; USE_DB_PROCESSOR: boolean }
+  ) => {
+    let newProcessors: Processor[] = [];
+    processor_data?.processor_list.forEach((p) => newProcessors.push(convertToMongoProcessor(p)));
+    setProcessors(newProcessors);
   };
 
   const handleClose = () => {
