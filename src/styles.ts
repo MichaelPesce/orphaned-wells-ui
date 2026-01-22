@@ -188,6 +188,7 @@ export const SubheaderStyles = {
   iconButton: {
     top: -5,
     color: "black",
+    fontSize: "13px"
   },
   icon: {
     fontSize: "15px"
