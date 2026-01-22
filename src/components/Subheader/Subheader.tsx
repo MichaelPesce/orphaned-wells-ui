@@ -1,11 +1,12 @@
 import { useState, Fragment, MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Grid, IconButton, Box, Menu, MenuItem, Chip } from "@mui/material";
+import { Button, Grid, IconButton, Box, Menu, MenuItem, Chip, Typography, Tooltip } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import LockIcon from "@mui/icons-material/Lock";
 import { SubheaderProps } from "../../types";
 import { SubheaderStyles as styles } from "../../styles";
+import { formatPageName } from "../../util";
 
 const Subheader = (props: SubheaderProps) => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const Subheader = (props: SubheaderProps) => {
                                     size="small" 
                                     onClick={pageAction}
                                   >
-                                    {page}
+                                    {formatPageName(page)}
                                   </Button>
                                         /
                                 </Fragment>
@@ -60,30 +61,38 @@ const Subheader = (props: SubheaderProps) => {
                             })
             }
 
-            <Button sx={styles.iconButton} size="small">{currentPage!== undefined ? currentPage : ""}</Button>
+            <Button sx={styles.iconButton} size="small">
+              <Typography noWrap component="span" sx={{fontSize: "13px"}}>
+                {currentPage!== undefined ? formatPageName(currentPage) : ""}
+              </Typography>
+              </Button>
           </div>
           <div style={styles.pageName}>
-            {currentPage}&nbsp;
-            {actions && Object.keys(actions).length > 0 &&
-                            <>
-                              <IconButton 
-                                id="options-button"
-                                onClick={handleShowActions} 
-                                disabled={locked}
-                              >
-                                <MoreHorizIcon sx={styles.icon} />
-                              </IconButton>
-                              <Menu
-                                id="actions"
-                                anchorEl={anchorEl}
-                                open={showActions}
-                                onClose={() => setShowActions(false)}
-                              >
-                                {Object.entries(actions).map(([action_text, action_func]) => (
-                                  <MenuItem key={action_text} onClick={() => handleSelectAction(action_func)}>{action_text}</MenuItem>
-                                ))}
-                              </Menu>
-                            </>
+            <Tooltip title={currentPage?.length > 50 ? currentPage : ""}>
+              <Typography noWrap>
+                {formatPageName(currentPage)}&nbsp;
+              </Typography>
+            </Tooltip>
+            {actions && Object.keys(actions)?.length > 0 &&
+                <>
+                  <IconButton 
+                    id="options-button"
+                    onClick={handleShowActions} 
+                    disabled={locked}
+                  >
+                    <MoreHorizIcon sx={styles.icon} />
+                  </IconButton>
+                  <Menu
+                    id="actions"
+                    anchorEl={anchorEl}
+                    open={showActions}
+                    onClose={() => setShowActions(false)}
+                  >
+                    {Object.entries(actions).map(([action_text, action_func]) => (
+                      <MenuItem key={action_text} onClick={() => handleSelectAction(action_func)}>{action_text}</MenuItem>
+                    ))}
+                  </Menu>
+                </>
             }
 
           </div>
