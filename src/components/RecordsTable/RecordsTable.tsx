@@ -1,13 +1,14 @@
 import React, { useEffect, Fragment, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter, TablePagination } from "@mui/material";
-import { Button, Box, Paper, IconButton, Grid, Typography } from "@mui/material";
+import { Button, Box, Paper, IconButton, Grid, Typography, Menu, MenuItem } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import ErrorIcon from "@mui/icons-material/Error";
 import CachedIcon from "@mui/icons-material/Cached";
 import WarningIcon from "@mui/icons-material/Warning";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
@@ -22,12 +23,13 @@ import { styles } from "../../styles";
 import RecordNotesDialog from "../RecordNotesDialog/RecordNotesDialog";
 import TableFilters from "../TableFilters/TableFilters";
 import { RecordData, RecordsTableProps, RecordNote } from "../../types";
-import { getRecords } from "../../services/app.service";
+import { getRecords, deleteRecords } from "../../services/app.service";
 import ColumnSelectDialog from "../ColumnSelectDialog/ColumnSelectDialog";
 import EmptyTable from "../EmptyTable/EmptyTable";
 import TableLoading from "../TableLoading/TableLoading";
 import PopupModal from "../PopupModal/PopupModal";
 import { useDownload } from "../../context/DownloadContext";
+import { useUserContext } from "../../usercontext";
 
 const SORTABLE_COLUMNS = {
   dateCreated: "toplevel",
@@ -48,15 +50,20 @@ const RecordsTable = (props: RecordsTableProps) => {
     handleUpdate,
     recordGroups,
   } = props;
+
+  const { userPermissions} = useUserContext();
   const [loading, setLoading] = useState(true);
   const [ showNotes, setShowNotes ] = useState(false);
   const [ notesRecordId, setNotesRecordId ] = useState<string>();
   const [ openColumnSelect, setOpenColumnSelect ] = useState(false);
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<RecordData[]>([]);
   const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(100);
   const [showDownloadMessage, setShowDownloadMessage] = useState(false);
+  const [openDeleteRecordsModal, setOpenDeleteRecordsModal] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+  const [ menuAnchor, setMenuAnchor ] = useState<HTMLElement>();
   const [filterBy, _setFilterBy] = useState<any[]>(
     JSON.parse(localStorage.getItem("appliedFilters") || "{}")[params.id || ""] || []
   );
@@ -187,6 +194,28 @@ const RecordsTable = (props: RecordsTableProps) => {
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     let newSize = parseInt(event.target.value);
     setPageSize(newSize);
+  };
+
+  const handleClickShowActions = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setShowActions(!showActions);
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleDeleteRecords = () => {
+    setOpenDeleteRecordsModal(false);
+    const body = {
+      record_ids: records.map((r) => r._id)
+    }
+    // TODO: 
+    // 1) set loader
+    // 2) replace error call back function in callAPI with a function that displays an error using the ErrorBar component
+    callAPI(
+        deleteRecords,
+        [body],
+        () => window.location.reload(),
+        (e) => console.error(e)
+      );
   };
 
   const handleSort = (key: SortableColumnKey) => {
@@ -353,6 +382,33 @@ const RecordsTable = (props: RecordsTableProps) => {
             </Grid>
             <Grid item sx={styles.topSectionRight} xs={6}>
               
+              {
+                userPermissions?.includes("delete") ? (
+                  <>
+                    <IconButton onClick={handleClickShowActions}>
+                      <MoreVertIcon/>
+                    </IconButton>
+                    <Menu
+                      id="actions"
+                      anchorEl={menuAnchor}
+                      open={showActions}
+                      onClose={() => setShowActions(false)}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                        <MenuItem
+                          onClick={() => {
+                            setOpenDeleteRecordsModal(true);
+                            setShowActions(false);
+                          }}
+                        >
+                          Delete Records
+                        </MenuItem>
+                    </Menu>
+                  </>
+                )
+                 : null
+              }
+              
             </Grid>
           </Grid>
         </Box>
@@ -443,6 +499,17 @@ const RecordsTable = (props: RecordsTableProps) => {
             width={500}
           />
         }
+
+        <PopupModal
+          open={openDeleteRecordsModal}
+          handleClose={() => setOpenDeleteRecordsModal(false)}
+          text="Are you sure you want to delete these records? Only currently displayed records will be deleted."
+          handleSave={handleDeleteRecords}
+          buttonText='Delete'
+          buttonColor='error'
+          buttonVariant='contained'
+          width={400}
+        />
           
         
       </TableContainer>

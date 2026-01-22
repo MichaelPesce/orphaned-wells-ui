@@ -208,6 +208,15 @@ export const deleteRecord = (record_id: string) => {
   });
 };
 
+export const deleteRecords = (data: any) => {
+  return fetch(BACKEND_URL + "/delete_records", {
+    method: "POST",
+    mode: "cors",
+    body: JSON.stringify(data),
+    headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+  });
+};
+
 export const authLogin = (code: any) => {
   return fetch(BACKEND_URL + "/auth_login", {
     method: "POST",
