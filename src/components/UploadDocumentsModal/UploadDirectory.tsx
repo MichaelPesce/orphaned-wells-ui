@@ -19,7 +19,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
   const [ uploadedFiles, setUploadedFiles ] = useState<string[]>([]);
   const [ duplicateFiles, setDuplicateFiles ] = useState<string[]>();
   const [ errorFiles, setErrorFiles ] = useState<string[]>([]);
-  const [ disabled, setDisabled ] = useState(false);
+  const [ disabled, setDisabled ] = useState(true);
   const MAX_UPLOAD_AMT = 500;
 
   useEffect(() => {
@@ -68,7 +68,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
     callAPI(
       checkForDuplicateRecords,
       [data, params.id],
-      (r) => setDuplicateFiles(r),
+      fetchedDuplicateRecords,
       (e, status) => console.error(e)
     );
   },[directoryFiles]);
@@ -87,6 +87,11 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
       marginTop: 2
     }
   };
+
+  const fetchedDuplicateRecords = (r: string[]) => {
+    setDisabled(false);
+    setDuplicateFiles(r);
+  }
 
   const upload = () => {
     setUploading(true);
@@ -168,7 +173,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
           <Stack direction={"row"}>
             <Tooltip title={"When selected, filenames that are already present in database will not be uploaded."}>
               <FormControlLabel 
-                disabled={uploading}
+                disabled={uploading || disabled}
                 control={<Switch/>} 
                 label="Prevent Duplicates" 
                 onChange={handlePreventDuplicates}
@@ -176,6 +181,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
               />
             </Tooltip>
             <FormControlLabel 
+              disabled={uploading || disabled}
               control={<Switch/>} 
               label="Run cleaning functions" 
               onChange={(e: any) => setRunCleaningFunctions(e.target.checked)}
