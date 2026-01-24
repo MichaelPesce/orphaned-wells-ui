@@ -18,9 +18,10 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
   const [ preventDuplicates, setPreventDuplicates ] = useState(true);
   const [ uploadedFiles, setUploadedFiles ] = useState<string[]>([]);
   const [ duplicateFiles, setDuplicateFiles ] = useState<string[]>();
+  const [ unduplicateFiles, setUnduplicateFiles ] = useState<File[]>();
   const [ errorFiles, setErrorFiles ] = useState<string[]>([]);
   const [ disabled, setDisabled ] = useState(true);
-  const MAX_UPLOAD_AMT = 500;
+  const MAX_UPLOAD_AMT = 1000;
 
   useEffect(() => {
     let uploadedAmt = uploadedFiles.length;
@@ -45,15 +46,27 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
       setFilesToUpload([]);
       return;
     } 
+    // TODO CONFIRM THE BELOW CODE WORKS:
+    // rather than determine the files that are duplicates EVERY time we update amountToUpload,
+    // let's create a list of files that are not duplicates one time (after fetching duplicate records)
+    // then, in this function we can just set filesToUpload to be the first X (amountToUpload) files from
+    // either the unduplicate list, or the entire list, depending on whether preventDuplicates is true
     if (duplicateFiles !== undefined) {
       if(amountToUpload > MAX_UPLOAD_AMT) setDisabled(true);
       else setDisabled(false);
-      let tempFilesToUpload = [];
-      for (let file of directoryFiles) {
-        if (!preventDuplicates || !duplicateFiles.includes(file.name.split(".")[0])) {
-          tempFilesToUpload.push(file);
+      let tempFilesToUpload: File[];
+      if (preventDuplicates) {
+        if (unduplicateFiles?.length || 0 > amountToUpload) {
+          tempFilesToUpload = unduplicateFiles?.slice(0,amountToUpload) || [];
+        } else {
+          tempFilesToUpload = [...unduplicateFiles || []];
         }
-        if (tempFilesToUpload.length >= amountToUpload) break;
+      } else {
+        if (directoryFiles.length || 0 > amountToUpload) {
+          tempFilesToUpload = directoryFiles?.slice(0,amountToUpload);
+        } else {
+          tempFilesToUpload = [...directoryFiles || []];
+        }
       }
       setFilesToUpload(tempFilesToUpload);
     }
@@ -89,8 +102,13 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
   };
 
   const fetchedDuplicateRecords = (r: string[]) => {
-    setDisabled(false);
     setDuplicateFiles(r);
+    const temp_unduplicateFiles = directoryFiles.filter((f) => !r.includes(f.name.split(".")[0]));
+    // console.log(r.length)
+    // console.log(temp_unduplicateFiles.length)
+    // console.log(directoryFiles.length)
+    setUnduplicateFiles(temp_unduplicateFiles);
+    setDisabled(false);
   }
 
   const upload = () => {

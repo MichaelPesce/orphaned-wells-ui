@@ -616,6 +616,8 @@ const Record = () => {
           reviewStatus={recordData.review_status || ""}
           updateFieldCoordinates={updateFieldCoordinates}
           loading={loading}
+          recordStatus={recordData.status}
+          errorMessage={recordData.error_message}
         />
       </Box>
       <Bottombar

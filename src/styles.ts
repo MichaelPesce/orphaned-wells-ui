@@ -332,6 +332,34 @@ export const DocumentContainerStyles = {
     backgroundColor: "#FFECED",
     marginBottom: "16px"
   },
+  errorState: {
+    border: "1px solid #F2B8B5",
+    background: "linear-gradient(180deg, #FFF7F7 0%, #FFFFFF 100%)",
+    borderRadius: "12px",
+    padding: "24px",
+    marginX: "16px",
+    marginBottom: "16px",
+    boxShadow: "0 6px 18px rgba(122, 28, 18, 0.08)",
+  },
+  errorStateTitle: {
+    fontSize: "18px",
+    fontWeight: 700,
+    color: "#7A1C12",
+  },
+  errorStateOuterBox: {
+    paddingBottom: "24px",
+  },
+  errorStateMessage: {
+    marginTop: "16px",
+    backgroundColor: "#FFF1F0",
+    borderRadius: "8px",
+    padding: "12px 14px",
+    fontFamily:
+      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+    fontSize: "13px",
+    color: "#5C1A13",
+    whiteSpace: "pre-wrap",
+  },
   zoomToggleActive: {
     color: "black",
     backgroundColor: "#EBEBEB"
