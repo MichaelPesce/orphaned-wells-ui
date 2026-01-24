@@ -25,6 +25,7 @@ export interface RecordData {
     section?: string;
     township?: string;
     range?: string;
+    error_message?: string;
     rank?: number; // index of record based on current sorting, filtering
 }
 
@@ -330,6 +331,8 @@ export interface DocumentContainerProps {
     reviewStatus: string;
     updateFieldCoordinates: updateFieldCoordinatesSignature;
     loading: boolean;
+    recordStatus?: string;
+    errorMessage?: string | null;
 }
 
 export interface ColumnSelectDialogProps {

@@ -13,7 +13,15 @@ import Switch from "@mui/material/Switch";
 import TableLoading from "../TableLoading/TableLoading";
 import HotkeyInfo from "../HotkeyInfo/HotkeyInfo";
 
-const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates, loading, ...attributeTableProps }: DocumentContainerProps) => {
+const DocumentContainer = ({
+  imageFiles,
+  attributesList,
+  updateFieldCoordinates,
+  loading,
+  recordStatus,
+  errorMessage,
+  ...attributeTableProps
+}: DocumentContainerProps) => {
 
   const [imgIndex, setImgIndex] = useState(0);
   const [displayPoints, setDisplayPoints] = useState<number[][] | null>(null);
@@ -316,6 +324,9 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
     setHotkeysAnchor(event.currentTarget);
   };
 
+  const showErrorState = !loading && !attributesList && recordStatus === "error";
+  const resolvedErrorMessage = errorMessage || "Unknown error.";
+
   return (
     <Box style={styles.outerBox}>
       {
@@ -350,7 +361,14 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                           </p>
                                 
                         </Box>
-                        {attributesList !== undefined ?
+                        {showErrorState ? (
+                          <Box sx={styles.errorStateOuterBox}>
+                            <Box sx={styles.errorState}>
+                              <Box sx={styles.errorStateTitle}>Processing Error</Box>
+                              <Box sx={styles.errorStateMessage}>{resolvedErrorMessage}</Box>
+                            </Box>
+                          </Box>
+                        ) : attributesList !== undefined ? (
                           <AttributesTable 
                             attributesList={attributesList}
                             handleClickField={handleClickField}
@@ -361,8 +379,10 @@ const DocumentContainer = ({ imageFiles, attributesList, updateFieldCoordinates,
                             showRawValues={showRawValues}
                             setUpdateFieldLocationID={setUpdateFieldLocationID}
                             {...attributeTableProps}
-                          /> : loading && <TableLoading/>
-                        }
+                          />
+                        ) : (
+                          loading && <TableLoading/>
+                        )}
                       </Box>
                     </Grid>
         }
