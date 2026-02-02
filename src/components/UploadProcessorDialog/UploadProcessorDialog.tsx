@@ -13,7 +13,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
   const [ warningMessage, setWarningMessage ] = useState("");
   const [ file, setFile ] = useState<File | null>(null);
   const maxFileSize = 10;
-  const fileTypes: string[] = ["csv"];
+  const fileTypes: string[] = ["csv", "json"];
 
   const [name, setName] = useState(updatingProcessor?.name || "");
   const [displayName, setDisplayName] = useState(updatingProcessor?.displayName || "");
