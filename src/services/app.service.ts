@@ -79,10 +79,10 @@ export const addRecordGroup = (data: any) => {
   });
 };
 
-export const uploadDocument = (data: FormData, project_id: string, user_email: any, reprocessed?: boolean, preventDuplicates?: boolean, run_cleaning_functions: boolean = false, undeployProcessor: boolean = false)  => {
+export const uploadDocument = (data: FormData, project_id: string, user_email: any, reprocessed?: boolean, preventDuplicates?: boolean, run_cleaning_functions: boolean = false)  => {
   if (!reprocessed) reprocessed = false;
   if (!preventDuplicates) preventDuplicates = false;
-  return fetch(BACKEND_URL + "/upload_document/" + project_id + "/" + user_email+"?reprocessed="+reprocessed+"&preventDuplicates="+preventDuplicates+"&run_cleaning_functions="+run_cleaning_functions+"&undeployProcessor="+undeployProcessor, {
+  return fetch(BACKEND_URL + "/upload_document/" + project_id + "/" + user_email+"?reprocessed="+reprocessed+"&preventDuplicates="+preventDuplicates+"&run_cleaning_functions="+run_cleaning_functions, {
     method: "POST",
     mode: "cors",
     body: data,
