@@ -12,7 +12,7 @@ interface UserContextObject {
   userEmail: string;
   userName: string;
   userPhoto: string;
-  userPermissions: any;
+  hasPermission: (permission: string) => boolean;
   databaseEnvironment: string;
 }
 
@@ -104,12 +104,17 @@ export const UserContextProvider = ({ children }: any) => {
     );
   };
 
+  const hasPermission = (permission: string) => {
+    if (userPermissions?.includes(permission)) return true;
+    return false
+  }
+
   const value = {
     user,
     userEmail,
     userName,
     userPhoto,
-    userPermissions,
+    hasPermission,
     databaseEnvironment,
   };
 

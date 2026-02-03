@@ -13,7 +13,7 @@ import { callAPI } from "../../util";
 import { User } from "../../types";
 
 const AdminPage = () => {
-  const { user, userPermissions } = useUserContext();
+  const { user, hasPermission } = useUserContext();
   const [users, setUsers] = useState<User[]>([]);
   const [unableToConnect, setUnableToConnect] = useState(false);
   const [showNewUserModal, setShowNewUserModal] = useState(false);
@@ -85,7 +85,7 @@ const AdminPage = () => {
     <Box sx={styles.outerBox}>
       <Subheader
         currentPage="Admin"
-        buttonName={(userPermissions && userPermissions.includes("add_user")) ? "+ Add user" : undefined}
+        buttonName={(hasPermission("add_user")) ? "+ Add user" : undefined}
         handleClickButton={() => setShowNewUserModal(true)}
       />
       <Box sx={styles.innerBox}>
@@ -96,7 +96,7 @@ const AdminPage = () => {
             setSelectedUser={setSelectedUser}
             setShowChangeRoleDialog={setShowChangeRoleDialog}
             setShowDeleteUserModal={setShowDeleteUserModal}
-            userPermissions={userPermissions}
+            hasPermission={hasPermission}
           />
           :
           <h1>You are not authorized to view this page.</h1>
@@ -131,7 +131,7 @@ const AdminPage = () => {
         selectedUser={selectedUser}
         onClose={() => setShowChangeRoleDialog(false)}
         team={user?.default_team}
-        userPermissions={userPermissions}
+        hasPermission={hasPermission}
       />
       <ErrorBar 
         duration={10000} 
@@ -148,10 +148,10 @@ interface UsersTableProps {
     setSelectedUser: (user: any) => void;
     setShowChangeRoleDialog: (show: boolean) => void;
     setShowDeleteUserModal: (show: boolean) => void;
-    userPermissions: any;
+    hasPermission: any;
 }
 
-const UsersTable = ({ user, users, setSelectedUser, setShowChangeRoleDialog, setShowDeleteUserModal, userPermissions }: UsersTableProps) => {
+const UsersTable = ({ user, users, setSelectedUser, setShowChangeRoleDialog, setShowDeleteUserModal, hasPermission }: UsersTableProps) => {
     
 
   const styles = {
@@ -209,14 +209,14 @@ const UsersTable = ({ user, users, setSelectedUser, setShowChangeRoleDialog, set
               <TableCell>{row.email}</TableCell>
               <TableCell>{getRole(row.roles)}</TableCell>
               <TableCell>
-                {userPermissions && userPermissions.includes("manage_team") &&
+                {hasPermission("manage_team") &&
                                 <Tooltip title="Update Roles">
                                   <IconButton color="primary" onClick={()=> handleClickChangeRole(row)}>
                                     <ManageAccountsIcon/>
                                   </IconButton>
                                 </Tooltip>
                 }
-                {userPermissions && userPermissions.includes("delete") &&
+                {hasPermission("delete") &&
                                 <Tooltip title="Remove User">
                                   <IconButton color="error" onClick={() => handleDeleteUser(row)}><CancelIcon /></IconButton>
                                 </Tooltip>

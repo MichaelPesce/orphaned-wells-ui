@@ -51,7 +51,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     recordGroups,
   } = props;
 
-  const { userPermissions} = useUserContext();
+  const { hasPermission} = useUserContext();
   const [loading, setLoading] = useState(true);
   const [ showNotes, setShowNotes ] = useState(false);
   const [ notesRecordId, setNotesRecordId ] = useState<string>();
@@ -383,7 +383,7 @@ const RecordsTable = (props: RecordsTableProps) => {
             <Grid item sx={styles.topSectionRight} xs={6}>
               
               {
-                userPermissions?.includes("delete") ? (
+                hasPermission("delete") ? (
                   <>
                     <IconButton onClick={handleClickShowActions}>
                       <MoreVertIcon/>

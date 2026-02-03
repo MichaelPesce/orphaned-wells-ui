@@ -14,7 +14,7 @@ import { useUserContext } from "../../usercontext";
 const RecordGroupPage = () => {
   const params = useParams<{ id: string }>(); 
   const navigate = useNavigate();
-  const { userEmail, userPermissions} = useUserContext();
+  const { userEmail, hasPermission} = useUserContext();
   const [project, setProject] = useState({} as ProjectData);
   const [recordGroup, setRecordGroup] = useState<RecordGroup>({ } as RecordGroup);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
@@ -43,17 +43,17 @@ const RecordGroupPage = () => {
 
   useEffect(() => {
     let tempActions = {} as SubheaderActions;
-    if (userPermissions && userPermissions.includes("manage_project")) {
+    if (hasPermission("manage_project")) {
       tempActions["Change record group name"] = handleClickChangeName;
     }
-    if (userPermissions && userPermissions.includes("clean_record")) {
+    if (hasPermission("clean_record")) {
       tempActions["Clean records"] = () => setOpenCleanPrompt(true);
     }
-    if (userPermissions && userPermissions.includes("delete")) {
+    if (hasPermission("delete")) {
       tempActions["Delete record group"] = () => setOpenDeleteModal(true);
     }
     setSubheaderActions(tempActions);
-  }, [userPermissions]);
+  }, [hasPermission]);
 
   const styles = {
     outerBox: {
@@ -162,7 +162,7 @@ const RecordGroupPage = () => {
     <Box sx={styles.outerBox}>
       <Subheader
         currentPage={recordGroup.name}
-        buttonName={(userPermissions && userPermissions.includes("upload_document")) ? "Upload new record(s)" : undefined}
+        buttonName={(hasPermission("upload_document")) ? "Upload new record(s)" : undefined}
         handleClickButton={() => setShowDocumentModal(true)}
         actions={subheaderActions}
         previousPages={navigation}

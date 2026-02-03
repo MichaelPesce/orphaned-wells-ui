@@ -10,7 +10,7 @@ import { Box } from "@mui/material";
 import { ProjectData } from "../../types";
 
 const ProjectsListPage = () => {
-  const { userPermissions} = useUserContext();
+  const { hasPermission} = useUserContext();
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [unableToConnect, setUnableToConnect] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
@@ -51,7 +51,7 @@ const ProjectsListPage = () => {
     <Box sx={styles.outerBox}>
       <Subheader
         currentPage="Projects"
-        buttonName={(userPermissions && userPermissions.includes("create_project")) ? "New Project" : undefined}
+        buttonName={(hasPermission("create_project")) ? "New Project" : undefined}
         handleClickButton={handleClickNewProject}
       />
       <Box sx={styles.innerBox}>

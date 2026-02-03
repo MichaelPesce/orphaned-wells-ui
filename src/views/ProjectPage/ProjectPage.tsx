@@ -16,7 +16,7 @@ import { ProjectData } from "../../types";
 const Project = () => {
   let params = useParams();
   const navigate = useNavigate();
-  const { userPermissions} = useUserContext();
+  const { hasPermission} = useUserContext();
   const [projectData, setProjectData] = useState({} as ProjectData);
   const [projectName, setProjectName] = useState("");
   const [record_groups, setRecordGroups] = useState<any[]>([]);
@@ -170,14 +170,14 @@ const Project = () => {
     <Box sx={styles.outerBox}>
       <Subheader
         currentPage={projectData.name}
-        buttonName={(userPermissions && userPermissions.includes("create_record_group")) ? "New Record Group" : undefined}
+        buttonName={(hasPermission("create_record_group")) ? "New Record Group" : undefined}
         handleClickButton={handleClickNewRecordGroup}
         previousPages={
           { 
             "Projects": () => navigate("/projects", { replace: true }),
           }
         }
-        actions={(userPermissions && userPermissions.includes("manage_project")) ?
+        actions={(hasPermission("manage_project")) ?
           {
             "Change project name": () => setOpenUpdateNameModal(true), 
             "Delete project": () => setOpenDeleteModal(true),
