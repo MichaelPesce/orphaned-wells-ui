@@ -13,7 +13,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 const Header = (props: any) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userName, userPhoto, userPermissions} = useUserContext();
+  const { userName, userPhoto, hasPermission} = useUserContext();
   const [anchorAr, setAnchorAr] = useState<null | HTMLElement>(null);
   const [profileActions, setProfileActions] = useState(false);
   const [tabValue, setTabValue] = useState(0);
@@ -31,8 +31,8 @@ const Header = (props: any) => {
     } else {
       setTabValue(0);
     }
-    if (userPermissions && userPermissions.includes("manage_system")) callAPI(fetchTeams, [], fetchedTeams, failedFetchTeams);
-  }, [props, userPermissions, location]);
+    if (hasPermission("manage_system")) callAPI(fetchTeams, [], fetchedTeams, failedFetchTeams);
+  }, [props, hasPermission, location]);
 
   const handleNavigateHome = () => {
     navigate("/");
@@ -86,10 +86,10 @@ const Header = (props: any) => {
           >
             <Tab label="Projects" {...a11yProps(0)} />
             <Tab label="Records" {...a11yProps(1)} />
-            {userPermissions && userPermissions.includes("manage_team") &&
+            {hasPermission("manage_team") &&
               <Tab label="Users" {...a11yProps(2)} />
             }
-            {userPermissions?.includes("manage_schema") &&
+            {hasPermission("manage_schema") &&
               <Tab label="Schema" {...a11yProps(3)} />
             }
           </Tabs>
@@ -118,7 +118,7 @@ const Header = (props: any) => {
               styles.menuSlotProps
             }
           >
-            {userPermissions && userPermissions.includes("manage_system") && (
+            {hasPermission("manage_system") && (
               <span>
                 {teams.map((team) => (
                   <MenuItem key={team} onClick={() => changeTeam(team)}>

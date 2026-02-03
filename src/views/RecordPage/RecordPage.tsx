@@ -38,7 +38,7 @@ const Record = () => {
   const [locked, setLocked] = useState(false);
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { userPermissions, userEmail } = useUserContext();
+  const { hasPermission, userEmail } = useUserContext();
   const { state } = useLocation();
   const { group_id, location } = state || {};
 
@@ -88,15 +88,15 @@ const Record = () => {
     let tempActions = {
       "Change record name": () => setOpenUpdateNameModal(true)
     } as SubheaderActions;
-    if (userPermissions && userPermissions.includes("clean_record")) {
+    if (hasPermission("clean_record")) {
       tempActions["Clean record"] = () => setOpenCleanPrompt(true);
       tempActions["Reset record"] = () => setShowResetPrompt(true);
     }
-    if (userPermissions && userPermissions.includes("delete")) {
+    if (hasPermission("delete")) {
       tempActions["Delete record"] = () => setOpenDeleteModal(true);
     }
     setSubheaderActions(tempActions);
-  }, [userPermissions]);
+  }, [hasPermission]);
 
   const handleFailedFetchRecord = (data: any, response_status?: number) => {
     setLoading(false);

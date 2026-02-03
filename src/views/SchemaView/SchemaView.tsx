@@ -12,7 +12,7 @@ import ErrorBar from "../../components/ErrorBar/ErrorBar";
 
 const SchemaView = () => {
   const navigate = useNavigate();
-  const { userPermissions} = useUserContext();
+  const { hasPermission} = useUserContext();
   const [showUploadProcessor, setShowUploadProcessor] = useState(false);
   const [schemaData, setSchemaData] = useState<SchemaOverview>();
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ const SchemaView = () => {
 
 
   useEffect(() => {
-    const hasAccess = userPermissions?.includes("manage_schema");
+    const hasAccess = hasPermission("manage_schema");
     if (!hasAccess) navigate("/");
     callAPI(
       getSchema,
@@ -31,7 +31,7 @@ const SchemaView = () => {
       handleError
     );
         
-  }, [userPermissions]);
+  }, [hasPermission]);
 
   const fetchedSchema = (processors: MongoProcessor[]) => {
     setSchemaData({

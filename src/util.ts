@@ -392,7 +392,7 @@ export const logout = (): void => {
   revokeToken();
   console.log("logging out");
   localStorage.clear();
-  window.location.replace("/");
+  window.location.replace("/login");
 };
 
 export const convertFiltersToMongoFormat = (filters: FilterOption[]): object => {
@@ -533,7 +533,8 @@ export const callAPI = async (
   apiParams: any[], 
   onSuccess: (data: any) => void, 
   onError: (error: any, status?: number) => void, 
-  isJson: boolean = true
+  isJson: boolean = true,
+  logoutOn401: boolean = true
 ): Promise<void> => {
   try {
     let response = await apiFunc(...apiParams);
@@ -568,11 +569,13 @@ export const callAPI = async (
           return onError(errorData, response.status);
         } else {
           console.error(`Received response status ${refreshResponse.status} when attempting to refresh tokens`);
-          return logout();
+          if (logoutOn401)
+            return logout();
         }
       } catch (error) {
         console.error(error);
-        return logout();
+        if (logoutOn401)
+          return logout();
       }
     } 
 

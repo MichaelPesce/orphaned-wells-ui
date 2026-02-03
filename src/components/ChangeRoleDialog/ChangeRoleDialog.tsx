@@ -12,17 +12,17 @@ interface ChangeRoleDialogProps {
     selectedUser: any;
     onClose: () => void;
     team: string;
-    userPermissions?: string[];
+    hasPermission: (permission: string) => boolean;
 }
 
-const ChangeRoleDialog = ({ open, selectedUser, onClose, team, userPermissions }: ChangeRoleDialogProps) => {
+const ChangeRoleDialog = ({ open, selectedUser, onClose, team, hasPermission }: ChangeRoleDialogProps) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [availableRoles, setAvailableRoles] = useState<any[]>([]);
   const [newRoles, setNewRoles] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const dialogHeight = "30vh";
   const dialogWidth = "40vw";
-  const is_sys_admin = userPermissions?.includes("system_administration");
+  const is_sys_admin = hasPermission("system_administration");
 
   const descriptionElementRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {

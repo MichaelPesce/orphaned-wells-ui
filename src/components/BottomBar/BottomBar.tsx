@@ -19,7 +19,7 @@ import PopupModal from "../PopupModal/PopupModal";
 
 const Bottombar = (props: BottombarProps) => {
   let params = useParams(); 
-  let { userPermissions } = useUserContext();
+  let { hasPermission } = useUserContext();
   const { 
     recordData, 
     onPreviousButtonClick, 
@@ -72,19 +72,19 @@ const Bottombar = (props: BottombarProps) => {
           markAsIncomplete, markAsDefective
         ];
         options.push(markAsNeedsVerification);
-        if (userPermissions && userPermissions.includes("verify_record")) options.push(markAsVerified);
+        if (hasPermission("verify_record")) options.push(markAsVerified);
       } else if (review_status === "incomplete") {
         options = [
           markAsUnreviewed, markAsDefective
         ];
         options.push(markAsNeedsVerification);
-        if (userPermissions && userPermissions.includes("verify_record")) options.push(markAsVerified);
+        if (hasPermission("verify_record")) options.push(markAsVerified);
       } else if (review_status === "defective") {
         options = [
           markAsUnreviewed, markAsIncomplete 
         ];
         options.push(markAsNeedsVerification);
-        if (userPermissions && userPermissions.includes("verify_record")) {
+        if (hasPermission("verify_record")) {
           options.push(markAsDefectiveVerified);
           options.push(markAsVerified);
         }
@@ -93,7 +93,7 @@ const Bottombar = (props: BottombarProps) => {
           markAsUnreviewed, markAsIncomplete 
         ];
         options.push(markAsNeedsVerification);
-        if (userPermissions && userPermissions.includes("verify_record")) options.push(markAsVerified);
+        if (hasPermission("verify_record")) options.push(markAsVerified);
       }
     } else if (verification_status === "required") {
       options = [

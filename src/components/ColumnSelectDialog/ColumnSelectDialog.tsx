@@ -14,7 +14,7 @@ import { useDownload } from "../../context/DownloadContext";
 
 const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
   const { open, onClose, location, handleUpdate, _id, appliedFilters, sortBy, sortAscending } = props;
-  const { userPermissions } = useUserContext();
+  const { hasPermission } = useUserContext();
 
   const [columns, setColumns] = useState<string[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);

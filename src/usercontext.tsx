@@ -12,7 +12,7 @@ interface UserContextObject {
   userEmail: string;
   userName: string;
   userPhoto: string;
-  userPermissions: any;
+  hasPermission: (permission: string) => boolean;
   databaseEnvironment: string;
 }
 
@@ -43,14 +43,14 @@ export const UserContextProvider = ({ children }: any) => {
     if (!authenticated) {
       // check if logged in
       let id_token = localStorage.getItem("id_token");
-      if (id_token !== null) {
-        callAPI(
-          checkAuth,
-          [id_token],
-          handlePassedAuthentication,
-          handleFailedAuthentication
-        );
-      } else handleFailedAuthentication(); // user has no id token so is not logged in
+      callAPI(
+        checkAuth,
+        [id_token],
+        handlePassedAuthentication,
+        handleFailedAuthentication,
+        true,
+        false
+      );
     }
     else setLoading(false);
     
@@ -61,6 +61,7 @@ export const UserContextProvider = ({ children }: any) => {
       user_data,
       environment,
     } = data || {};
+    console.log(user_data)
     setAuthenticated(true);
     setUser(user_data);
     setUserEmail(user_data.email);
@@ -77,7 +78,11 @@ export const UserContextProvider = ({ children }: any) => {
   const handleFailedAuthentication = () => {
     setAuthenticated(false);
     setLoading(false);
-    if (!window.location.href.includes("login")) navigate("/login", {replace: true});
+    console.log("handle failed authentication")
+    if (!window.location.href.includes("login")) {
+      console.log("navigating to login")
+      navigate("/login", {replace: true});
+    }
   };
 
   const handleSuccessfulLogin = (access_token: string, refresh_token: string, id_token: string) => {
@@ -93,12 +98,18 @@ export const UserContextProvider = ({ children }: any) => {
     );
   };
 
+  const hasPermission = (permission: string) => {
+    if (user?.anonymous) return true;
+    if (userPermissions?.includes(permission)) return true;
+    return false
+  }
+
   const value = {
     user,
     userEmail,
     userName,
     userPhoto,
-    userPermissions,
+    hasPermission,
     databaseEnvironment,
   };
 
