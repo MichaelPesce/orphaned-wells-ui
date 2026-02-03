@@ -40,17 +40,24 @@ export const UserContextProvider = ({ children }: any) => {
   const [databaseEnvironment, setDatabaseEnvironment] = useState("");
 
   useEffect(() => {
+    /*
+    TODO: 
+      Also, in the case that user is anonymous, we should allow for all permissions to be accessible.
+      We might want to rework the way we check for permissions.
+      - Add a function here: hasPermission()
+      - in the case that a user is anonymous, just return true
+    */
     if (!authenticated) {
       // check if logged in
       let id_token = localStorage.getItem("id_token");
-      if (id_token !== null) {
-        callAPI(
-          checkAuth,
-          [id_token],
-          handlePassedAuthentication,
-          handleFailedAuthentication
-        );
-      } else handleFailedAuthentication(); // user has no id token so is not logged in
+      callAPI(
+        checkAuth,
+        [id_token],
+        handlePassedAuthentication,
+        handleFailedAuthentication,
+        true,
+        false
+      );
     }
     else setLoading(false);
     
@@ -77,7 +84,11 @@ export const UserContextProvider = ({ children }: any) => {
   const handleFailedAuthentication = () => {
     setAuthenticated(false);
     setLoading(false);
-    if (!window.location.href.includes("login")) navigate("/login", {replace: true});
+    console.log("handle failed authentication")
+    if (!window.location.href.includes("login")) {
+      console.log("navigating to login")
+      navigate("/login", {replace: true});
+    }
   };
 
   const handleSuccessfulLogin = (access_token: string, refresh_token: string, id_token: string) => {
