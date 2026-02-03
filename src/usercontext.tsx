@@ -40,13 +40,6 @@ export const UserContextProvider = ({ children }: any) => {
   const [databaseEnvironment, setDatabaseEnvironment] = useState("");
 
   useEffect(() => {
-    /*
-    TODO: 
-      Also, in the case that user is anonymous, we should allow for all permissions to be accessible.
-      We might want to rework the way we check for permissions.
-      - Add a function here: hasPermission()
-      - in the case that a user is anonymous, just return true
-    */
     if (!authenticated) {
       // check if logged in
       let id_token = localStorage.getItem("id_token");
