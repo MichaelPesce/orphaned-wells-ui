@@ -204,7 +204,8 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   const { hasPermission } = useUserContext();
 
   const allowMultiple = recordSchema[schemaKey]?.occurrence?.toLowerCase().includes("multiple");
-  const isParent = recordSchema[schemaKey]?.google_data_type?.toLowerCase() === "parent";
+  const schemaDataType = recordSchema[schemaKey]?.google_data_type ?? recordSchema[schemaKey]?.data_type;
+  const isParent = schemaDataType?.toLowerCase() === "parent";
 
   useEffect(() => {
     const tempChildFields = [];
