@@ -358,11 +358,9 @@ const DocumentContainer = ({
                         <Box sx={styles.containerActions.both}>
                           <p style={{marginTop: "24px"}}>
                             <Button
-                              variant="outlined"
-                              size="small"
                               onClick={handleGetRecordHistory}
                             >
-                              History
+                              View Record History
                             </Button>
                           </p>
                           <p>
