@@ -129,6 +129,13 @@ export const getRecordNotes = (record_id: string) => {
   });
 };
 
+export const getRecordHistory = (record_id: string) => {
+  return fetch(BACKEND_URL + "/get_record_history/" + record_id, {
+    mode: "cors",
+    headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+  });
+};
+
 export const getDownloadSize = (location: string, _id: string, data: any) => {
   let endpoint = `${BACKEND_URL}/get_download_size/${location}/${_id}`;
   return fetch(endpoint, {

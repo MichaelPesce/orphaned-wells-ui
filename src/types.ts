@@ -167,6 +167,19 @@ export interface RecordNote {
     repliesTo?: number; // the index that this comment replies to, if this is a reply
 }
 
+export interface RecordHistoryItem {
+    action: string;
+    user?: string | null;
+    project_id?: string | null;
+    record_group_id?: string | null;
+    record_id?: string | null;
+    notes?: string | null;
+    query?: Record<string, any> | null;
+    previous_state?: Record<string, any> | null;
+    calling_function?: string | null;
+    timestamp?: number;
+}
+
 export interface PreviousPages {
     [key: string]: () => void;
 }
@@ -371,6 +384,13 @@ export interface RecordNotesDialogProps {
     record_id?: string;
     open: boolean;
     onClose: (record_id?: string, newNotes?: RecordNote[], submitted?: boolean) => void;
+}
+
+export interface RecordHistoryDialogProps {
+    open: boolean;
+    onClose: () => void;
+    history: RecordHistoryItem[];
+    loading?: boolean;
 }
 
 export interface ImageCropperProps {
