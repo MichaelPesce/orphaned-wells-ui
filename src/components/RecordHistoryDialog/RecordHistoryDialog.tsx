@@ -50,10 +50,10 @@ const RecordHistoryDialog = ({
           pr: 6,
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <Typography component="div" variant="h6" sx={{ fontWeight: 700 }}>
           Record History
         </Typography>
-        <Typography variant="body2" sx={{ color: "#6B7280", mt: 0.5 }}>
+        <Typography component="div" variant="body2" sx={{ color: "#6B7280", mt: 0.5 }}>
           Chronological activity timeline
         </Typography>
       </DialogTitle>
