@@ -61,7 +61,6 @@ export const UserContextProvider = ({ children }: any) => {
       user_data,
       environment,
     } = data || {};
-    console.log(user_data)
     setAuthenticated(true);
     setUser(user_data);
     setUserEmail(user_data.email);
