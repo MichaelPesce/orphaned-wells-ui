@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Grid, Box, IconButton, Alert, Tooltip, Button } from "@mui/material";
+import { Grid, Box, IconButton, Alert, Button } from "@mui/material";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import KeyboardIcon from "@mui/icons-material/Keyboard";
 import { ImageCropper } from "../ImageCropper/ImageCropper";
 import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI } from "../../util";
 import AttributesTable from "../RecordAttributesTable/RecordAttributesTable";
-import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID } from "../../types";
+import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID, RecordHistoryItem } from "../../types";
 import { DocumentContainerStyles as styles } from "../../styles";
 import Switch from "@mui/material/Switch";
 import TableLoading from "../TableLoading/TableLoading";
 import HotkeyInfo from "../HotkeyInfo/HotkeyInfo";
 import { getRecordHistory } from "../../services/app.service";
+import RecordHistoryDialog from "../RecordHistoryDialog/RecordHistoryDialog";
 
 const DocumentContainer = ({
   imageFiles,
@@ -40,6 +41,9 @@ const DocumentContainer = ({
   const [ zoomOnToken, setZoomOnToken ] = useState(JSON.parse(localStorage.getItem("zoomOnToken") || "false"));
   const [updateFieldLocationID, setUpdateFieldLocationID] = useState<FieldID>();
   const [hotkeysAnchor, setHotkeysAnchor] = useState<HTMLElement>();
+  const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
+  const [recordHistory, setRecordHistory] = useState<RecordHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const imageDivStyle = {
     width: width,
@@ -330,11 +334,19 @@ const DocumentContainer = ({
       console.error("missing record id");
       return;
     }
+    setOpenHistoryDialog(true);
+    setHistoryLoading(true);
     callAPI(
       getRecordHistory,
       [params.id],
-      (history) => console.log("record history:", history),
-      (error, status) => console.error("error fetching record history:", status, error)
+      (history: RecordHistoryItem[]) => {
+        setRecordHistory(history);
+        setHistoryLoading(false);
+      },
+      (error, status) => {
+        console.error("error fetching record history:", status, error);
+        setHistoryLoading(false);
+      }
     );
   };
 
@@ -441,6 +453,12 @@ const DocumentContainer = ({
         }
                 
       </Grid>
+      <RecordHistoryDialog
+        open={openHistoryDialog}
+        onClose={() => setOpenHistoryDialog(false)}
+        history={recordHistory}
+        loading={historyLoading}
+      />
     </Box>
   );
 };
