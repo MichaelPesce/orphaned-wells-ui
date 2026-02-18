@@ -590,27 +590,27 @@ export const callAPI = async (
 
 // Type guard to determine if an object is a RepoProcessor
 function isRepoProcessor(obj: any): obj is RepoProcessor {
-    return "Processor Name" in obj && "Processor ID" in obj && "Model ID" in obj;
+  return "Processor Name" in obj && "Processor ID" in obj && "Model ID" in obj;
 }
 
 // Function to convert a RepoProcessor to a MongoProcessor or return it directly if it's a MongoProcessor
 export function convertToMongoProcessor(input: RepoProcessor | MongoProcessor): MongoProcessor {
-    if (isRepoProcessor(input)) {
-        return {
-            name: input["Processor Name"],
-            processorId: input["Processor ID"],
-            modelId: input["Model ID"],
-            lastUpdated: input.lastUpdated,
-            img: input.img,
-            documentType: input.documentType,
-            displayName: input.displayName,
-            attributes: input.attributes as SchemaField[]
-        };
-    }
-    return input;
+  if (isRepoProcessor(input)) {
+    return {
+      name: input["Processor Name"],
+      processorId: input["Processor ID"],
+      modelId: input["Model ID"],
+      lastUpdated: input.lastUpdated,
+      img: input.img,
+      documentType: input.documentType,
+      displayName: input.displayName,
+      attributes: input.attributes as SchemaField[]
+    };
+  }
+  return input;
 }
 
 export const formatPageName = (page: string) => {
   const formattedName = page?.length > 50 ? `${page?.substring(0,47)}...` : page;
   return formattedName;
-}
+};

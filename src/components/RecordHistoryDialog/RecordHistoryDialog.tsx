@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Avatar,
+  Button,
   Box,
   Chip,
   Dialog,
@@ -29,12 +30,25 @@ type QuerySummary = {
   lines: string[];
 };
 
-const SHOW_QUERY_SUMMARY = false;
+const SHOW_QUERY_SUMMARY = true;
+const QUERY_SUMMARY_LINE_LIMIT = 6;
 
 const getAttributesList = (payload?: Record<string, unknown> | null): HistoryAttribute[] => {
   if (!payload || typeof payload !== "object") return [];
+
   const attrs = payload.attributesList;
-  return Array.isArray(attrs) ? (attrs as HistoryAttribute[]) : [];
+  if (Array.isArray(attrs)) return attrs as HistoryAttribute[];
+
+  const indexedAttributes = Object.entries(payload)
+    .filter(([key, value]) => key.startsWith("attributesList.") && value && typeof value === "object")
+    .map(([key, value]) => {
+      const idx = Number(key.replace("attributesList.", ""));
+      return { idx: Number.isNaN(idx) ? Number.MAX_SAFE_INTEGER : idx, value: value as HistoryAttribute };
+    })
+    .sort((a, b) => a.idx - b.idx)
+    .map((entry) => entry.value);
+
+  return indexedAttributes;
 };
 
 const getAttributeValue = (attr: HistoryAttribute): unknown => {
@@ -72,6 +86,11 @@ const formatValue = (value: unknown): string => {
 };
 
 const areValuesEqual = (a: unknown, b: unknown): boolean => {
+  const isEmptyLike = (value: unknown): boolean =>
+    value === null || value === undefined || value === "";
+
+  if (isEmptyLike(a) && isEmptyLike(b)) return true;
+
   if (a === b) return true;
   if (typeof a !== typeof b) return false;
   if (
@@ -132,7 +151,7 @@ const buildQuerySummary = (
     return {
       title: "Query changes",
       subtitle: `${changedFields.length} field${changedFields.length === 1 ? "" : "s"} changed`,
-      lines: changedLines.slice(0, 6),
+      lines: changedLines,
     };
   }
 
@@ -150,9 +169,9 @@ const buildQuerySummary = (
       subtitle: `${populatedFields.length} populated field${
         populatedFields.length === 1 ? "" : "s"
       }`,
-      lines: populatedFields
-        .slice(0, 6)
-        .map((entry) => `${formatKey(entry.key)}: ${formatValue(entry.value)}`),
+      lines: populatedFields.map(
+        (entry) => `${formatKey(entry.key)}: ${formatValue(entry.value)}`
+      ),
     };
   }
 
@@ -161,6 +180,50 @@ const buildQuerySummary = (
     subtitle: "No populated fields detected",
     lines: [],
   };
+};
+
+const QuerySummaryBlock = ({ querySummary }: { querySummary: QuerySummary }) => {
+  const [expanded, setExpanded] = useState(false);
+  const hasMoreLines = querySummary.lines.length > QUERY_SUMMARY_LINE_LIMIT;
+  const visibleLines = expanded
+    ? querySummary.lines
+    : querySummary.lines.slice(0, QUERY_SUMMARY_LINE_LIMIT);
+
+  return (
+    <Box>
+      <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>
+        {querySummary.title}
+      </Typography>
+      {querySummary.subtitle && (
+        <Typography sx={{ fontSize: "12px", color: "#6B7280", mt: 0.25 }}>
+          {querySummary.subtitle}
+        </Typography>
+      )}
+      {visibleLines.length > 0 && (
+        <Stack spacing={0.35} sx={{ mt: 0.8 }}>
+          {visibleLines.map((line, idx) => (
+            <Typography
+              key={`${line}-${idx}`}
+              sx={{ fontSize: "12px", color: "#374151", wordBreak: "break-word" }}
+            >
+              {line}
+            </Typography>
+          ))}
+        </Stack>
+      )}
+      {hasMoreLines && (
+        <Button
+          onClick={() => setExpanded((prev) => !prev)}
+          size="small"
+          sx={{ mt: 0.75, minWidth: 0, px: 0, textTransform: "none" }}
+        >
+          {expanded
+            ? "Show fewer"
+            : `Show ${querySummary.lines.length - QUERY_SUMMARY_LINE_LIMIT} more`}
+        </Button>
+      )}
+    </Box>
+  );
 };
 
 const RecordHistoryDialog = ({
@@ -288,28 +351,7 @@ const RecordHistoryDialog = ({
                     <Divider sx={{ my: 1.25 }} />
 
                     {querySummary ? (
-                      <Box>
-                        <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>
-                          {querySummary.title}
-                        </Typography>
-                        {querySummary.subtitle && (
-                          <Typography sx={{ fontSize: "12px", color: "#6B7280", mt: 0.25 }}>
-                            {querySummary.subtitle}
-                          </Typography>
-                        )}
-                        {querySummary.lines.length > 0 && (
-                          <Stack spacing={0.35} sx={{ mt: 0.8 }}>
-                            {querySummary.lines.map((line) => (
-                              <Typography
-                                key={line}
-                                sx={{ fontSize: "12px", color: "#374151", wordBreak: "break-word" }}
-                              >
-                                {line}
-                              </Typography>
-                            ))}
-                          </Stack>
-                        )}
-                      </Box>
+                      <QuerySummaryBlock querySummary={querySummary} />
                     ) : noteText ? (
                       <Typography sx={{ fontSize: "13px", color: "#374151" }}>
                         {noteText}

@@ -206,16 +206,16 @@ const RecordsTable = (props: RecordsTableProps) => {
     setOpenDeleteRecordsModal(false);
     const body = {
       record_ids: records.map((r) => r._id)
-    }
+    };
     // TODO: 
     // 1) set loader
     // 2) replace error call back function in callAPI with a function that displays an error using the ErrorBar component
     callAPI(
-        deleteRecords,
-        [body],
-        () => window.location.reload(),
-        (e) => console.error(e)
-      );
+      deleteRecords,
+      [body],
+      () => window.location.reload(),
+      (e) => console.error(e)
+    );
   };
 
   const handleSort = (key: SortableColumnKey) => {
@@ -395,18 +395,18 @@ const RecordsTable = (props: RecordsTableProps) => {
                       onClose={() => setShowActions(false)}
                       onClick={(e) => e.stopPropagation()}
                     >
-                        <MenuItem
-                          onClick={() => {
-                            setOpenDeleteRecordsModal(true);
-                            setShowActions(false);
-                          }}
-                        >
+                      <MenuItem
+                        onClick={() => {
+                          setOpenDeleteRecordsModal(true);
+                          setShowActions(false);
+                        }}
+                      >
                           Delete Records
-                        </MenuItem>
+                      </MenuItem>
                     </Menu>
                   </>
                 )
-                 : null
+                  : null
               }
               
             </Grid>
