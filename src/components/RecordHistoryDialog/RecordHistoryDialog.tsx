@@ -63,11 +63,30 @@ const getAttributesList = (payload?: Record<string, unknown> | null): HistoryAtt
 };
 
 const getAttributeValue = (attr: HistoryAttribute): unknown => {
-  if (attr.normalized_value !== undefined && attr.normalized_value !== null) {
+  const hasNonEmptyString = (value: unknown): boolean =>
+    typeof value === "string" ? value.trim().length > 0 : true;
+
+  if (
+    attr.normalized_value !== undefined &&
+    attr.normalized_value !== null &&
+    hasNonEmptyString(attr.normalized_value)
+  ) {
     return attr.normalized_value;
   }
-  if (attr.value !== undefined && attr.value !== null) return attr.value;
-  if (attr.text_value !== undefined && attr.text_value !== null) return attr.text_value;
+  if (
+    attr.value !== undefined &&
+    attr.value !== null &&
+    hasNonEmptyString(attr.value)
+  ) {
+    return attr.value;
+  }
+  if (
+    attr.text_value !== undefined &&
+    attr.text_value !== null &&
+    hasNonEmptyString(attr.text_value)
+  ) {
+    return attr.text_value;
+  }
   return attr.raw_text;
 };
 
