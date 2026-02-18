@@ -27,22 +27,33 @@ type HistoryAttribute = {
 type QuerySummary = {
   title: string;
   subtitle?: string;
-  lines: string[];
+  lines: QuerySummaryLine[];
+};
+
+type QuerySummaryLine = {
+  key: string;
+  previousValue?: unknown;
+  currentValue?: unknown;
+  kind: "changed" | "current";
 };
 
 const SHOW_QUERY_SUMMARY = true;
 const QUERY_SUMMARY_LINE_LIMIT = 6;
+const ATTRIBUTES_LIST_KEY = "attributesList";
 
 const getAttributesList = (payload?: Record<string, unknown> | null): HistoryAttribute[] => {
   if (!payload || typeof payload !== "object") return [];
 
-  const attrs = payload.attributesList;
+  const attrs = payload[ATTRIBUTES_LIST_KEY];
   if (Array.isArray(attrs)) return attrs as HistoryAttribute[];
 
   const indexedAttributes = Object.entries(payload)
-    .filter(([key, value]) => key.startsWith("attributesList.") && value && typeof value === "object")
+    .filter(
+      ([key, value]) =>
+        key.startsWith(`${ATTRIBUTES_LIST_KEY}.`) && value && typeof value === "object"
+    )
     .map(([key, value]) => {
-      const idx = Number(key.replace("attributesList.", ""));
+      const idx = Number(key.replace(`${ATTRIBUTES_LIST_KEY}.`, ""));
       return { idx: Number.isNaN(idx) ? Number.MAX_SAFE_INTEGER : idx, value: value as HistoryAttribute };
     })
     .sort((a, b) => a.idx - b.idx)
@@ -106,11 +117,72 @@ const areValuesEqual = (a: unknown, b: unknown): boolean => {
   return false;
 };
 
+const isAttributesListField = (key: string): boolean =>
+  key === ATTRIBUTES_LIST_KEY || key.startsWith(`${ATTRIBUTES_LIST_KEY}.`);
+
+const buildNonAttributeChanges = (
+  query?: Record<string, unknown> | null,
+  previousState?: Record<string, unknown> | null
+): QuerySummaryLine[] => {
+  const queryObj = query && typeof query === "object" ? query : {};
+  const previousObj =
+    previousState && typeof previousState === "object" ? previousState : {};
+
+  const allKeys = new Set<string>([
+    ...Object.keys(queryObj),
+    ...Object.keys(previousObj),
+  ]);
+
+  const lines: QuerySummaryLine[] = [];
+  allKeys.forEach((key) => {
+    if (isAttributesListField(key)) return;
+
+    const hasQuery = Object.prototype.hasOwnProperty.call(queryObj, key);
+    const hasPrevious = Object.prototype.hasOwnProperty.call(previousObj, key);
+    const currentValue = (queryObj as Record<string, unknown>)[key];
+    const previousValue = (previousObj as Record<string, unknown>)[key];
+
+    if (hasQuery && hasPrevious) {
+      if (!areValuesEqual(currentValue, previousValue)) {
+        lines.push({
+          key,
+          previousValue,
+          currentValue,
+          kind: "changed",
+        });
+      }
+      return;
+    }
+
+    if (hasQuery) {
+      lines.push({
+        key,
+        currentValue,
+        kind: "current",
+      });
+      return;
+    }
+
+    if (hasPrevious) {
+      lines.push({
+        key,
+        previousValue,
+        currentValue: null,
+        kind: "changed",
+      });
+    }
+  });
+
+  return lines;
+};
+
 const buildQuerySummary = (
   query?: Record<string, unknown> | null,
   previousState?: Record<string, unknown> | null
 ): QuerySummary | null => {
   if (!query || typeof query !== "object") return null;
+  console.log(query)
+  console.log(previousState)
 
   const queryAttributes = getAttributesList(query);
   const prevAttributes = getAttributesList(previousState);
@@ -129,7 +201,7 @@ const buildQuerySummary = (
     }
   });
 
-  const changedLines: string[] = [];
+  const changedLines: QuerySummaryLine[] = [];
   const changedFields: string[] = [];
   const keys = new Set<string>([
     ...Array.from(queryMap.keys()),
@@ -141,9 +213,12 @@ const buildQuerySummary = (
     const previousValue = prevMap.get(key);
     if (!areValuesEqual(currentValue, previousValue)) {
       changedFields.push(key);
-      changedLines.push(
-        `${formatKey(key)}: ${formatValue(previousValue)} -> ${formatValue(currentValue)}`
-      );
+      changedLines.push({
+        key,
+        previousValue,
+        currentValue,
+        kind: "changed",
+      });
     }
   });
 
@@ -152,6 +227,17 @@ const buildQuerySummary = (
       title: "Query changes",
       subtitle: `${changedFields.length} field${changedFields.length === 1 ? "" : "s"} changed`,
       lines: changedLines,
+    };
+  }
+
+  const nonAttributeChanges = buildNonAttributeChanges(query, previousState);
+  if (nonAttributeChanges.length > 0) {
+    return {
+      title: "Query changes",
+      subtitle: `${nonAttributeChanges.length} field${
+        nonAttributeChanges.length === 1 ? "" : "s"
+      } changed`,
+      lines: nonAttributeChanges,
     };
   }
 
@@ -169,9 +255,11 @@ const buildQuerySummary = (
       subtitle: `${populatedFields.length} populated field${
         populatedFields.length === 1 ? "" : "s"
       }`,
-      lines: populatedFields.map(
-        (entry) => `${formatKey(entry.key)}: ${formatValue(entry.value)}`
-      ),
+      lines: populatedFields.map((entry) => ({
+        key: entry.key,
+        currentValue: entry.value,
+        kind: "current",
+      })),
     };
   }
 
@@ -203,10 +291,15 @@ const QuerySummaryBlock = ({ querySummary }: { querySummary: QuerySummary }) => 
         <Stack spacing={0.35} sx={{ mt: 0.8 }}>
           {visibleLines.map((line, idx) => (
             <Typography
-              key={`${line}-${idx}`}
+              key={`${line.key}-${idx}`}
               sx={{ fontSize: "12px", color: "#374151", wordBreak: "break-word" }}
             >
-              {line}
+              <Box component="span" sx={{ fontWeight: 700 }}>
+                {formatKey(line.key)}:
+              </Box>{" "}
+              {line.kind === "changed"
+                ? `${formatValue(line.previousValue)} -> ${formatValue(line.currentValue)}`
+                : formatValue(line.currentValue)}
             </Typography>
           ))}
         </Stack>
