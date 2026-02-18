@@ -13,281 +13,16 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { RecordHistoryDialogProps } from "../../types";
-import { formatDateTime } from "../../util";
-
-type HistoryAttribute = {
-  key?: unknown;
-  value?: unknown;
-  normalized_value?: unknown;
-  text_value?: unknown;
-  raw_text?: unknown;
-};
-
-type QuerySummary = {
-  title: string;
-  subtitle?: string;
-  lines: QuerySummaryLine[];
-};
-
-type QuerySummaryLine = {
-  key: string;
-  previousValue?: unknown;
-  currentValue?: unknown;
-  kind: "changed" | "current";
-};
+import { QuerySummary, RecordHistoryDialogProps } from "../../types";
+import {
+  buildRecordHistoryQuerySummary,
+  formatDateTime,
+  formatHistoryKey,
+  formatHistoryValue,
+} from "../../util";
 
 const SHOW_QUERY_SUMMARY = true;
 const QUERY_SUMMARY_LINE_LIMIT = 6;
-const ATTRIBUTES_LIST_KEY = "attributesList";
-
-const getAttributesList = (payload?: Record<string, unknown> | null): HistoryAttribute[] => {
-  if (!payload || typeof payload !== "object") return [];
-
-  const attrs = payload[ATTRIBUTES_LIST_KEY];
-  if (Array.isArray(attrs)) return attrs as HistoryAttribute[];
-
-  const indexedAttributes = Object.entries(payload)
-    .filter(
-      ([key, value]) =>
-        key.startsWith(`${ATTRIBUTES_LIST_KEY}.`) && value && typeof value === "object"
-    )
-    .map(([key, value]) => {
-      const idx = Number(key.replace(`${ATTRIBUTES_LIST_KEY}.`, ""));
-      return { idx: Number.isNaN(idx) ? Number.MAX_SAFE_INTEGER : idx, value: value as HistoryAttribute };
-    })
-    .sort((a, b) => a.idx - b.idx)
-    .map((entry) => entry.value);
-
-  return indexedAttributes;
-};
-
-const getAttributeValue = (attr: HistoryAttribute): unknown => {
-  const hasNonEmptyString = (value: unknown): boolean =>
-    typeof value === "string" ? value.trim().length > 0 : true;
-
-  if (
-    attr.normalized_value !== undefined &&
-    attr.normalized_value !== null &&
-    hasNonEmptyString(attr.normalized_value)
-  ) {
-    return attr.normalized_value;
-  }
-  if (
-    attr.value !== undefined &&
-    attr.value !== null &&
-    hasNonEmptyString(attr.value)
-  ) {
-    return attr.value;
-  }
-  if (
-    attr.text_value !== undefined &&
-    attr.text_value !== null &&
-    hasNonEmptyString(attr.text_value)
-  ) {
-    return attr.text_value;
-  }
-  return attr.raw_text;
-};
-
-const isMeaningfulValue = (value: unknown): boolean => {
-  if (value === null || value === undefined) return false;
-  if (typeof value === "string") return value.trim().length > 0;
-  if (typeof value === "boolean") return value;
-  if (Array.isArray(value)) return value.length > 0;
-  return true;
-};
-
-const formatKey = (key: string): string =>
-  key
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-
-const formatValue = (value: unknown): string => {
-  if (value === null || value === undefined) return "empty";
-  if (typeof value === "string") return value.trim() || "empty";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") return String(value);
-  if (Array.isArray(value)) return `[${value.length} values]`;
-  if (typeof value === "object") return "{...}";
-  return String(value);
-};
-
-const areValuesEqual = (a: unknown, b: unknown): boolean => {
-  const isEmptyLike = (value: unknown): boolean =>
-    value === null || value === undefined || value === "";
-
-  if (isEmptyLike(a) && isEmptyLike(b)) return true;
-
-  if (a === b) return true;
-  if (typeof a !== typeof b) return false;
-  if (
-    (typeof a === "object" && a !== null) ||
-    (typeof b === "object" && b !== null)
-  ) {
-    try {
-      return JSON.stringify(a) === JSON.stringify(b);
-    } catch (_error) {
-      return false;
-    }
-  }
-  return false;
-};
-
-const isAttributesListField = (key: string): boolean =>
-  key === ATTRIBUTES_LIST_KEY || key.startsWith(`${ATTRIBUTES_LIST_KEY}.`);
-
-const buildNonAttributeChanges = (
-  query?: Record<string, unknown> | null,
-  previousState?: Record<string, unknown> | null
-): QuerySummaryLine[] => {
-  const queryObj = query && typeof query === "object" ? query : {};
-  const previousObj =
-    previousState && typeof previousState === "object" ? previousState : {};
-
-  const allKeys = new Set<string>([
-    ...Object.keys(queryObj),
-    ...Object.keys(previousObj),
-  ]);
-
-  const lines: QuerySummaryLine[] = [];
-  allKeys.forEach((key) => {
-    if (isAttributesListField(key)) return;
-
-    const hasQuery = Object.prototype.hasOwnProperty.call(queryObj, key);
-    const hasPrevious = Object.prototype.hasOwnProperty.call(previousObj, key);
-    const currentValue = (queryObj as Record<string, unknown>)[key];
-    const previousValue = (previousObj as Record<string, unknown>)[key];
-
-    if (hasQuery && hasPrevious) {
-      if (!areValuesEqual(currentValue, previousValue)) {
-        lines.push({
-          key,
-          previousValue,
-          currentValue,
-          kind: "changed",
-        });
-      }
-      return;
-    }
-
-    if (hasQuery) {
-      lines.push({
-        key,
-        currentValue,
-        kind: "current",
-      });
-      return;
-    }
-
-    if (hasPrevious) {
-      lines.push({
-        key,
-        previousValue,
-        currentValue: null,
-        kind: "changed",
-      });
-    }
-  });
-
-  return lines;
-};
-
-const buildQuerySummary = (
-  query?: Record<string, unknown> | null,
-  previousState?: Record<string, unknown> | null
-): QuerySummary | null => {
-  if (!query || typeof query !== "object") return null;
-  console.log(query)
-  console.log(previousState)
-
-  const queryAttributes = getAttributesList(query);
-  const prevAttributes = getAttributesList(previousState);
-
-  const queryMap = new Map<string, unknown>();
-  queryAttributes.forEach((attr) => {
-    if (typeof attr.key === "string" && attr.key) {
-      queryMap.set(attr.key, getAttributeValue(attr));
-    }
-  });
-
-  const prevMap = new Map<string, unknown>();
-  prevAttributes.forEach((attr) => {
-    if (typeof attr.key === "string" && attr.key) {
-      prevMap.set(attr.key, getAttributeValue(attr));
-    }
-  });
-
-  const changedLines: QuerySummaryLine[] = [];
-  const changedFields: string[] = [];
-  const keys = new Set<string>([
-    ...Array.from(queryMap.keys()),
-    ...Array.from(prevMap.keys()),
-  ]);
-
-  keys.forEach((key) => {
-    const currentValue = queryMap.get(key);
-    const previousValue = prevMap.get(key);
-    if (!areValuesEqual(currentValue, previousValue)) {
-      changedFields.push(key);
-      changedLines.push({
-        key,
-        previousValue,
-        currentValue,
-        kind: "changed",
-      });
-    }
-  });
-
-  if (changedLines.length > 0) {
-    return {
-      title: "Query changes",
-      subtitle: `${changedFields.length} field${changedFields.length === 1 ? "" : "s"} changed`,
-      lines: changedLines,
-    };
-  }
-
-  const nonAttributeChanges = buildNonAttributeChanges(query, previousState);
-  if (nonAttributeChanges.length > 0) {
-    return {
-      title: "Query changes",
-      subtitle: `${nonAttributeChanges.length} field${
-        nonAttributeChanges.length === 1 ? "" : "s"
-      } changed`,
-      lines: nonAttributeChanges,
-    };
-  }
-
-  const populatedFields = queryAttributes
-    .filter((attr) => typeof attr.key === "string" && attr.key)
-    .map((attr) => ({
-      key: attr.key as string,
-      value: getAttributeValue(attr),
-    }))
-    .filter((entry) => isMeaningfulValue(entry.value));
-
-  if (populatedFields.length > 0) {
-    return {
-      title: "Query snapshot",
-      subtitle: `${populatedFields.length} populated field${
-        populatedFields.length === 1 ? "" : "s"
-      }`,
-      lines: populatedFields.map((entry) => ({
-        key: entry.key,
-        currentValue: entry.value,
-        kind: "current",
-      })),
-    };
-  }
-
-  return {
-    title: "Query snapshot",
-    subtitle: "No populated fields detected",
-    lines: [],
-  };
-};
 
 const QuerySummaryBlock = ({ querySummary }: { querySummary: QuerySummary }) => {
   const [expanded, setExpanded] = useState(false);
@@ -314,11 +49,9 @@ const QuerySummaryBlock = ({ querySummary }: { querySummary: QuerySummary }) => 
               sx={{ fontSize: "12px", color: "#374151", wordBreak: "break-word" }}
             >
               <Box component="span" sx={{ fontWeight: 700 }}>
-                {formatKey(line.key)}:
+                {formatHistoryKey(line.key)}:
               </Box>{" "}
-              {line.kind === "changed"
-                ? `${formatValue(line.previousValue)} -> ${formatValue(line.currentValue)}`
-                : formatValue(line.currentValue)}
+              {formatHistoryValue(line.currentValue)}
             </Typography>
           ))}
         </Stack>
@@ -406,7 +139,7 @@ const RecordHistoryDialog = ({
                 const action = item.action || "unknown_action";
                 const noteText = (item.notes || "").trim();
                 const querySummary = SHOW_QUERY_SUMMARY
-                  ? buildQuerySummary(item.query, item.previous_state)
+                  ? buildRecordHistoryQuerySummary(item.query)
                   : null;
                 const initial = userName[0]?.toUpperCase() || "?";
                 return (
