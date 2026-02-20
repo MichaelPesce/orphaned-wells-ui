@@ -65,7 +65,7 @@ const Subheader = (props: SubheaderProps) => {
               <Typography noWrap component="span" sx={{fontSize: "13px"}}>
                 {currentPage!== undefined ? formatPageName(currentPage) : ""}
               </Typography>
-              </Button>
+            </Button>
           </div>
           <div style={styles.pageName}>
             <Tooltip title={currentPage?.length > 50 ? currentPage : ""}>

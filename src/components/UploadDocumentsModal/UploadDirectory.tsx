@@ -109,7 +109,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
     // console.log(directoryFiles.length)
     setUnduplicateFiles(temp_unduplicateFiles);
     setDisabled(false);
-  }
+  };
 
   const upload = () => {
     setUploading(true);

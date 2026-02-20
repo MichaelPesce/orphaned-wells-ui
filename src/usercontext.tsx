@@ -77,9 +77,9 @@ export const UserContextProvider = ({ children }: any) => {
   const handleFailedAuthentication = () => {
     setAuthenticated(false);
     setLoading(false);
-    console.log("handle failed authentication")
+    console.log("handle failed authentication");
     if (!window.location.href.includes("login")) {
-      console.log("navigating to login")
+      console.log("navigating to login");
       navigate("/login", {replace: true});
     }
   };
@@ -100,8 +100,8 @@ export const UserContextProvider = ({ children }: any) => {
   const hasPermission = (permission: string) => {
     if (user?.anonymous) return true;
     if (userPermissions?.includes(permission)) return true;
-    return false
-  }
+    return false;
+  };
 
   const value = {
     user,

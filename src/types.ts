@@ -180,6 +180,25 @@ export interface RecordHistoryItem {
     timestamp?: number;
 }
 
+export interface HistoryAttribute {
+    key?: unknown;
+    value?: unknown;
+    normalized_value?: unknown;
+    text_value?: unknown;
+    raw_text?: unknown;
+}
+
+export interface QuerySummaryLine {
+    key: string;
+    currentValue?: unknown;
+}
+
+export interface QuerySummary {
+    title: string;
+    subtitle?: string;
+    lines: QuerySummaryLine[];
+}
+
 export interface PreviousPages {
     [key: string]: () => void;
 }

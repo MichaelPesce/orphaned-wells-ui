@@ -368,7 +368,7 @@ const DocumentContainer = ({
                     <Grid item xs={gridWidths[2]}>
                       <Box sx={styles.gridContainer}>
                         <Box sx={styles.containerActions.both}>
-                          <p style={{marginTop: "24px"}}>
+                          <p>
                             <Button
                               onClick={handleGetRecordHistory}
                             >

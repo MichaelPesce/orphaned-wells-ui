@@ -1,6 +1,16 @@
 import { refreshAuth, revokeToken } from "./services/app.service";
 import { useEffect, useRef } from "react";
-import { FilterOption, TableColumns, RecordNote, SchemaField, RepoProcessor, MongoProcessor } from "./types";
+import {
+  FilterOption,
+  TableColumns,
+  RecordNote,
+  SchemaField,
+  RepoProcessor,
+  MongoProcessor,
+  HistoryAttribute,
+  QuerySummary,
+  QuerySummaryLine,
+} from "./types";
 
 export const DEFAULT_FILTER_OPTIONS: {
   [key: string]: FilterOption;
@@ -300,6 +310,132 @@ export function formatDateTime(timestamp?: number): string {
   return new Intl.DateTimeFormat("en-US", options).format(date);
 }
 
+const ATTRIBUTES_LIST_KEY = "attributesList";
+
+const isAttributesListField = (key: string): boolean =>
+  key === ATTRIBUTES_LIST_KEY || key.startsWith(`${ATTRIBUTES_LIST_KEY}.`);
+
+const isMeaningfulHistoryValue = (value: unknown): boolean => {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+};
+
+const getHistoryAttributeValue = (attr: HistoryAttribute): unknown => {
+  const hasNonEmptyString = (value: unknown): boolean =>
+    typeof value === "string" ? value.trim().length > 0 : true;
+
+  if (
+    attr.normalized_value !== undefined &&
+    attr.normalized_value !== null &&
+    hasNonEmptyString(attr.normalized_value)
+  ) {
+    return attr.normalized_value;
+  }
+  if (
+    attr.value !== undefined &&
+    attr.value !== null &&
+    hasNonEmptyString(attr.value)
+  ) {
+    return attr.value;
+  }
+  if (
+    attr.text_value !== undefined &&
+    attr.text_value !== null &&
+    hasNonEmptyString(attr.text_value)
+  ) {
+    return attr.text_value;
+  }
+  return attr.raw_text;
+};
+
+const getHistoryAttributesList = (
+  payload?: Record<string, unknown> | null
+): HistoryAttribute[] => {
+  if (!payload || typeof payload !== "object") return [];
+
+  const attrs = payload[ATTRIBUTES_LIST_KEY];
+  if (Array.isArray(attrs)) return attrs as HistoryAttribute[];
+
+  return Object.entries(payload)
+    .filter(
+      ([key, value]) =>
+        key.startsWith(`${ATTRIBUTES_LIST_KEY}.`) &&
+        value &&
+        typeof value === "object"
+    )
+    .map(([key, value]) => {
+      const idx = Number(key.replace(`${ATTRIBUTES_LIST_KEY}.`, ""));
+      return {
+        idx: Number.isNaN(idx) ? Number.MAX_SAFE_INTEGER : idx,
+        value: value as HistoryAttribute,
+      };
+    })
+    .sort((a, b) => a.idx - b.idx)
+    .map((entry) => entry.value);
+};
+
+export const formatHistoryKey = (key: string): string =>
+  key
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+export const formatHistoryValue = (value: unknown): string => {
+  if (value === null || value === undefined) return "empty";
+  if (typeof value === "string") return value.trim() || "empty";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) return `[${value.length} values]`;
+  if (typeof value === "object") return "{...}";
+  return String(value);
+};
+
+export const buildRecordHistoryQuerySummary = (
+  query?: Record<string, unknown> | null
+): QuerySummary | null => {
+  if (!query || typeof query !== "object") return null;
+
+  const queryAttributes = getHistoryAttributesList(query);
+  const attributeLines: QuerySummaryLine[] = queryAttributes
+    .filter((attr) => typeof attr.key === "string" && attr.key)
+    .map((attr) => ({
+      key: attr.key as string,
+      currentValue: getHistoryAttributeValue(attr),
+    }))
+    .filter((line) => isMeaningfulHistoryValue(line.currentValue));
+
+  const nonAttributeLines: QuerySummaryLine[] = Object.entries(query)
+    .filter(([key]) => !isAttributesListField(key))
+    .map(([key, currentValue]) => ({ key, currentValue }))
+    .filter((line) => isMeaningfulHistoryValue(line.currentValue));
+
+  const lines: QuerySummaryLine[] = [];
+  const seenKeys = new Set<string>();
+  [...attributeLines, ...nonAttributeLines].forEach((line) => {
+    if (seenKeys.has(line.key)) return;
+    seenKeys.add(line.key);
+    lines.push(line);
+  });
+
+  if (lines.length === 0) {
+    return {
+      title: "Query snapshot",
+      subtitle: "No populated fields detected",
+      lines: [],
+    };
+  }
+
+  return {
+    title: "Query snapshot",
+    subtitle: `${lines.length} populated field${lines.length === 1 ? "" : "s"}`,
+    lines,
+  };
+};
+
 export const findCenter = (points: number[][]) => {
   let center = [];
   if (points) {
@@ -590,27 +726,27 @@ export const callAPI = async (
 
 // Type guard to determine if an object is a RepoProcessor
 function isRepoProcessor(obj: any): obj is RepoProcessor {
-    return "Processor Name" in obj && "Processor ID" in obj && "Model ID" in obj;
+  return "Processor Name" in obj && "Processor ID" in obj && "Model ID" in obj;
 }
 
 // Function to convert a RepoProcessor to a MongoProcessor or return it directly if it's a MongoProcessor
 export function convertToMongoProcessor(input: RepoProcessor | MongoProcessor): MongoProcessor {
-    if (isRepoProcessor(input)) {
-        return {
-            name: input["Processor Name"],
-            processorId: input["Processor ID"],
-            modelId: input["Model ID"],
-            lastUpdated: input.lastUpdated,
-            img: input.img,
-            documentType: input.documentType,
-            displayName: input.displayName,
-            attributes: input.attributes as SchemaField[]
-        };
-    }
-    return input;
+  if (isRepoProcessor(input)) {
+    return {
+      name: input["Processor Name"],
+      processorId: input["Processor ID"],
+      modelId: input["Model ID"],
+      lastUpdated: input.lastUpdated,
+      img: input.img,
+      documentType: input.documentType,
+      displayName: input.displayName,
+      attributes: input.attributes as SchemaField[]
+    };
+  }
+  return input;
 }
 
 export const formatPageName = (page: string) => {
   const formattedName = page?.length > 50 ? `${page?.substring(0,47)}...` : page;
   return formattedName;
-}
+};

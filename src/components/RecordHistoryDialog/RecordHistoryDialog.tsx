@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Avatar,
+  Button,
   Box,
   Chip,
   Dialog,
@@ -12,155 +13,62 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { RecordHistoryDialogProps } from "../../types";
-import { formatDateTime } from "../../util";
+import { QuerySummary, RecordHistoryDialogProps } from "../../types";
+import {
+  buildRecordHistoryQuerySummary,
+  formatDateTime,
+  formatHistoryKey,
+  formatHistoryValue,
+} from "../../util";
 
-type HistoryAttribute = {
-  key?: unknown;
-  value?: unknown;
-  normalized_value?: unknown;
-  text_value?: unknown;
-  raw_text?: unknown;
-};
+const SHOW_QUERY_SUMMARY = true;
+const QUERY_SUMMARY_LINE_LIMIT = 6;
 
-type QuerySummary = {
-  title: string;
-  subtitle?: string;
-  lines: string[];
-};
+const QuerySummaryBlock = ({ querySummary }: { querySummary: QuerySummary }) => {
+  const [expanded, setExpanded] = useState(false);
+  const hasMoreLines = querySummary.lines.length > QUERY_SUMMARY_LINE_LIMIT;
+  const visibleLines = expanded
+    ? querySummary.lines
+    : querySummary.lines.slice(0, QUERY_SUMMARY_LINE_LIMIT);
 
-const SHOW_QUERY_SUMMARY = false;
-
-const getAttributesList = (payload?: Record<string, unknown> | null): HistoryAttribute[] => {
-  if (!payload || typeof payload !== "object") return [];
-  const attrs = payload.attributesList;
-  return Array.isArray(attrs) ? (attrs as HistoryAttribute[]) : [];
-};
-
-const getAttributeValue = (attr: HistoryAttribute): unknown => {
-  if (attr.normalized_value !== undefined && attr.normalized_value !== null) {
-    return attr.normalized_value;
-  }
-  if (attr.value !== undefined && attr.value !== null) return attr.value;
-  if (attr.text_value !== undefined && attr.text_value !== null) return attr.text_value;
-  return attr.raw_text;
-};
-
-const isMeaningfulValue = (value: unknown): boolean => {
-  if (value === null || value === undefined) return false;
-  if (typeof value === "string") return value.trim().length > 0;
-  if (typeof value === "boolean") return value;
-  if (Array.isArray(value)) return value.length > 0;
-  return true;
-};
-
-const formatKey = (key: string): string =>
-  key
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-
-const formatValue = (value: unknown): string => {
-  if (value === null || value === undefined) return "empty";
-  if (typeof value === "string") return value.trim() || "empty";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") return String(value);
-  if (Array.isArray(value)) return `[${value.length} values]`;
-  if (typeof value === "object") return "{...}";
-  return String(value);
-};
-
-const areValuesEqual = (a: unknown, b: unknown): boolean => {
-  if (a === b) return true;
-  if (typeof a !== typeof b) return false;
-  if (
-    (typeof a === "object" && a !== null) ||
-    (typeof b === "object" && b !== null)
-  ) {
-    try {
-      return JSON.stringify(a) === JSON.stringify(b);
-    } catch (_error) {
-      return false;
-    }
-  }
-  return false;
-};
-
-const buildQuerySummary = (
-  query?: Record<string, unknown> | null,
-  previousState?: Record<string, unknown> | null
-): QuerySummary | null => {
-  if (!query || typeof query !== "object") return null;
-
-  const queryAttributes = getAttributesList(query);
-  const prevAttributes = getAttributesList(previousState);
-
-  const queryMap = new Map<string, unknown>();
-  queryAttributes.forEach((attr) => {
-    if (typeof attr.key === "string" && attr.key) {
-      queryMap.set(attr.key, getAttributeValue(attr));
-    }
-  });
-
-  const prevMap = new Map<string, unknown>();
-  prevAttributes.forEach((attr) => {
-    if (typeof attr.key === "string" && attr.key) {
-      prevMap.set(attr.key, getAttributeValue(attr));
-    }
-  });
-
-  const changedLines: string[] = [];
-  const changedFields: string[] = [];
-  const keys = new Set<string>([
-    ...Array.from(queryMap.keys()),
-    ...Array.from(prevMap.keys()),
-  ]);
-
-  keys.forEach((key) => {
-    const currentValue = queryMap.get(key);
-    const previousValue = prevMap.get(key);
-    if (!areValuesEqual(currentValue, previousValue)) {
-      changedFields.push(key);
-      changedLines.push(
-        `${formatKey(key)}: ${formatValue(previousValue)} -> ${formatValue(currentValue)}`
-      );
-    }
-  });
-
-  if (changedLines.length > 0) {
-    return {
-      title: "Query changes",
-      subtitle: `${changedFields.length} field${changedFields.length === 1 ? "" : "s"} changed`,
-      lines: changedLines.slice(0, 6),
-    };
-  }
-
-  const populatedFields = queryAttributes
-    .filter((attr) => typeof attr.key === "string" && attr.key)
-    .map((attr) => ({
-      key: attr.key as string,
-      value: getAttributeValue(attr),
-    }))
-    .filter((entry) => isMeaningfulValue(entry.value));
-
-  if (populatedFields.length > 0) {
-    return {
-      title: "Query snapshot",
-      subtitle: `${populatedFields.length} populated field${
-        populatedFields.length === 1 ? "" : "s"
-      }`,
-      lines: populatedFields
-        .slice(0, 6)
-        .map((entry) => `${formatKey(entry.key)}: ${formatValue(entry.value)}`),
-    };
-  }
-
-  return {
-    title: "Query snapshot",
-    subtitle: "No populated fields detected",
-    lines: [],
-  };
+  return (
+    <Box>
+      <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>
+        {querySummary.title}
+      </Typography>
+      {querySummary.subtitle && (
+        <Typography sx={{ fontSize: "12px", color: "#6B7280", mt: 0.25 }}>
+          {querySummary.subtitle}
+        </Typography>
+      )}
+      {visibleLines.length > 0 && (
+        <Stack spacing={0.35} sx={{ mt: 0.8 }}>
+          {visibleLines.map((line, idx) => (
+            <Typography
+              key={`${line.key}-${idx}`}
+              sx={{ fontSize: "12px", color: "#374151", wordBreak: "break-word" }}
+            >
+              <Box component="span" sx={{ fontWeight: 700 }}>
+                {formatHistoryKey(line.key)}:
+              </Box>{" "}
+              {formatHistoryValue(line.currentValue)}
+            </Typography>
+          ))}
+        </Stack>
+      )}
+      {hasMoreLines && (
+        <Button
+          onClick={() => setExpanded((prev) => !prev)}
+          size="small"
+          sx={{ mt: 0.75, minWidth: 0, px: 0, textTransform: "none" }}
+        >
+          {expanded
+            ? "Show fewer"
+            : `Show ${querySummary.lines.length - QUERY_SUMMARY_LINE_LIMIT} more`}
+        </Button>
+      )}
+    </Box>
+  );
 };
 
 const RecordHistoryDialog = ({
@@ -231,7 +139,7 @@ const RecordHistoryDialog = ({
                 const action = item.action || "unknown_action";
                 const noteText = (item.notes || "").trim();
                 const querySummary = SHOW_QUERY_SUMMARY
-                  ? buildQuerySummary(item.query, item.previous_state)
+                  ? buildRecordHistoryQuerySummary(item.query)
                   : null;
                 const initial = userName[0]?.toUpperCase() || "?";
                 return (
@@ -288,28 +196,7 @@ const RecordHistoryDialog = ({
                     <Divider sx={{ my: 1.25 }} />
 
                     {querySummary ? (
-                      <Box>
-                        <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>
-                          {querySummary.title}
-                        </Typography>
-                        {querySummary.subtitle && (
-                          <Typography sx={{ fontSize: "12px", color: "#6B7280", mt: 0.25 }}>
-                            {querySummary.subtitle}
-                          </Typography>
-                        )}
-                        {querySummary.lines.length > 0 && (
-                          <Stack spacing={0.35} sx={{ mt: 0.8 }}>
-                            {querySummary.lines.map((line) => (
-                              <Typography
-                                key={line}
-                                sx={{ fontSize: "12px", color: "#374151", wordBreak: "break-word" }}
-                              >
-                                {line}
-                              </Typography>
-                            ))}
-                          </Stack>
-                        )}
-                      </Box>
+                      <QuerySummaryBlock querySummary={querySummary} />
                     ) : noteText ? (
                       <Typography sx={{ fontSize: "13px", color: "#374151" }}>
                         {noteText}
