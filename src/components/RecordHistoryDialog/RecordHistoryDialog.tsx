@@ -201,11 +201,8 @@ const RecordHistoryDialog = ({
                       <Typography sx={{ fontSize: "13px", color: "#374151" }}>
                         {noteText}
                       </Typography>
-                    ) : (
-                      <Typography sx={{ fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>
-                        No query details or notes.
-                      </Typography>
-                    )}
+                    ) : 
+                      null}
                   </Box>
                 );
               })}
