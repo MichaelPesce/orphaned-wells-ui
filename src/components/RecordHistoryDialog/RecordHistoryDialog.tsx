@@ -175,10 +175,10 @@ const RecordHistoryDialog = ({
                             whiteSpace: "nowrap",
                           }}
                         >
-                          {userName}
+                          {formatDateTime(item.timestamp)}
                         </Typography>
                         <Typography sx={{ fontSize: "12px", color: "#6B7280" }}>
-                          {formatDateTime(item.timestamp)}
+                          {userName}
                         </Typography>
                       </Box>
                       <Chip
