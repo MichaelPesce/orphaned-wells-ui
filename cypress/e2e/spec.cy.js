@@ -179,7 +179,7 @@ describe("End to end testing", () => {
     cy.get("#fullscreen-table-button").click();
 
     // click on field
-    let field_name = "Acidized";
+    let field_name = "Oil";
     cy.get("#"+field_name+"_confidence").contains(/not found/i);
     cy.findByText(field_name).click();
     cy.screenshot("clicked on "+field_name);
