@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Grid, Box, IconButton, Alert, Button } from "@mui/material";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
+import HistoryIcon from '@mui/icons-material/History';
 import KeyboardIcon from "@mui/icons-material/Keyboard";
 import { ImageCropper } from "../ImageCropper/ImageCropper";
 import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI } from "../../util";
@@ -369,15 +370,13 @@ const DocumentContainer = ({
                       <Box sx={styles.gridContainer}>
                         <Box sx={styles.containerActions.both}>
                           <p>
-                            <Button
-                              onClick={handleGetRecordHistory}
-                            >
-                              View Record History
-                            </Button>
                           </p>
                           <p>
                                     Raw Values 
                             <Switch checked={showRawValues} onChange={() => setShowRawValues(!showRawValues)} size='small'/>
+                            <IconButton id='record-history-table-button' onClick={handleGetRecordHistory}>
+                              <HistoryIcon/>
+                            </IconButton>
                             <IconButton id='fullscreen-table-button' onClick={() => handleSetFullscreen("table")}>
                               { 
                                 fullscreen === "table" ? <FullscreenExitIcon/> : <FullscreenIcon/> 

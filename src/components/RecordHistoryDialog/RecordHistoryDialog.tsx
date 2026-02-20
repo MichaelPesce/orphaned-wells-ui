@@ -175,10 +175,10 @@ const RecordHistoryDialog = ({
                             whiteSpace: "nowrap",
                           }}
                         >
-                          {userName}
+                          {formatDateTime(item.timestamp)}
                         </Typography>
                         <Typography sx={{ fontSize: "12px", color: "#6B7280" }}>
-                          {formatDateTime(item.timestamp)}
+                          {userName}
                         </Typography>
                       </Box>
                       <Chip
@@ -201,11 +201,8 @@ const RecordHistoryDialog = ({
                       <Typography sx={{ fontSize: "13px", color: "#374151" }}>
                         {noteText}
                       </Typography>
-                    ) : (
-                      <Typography sx={{ fontSize: "12px", color: "#9CA3AF", fontStyle: "italic" }}>
-                        No query details or notes.
-                      </Typography>
-                    )}
+                    ) : 
+                      null}
                   </Box>
                 );
               })}
