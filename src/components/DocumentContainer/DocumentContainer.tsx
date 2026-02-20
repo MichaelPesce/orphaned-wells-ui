@@ -374,7 +374,7 @@ const DocumentContainer = ({
                           <p>
                                     Raw Values 
                             <Switch checked={showRawValues} onChange={() => setShowRawValues(!showRawValues)} size='small'/>
-                            <IconButton id='fullscreen-table-button' onClick={handleGetRecordHistory}>
+                            <IconButton id='record-history-table-button' onClick={handleGetRecordHistory}>
                               <HistoryIcon/>
                             </IconButton>
                             <IconButton id='fullscreen-table-button' onClick={() => handleSetFullscreen("table")}>
