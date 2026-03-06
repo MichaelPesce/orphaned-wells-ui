@@ -21,12 +21,18 @@ cd <orphaned-wells-ui-path>
 npm clean-install
 ```
 
-### 3. Set required environment variables.
+### 3. Set environment variables.
 
-The frontend relies on a set of environment variables to determine which backend to connect to, which google client to use, and more. The following variables should be defined in a file called `.env` at the root of the frontend project.
+Create a `.env` file at the root of the frontend project.
 
-- <b>REACT_APP_BACKEND_URL</b>: The backend URL to connect to. If running the backend locally, this is likely going to be "http://localhost:8001". If running from a server with a dedicated IP/URL, use the proper address here.
-- <b>REACT_APP_GOOGLE_CLIENTID</b>: The Google Client ID that is provided when using Google's OAuth service. This is necessary for frontend authentication. For more information, see the [GCP section on OAuth](gcp_setup#setting-up-a-gcp-project).
+Required in all setups:
+
+- <b>REACT_APP_BACKEND_URL</b>: Backend URL the UI should call. For local development this is usually `http://localhost:8001`.
+
+Optional, depending on your setup:
+
+- <b>REACT_APP_GOOGLE_CLIENTID</b>: Google OAuth client ID for frontend sign-in. Required when backend auth is enabled (`REQUIRE_AUTH=true` on the backend). Not required when running without auth.
+- <b>REACT_APP_COLLABORATOR</b>: Optional collaborator override (`isgs`, `osage`, etc.) used for collaborator-specific table configuration in the UI.
 
 ### 4. Run UI in browser
 
@@ -39,7 +45,7 @@ npm start
 
 ### 1. Clone Repository
 
-Clone the frontend repository (https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server) and navigate to the root of the repository.
+Clone the backend repository (https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server) and navigate to the root of the repository.
 
 ### 2. Create conda environment and install Python dependencies.
 
@@ -59,22 +65,56 @@ activate your environment and run the command:
 pip install .
 ```
 
-### 3. Set required environment variables.
+### 3. Set environment variables.
 
-The backend relies on a set of environment variables to determine which database to connect to, which google cloud project to use, and more. The following variables should be defined in a file called `.env` inside `app/internal`.
+Create a `.env` file for the backend runtime (where your backend process loads environment variables).
 
-- <b>ENVIRONMENT</b>: The project or collaborator that this instance is designed for. Each collaborator has their own set of trained processors, and OGRRE uses this variable to determine which processors to look for. For example, "isgs".
-- <b>LOCATION</b>: The Google Cloud location. For example: "us".
-- <b>DB_USERNAME</b>: MongoDB database username. For more information, see the [section on creating a MongoDB database user](database_setup#create-a-mongodb-database).
-- <b>DB_PASSWORD</b>: MongoDB database user password. For more information, [section on creating a MongoDB database user](database_setup#create-a-mongodb-database).
-- <b>DB_CONNECTION</b>: MongoDB database connection string. For more information, see the [section on connecting to a MongoDB instance](database_setup#create-a-mongodb-database).
+Required in all setups:
+
+- <b>ENVIRONMENT</b>: Deployment environment name used by OGRRE (for example, `isgs`).
+- <b>COLLABORATOR</b>: Collaborator key used to load processor metadata (for example, `isgs`, `calgem`, or `osage`).
+- <b>DB_USERNAME</b>: MongoDB username. See [database setup](database_setup#create-a-mongodb-database).
+- <b>DB_PASSWORD</b>: MongoDB password. See [database setup](database_setup#create-a-mongodb-database).
+- <b>DB_CONNECTION</b>: MongoDB connection string. See [database setup](database_setup#create-a-mongodb-database).
 - <b>DB_NAME</b>: MongoDB database name.
-- <b>STORAGE_BUCKET_NAME</b>: Google Cloud storage buckent name to store document files in.
+
+Optional toggles (defaults shown):
+
+- <b>REQUIRE_AUTH</b>: Enables API authentication/authorization checks (`true` or `false`, default: `true`).
+- <b>USE_DB_PROCESSORS</b>: If `true`, load processor definitions from MongoDB; if `false`, use collaborator processor API/defaults (default: `false`).
+- <b>STORAGE_BACKEND</b>: File storage backend (`google` or `local`, default: `google`).
+- <b>DOCUMENT_AI_BACKEND</b>: Document extraction backend (`google` or `custom`, default: `google`).
+
+Required only when `REQUIRE_AUTH=true`:
+
+- <b>token_uri</b>: OAuth token endpoint used for token exchange/refresh. See [GCP OAuth setup](gcp_setup#setting-up-a-gcp-project).
+- <b>client_id</b>: OAuth client ID used to validate user tokens. See [GCP OAuth setup](gcp_setup#setting-up-a-gcp-project).
+- <b>client_secret</b>: OAuth client secret used for token exchange. See [GCP OAuth setup](gcp_setup#setting-up-a-gcp-project).
+
+Storage configuration:
+
+When <b>STORAGE_BACKEND=google</b>:
+
+- <b>STORAGE_BUCKET_NAME</b>: Google Cloud Storage bucket for uploaded and generated files.
+- <b>STORAGE_SERVICE_KEY</b>: Service account key filename/path used to connect to Google Cloud Storage. See [GCP service account setup](gcp_setup#setting-up-a-gcp-project).
+
+When <b>STORAGE_BACKEND=local</b>:
+
+- <b>LOCAL_STORAGE_ROOT</b>: Local directory for uploaded/generated files (default: `~/.ogrre/uploads`).
+- <b>STORAGE_BUCKET_NAME</b> is not required.
+
+Document AI configuration:
+
+When <b>DOCUMENT_AI_BACKEND=google</b>:
+
 - <b>PROJECT_ID</b>: Google Cloud project ID.
-- <b>STORAGE_SERVICE_KEY</b>: The name of the file storing the Google Cloud connection credentials. For more information, see the [section on creating a GCP service account](gcp_setup#setting-up-a-gcp-project).
-- <b>token_uri</b>: The endpoint URL where an application requests and receives access tokens. This is necessary for user authentication. For more information, see the [GCP section on OAuth](gcp_setup#setting-up-a-gcp-project).
-- <b>client_id</b>: The Google Client ID that is provided when using Google's OAuth service. This is necessary for user authentication. For more information, see the [GCP section on OAuth](gcp_setup#setting-up-a-gcp-project).
-- <b>client_secret</b>: The Google Client secret that is provided when using Google's OAuth service. This is necessary for user authentication. For more information, see the [GCP section on OAuth](gcp_setup#setting-up-a-gcp-project).
+- <b>LOCATION</b>: Google Cloud region for Document AI (for example, `us`).
+
+When <b>DOCUMENT_AI_BACKEND=custom</b>:
+
+- <b>DOCUMENT_AI_URL</b>: HTTP endpoint for your custom document processing service.
+- <b>DOCUMENT_AI_TIMEOUT</b>: Timeout (seconds) for custom document-AI HTTP requests (default: `60`).
+- <b>PROJECT_ID</b> and <b>LOCATION</b> are not required.
 
 
 ### 4. Start the backend server
