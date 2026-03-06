@@ -8,6 +8,9 @@ import UsersPageUrl from '@site/static/screenshots/users-page.png';
 import UpdateUserRoleButtonUrl from '@site/static/screenshots/update-user-button.png';
 import UploadRecordsModalUrl from '@site/static/screenshots/upload-records-modal.png';
 import UploadDirectoryUrl from '@site/static/screenshots/upload-directory.png';
+import SchemaViewUrl from '@site/static/screenshots/schema-view.png';
+import UploadProcessorUrl from '@site/static/screenshots/upload-processor.png';
+import EditProcessorUrl from '@site/static/screenshots/edit-processor.png';
 
 const imageStyle = {
     boxShadow: '0 0 10px rgba(0, 0, 0, 0.4)',
@@ -45,4 +48,13 @@ export function UploadRecordsModalImg() {
 }
 export function UploadDirectoryImg() {
     return <img src={UploadDirectoryUrl} style={imageStyle}/>;
+}
+export function SchemaViewImg() {
+    return <img src={SchemaViewUrl} style={imageStyle}/>;
+}
+export function UploadProcessorImg() {
+    return <img src={UploadProcessorUrl} style={imageStyle}/>;
+}
+export function EditProcessorImg() {
+    return <img src={EditProcessorUrl} style={imageStyle}/>;
 }
