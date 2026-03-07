@@ -27,4 +27,29 @@
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --docusaurus-details-decoration-color: #25c2a0 !important;
+}
+
+/* For Details component - remove default styling of the rounded box border, keep only top and bottom lines */
+details {
+  border: none !important;
+  border-top: 2px solid var(--ifm-color-emphasis-300) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 12px 0 !important;
+  --docusaurus-details-decoration-color: #3cad6e !important;
+}
+
+/* Normal black text for summary */
+details summary {
+  color: var(--ifm-font-color-base) !important;
+  font-weight: 500;
+}
+
+/* Normal black text for content */
+details .collapsibleContent_node_modules-\@docusaurus-theme-classic-lib-theme-Details-styles-module,
+details > div {
+  color: var(--ifm-font-color-base) !important;
 }
