@@ -2,12 +2,16 @@
  * CSS files with the .module.css suffix will be treated as CSS modules
  * and scoped locally.
  */
+@import url('https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@700&display=swap');
 
 .heroBanner {
-  padding: 4rem 0;
+  padding: 2rem 0;
   text-align: center;
   position: relative;
   overflow: hidden;
+  background-color: #DEFFF1;
+  color: #0B0908;
+  
 }
 
 @media screen and (max-width: 996px) {
@@ -20,4 +24,42 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.heroContainer {
+  align-items: center;
+  max-width: 80vw;
+}
+/* Container for hero title and logo */
+.heroTitleContainer {
+  display: flex;
+  align-items: center;
+  gap: 1.25em;
+  justify-content: center;
+  /* width: clamp(200px, 80vw, 1000px); */
+  /* height: auto; */
+}
+.heroLogo {
+  /* height: 6em; */
+  width: 110px;
+  max-width: 20vw;
+  height: auto;
+}
+.heroTitle {
+  /* font-size: 6rem; */
+  font-size: clamp(32px, 15vw, 96px);
+}
+
+.siteCaption {
+  max-width: 700px;
+  margin: auto;
+  font-size: 1.125 rem;
+  text-align: center;
+}
+
+.kumbhSansTitle {
+  font-family: 'Kumbh Sans', sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
 }
