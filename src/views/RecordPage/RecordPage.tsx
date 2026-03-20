@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getRecordData, updateRecord, deleteRecord, cleanRecords } from "../../services/app.service";
@@ -41,6 +41,10 @@ const Record = () => {
   const { hasPermission, userEmail } = useUserContext();
   const { state } = useLocation();
   const { group_id, location } = state || {};
+  const currentRecordIdRef = useRef<string | undefined>(params.id);
+  const latestFetchRequestRef = useRef(0);
+  const lockedRef = useRef(locked);
+  const userEmailRef = useRef(userEmail);
 
   const styles = {
     outerBox: {
@@ -67,22 +71,16 @@ const Record = () => {
   };
 
   useEffect(() => {
-    const filterBy = convertFiltersToMongoFormat(JSON.parse(localStorage.getItem("appliedFilters") || "{}")[group_id || ""] || []);
-    const sorted = JSON.parse(localStorage.getItem("sorted") || "{}")[group_id || ""] || ["dateCreated", 1];
-    const page_state = {
-      location: location,
-      group_id: group_id,
-      filterBy: filterBy,
-      sortBy: sorted,
-    };
-    setLoading(true);
-    callAPI(
-      getRecordData,
-      [params.id, page_state],
-      handleSuccessfulFetchRecord,
-      handleFailedFetchRecord,
-    );
+    currentRecordIdRef.current = params.id;
   }, [params.id]);
+
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
+
+  useEffect(() => {
+    userEmailRef.current = userEmail;
+  }, [userEmail]);
 
   useEffect(() => {
     let tempActions = {
@@ -98,19 +96,7 @@ const Record = () => {
     setSubheaderActions(tempActions);
   }, [hasPermission]);
 
-  const handleFailedFetchRecord = (data: any, response_status?: number) => {
-    setLoading(false);
-    if (response_status === 303) {
-      handleSuccessfulFetchRecord(data, true);
-    } else if (response_status === 403) {
-      setErrorMsg(`${data}`);
-    }
-    else {
-      setErrorMsg("error getting record data: " + data);
-    }
-  };
-
-  const handleSuccessfulFetchRecord = (data: any, lock_record?: boolean) => {
+  const handleSuccessfulFetchRecord = React.useCallback((data: any, lock_record?: boolean) => {
     let newRecordData = data.recordData;
     if (lock_record) {
       setErrorMsg(data.lockedMessage);
@@ -132,22 +118,75 @@ const Record = () => {
     tempPreviousPages[newRecordData.rg_name] = 
             () => navigate("/record_group/" + newRecordData.rg_id);
     setPreviousPages(tempPreviousPages);
-  };
+  }, [navigate]);
+
+  const handleFailedFetchRecord = React.useCallback((data: any, response_status?: number) => {
+    setLoading(false);
+    if (response_status === 303) {
+      handleSuccessfulFetchRecord(data, true);
+    } else if (response_status === 403) {
+      setErrorMsg(`${data}`);
+    }
+    else {
+      setErrorMsg("error getting record data: " + data);
+    }
+  }, [handleSuccessfulFetchRecord]);
+
+  useEffect(() => {
+    const filterBy = convertFiltersToMongoFormat(JSON.parse(localStorage.getItem("appliedFilters") || "{}")[group_id || ""] || []);
+    const sorted = JSON.parse(localStorage.getItem("sorted") || "{}")[group_id || ""] || ["dateCreated", 1];
+    const page_state = {
+      location: location,
+      group_id: group_id,
+      filterBy: filterBy,
+      sortBy: sorted,
+    };
+    const requestId = latestFetchRequestRef.current + 1;
+    latestFetchRequestRef.current = requestId;
+    setLoading(true);
+    setRecordData({} as RecordData);
+    callAPI(
+      getRecordData,
+      [params.id, page_state],
+      (data) => {
+        if (requestId !== latestFetchRequestRef.current) return;
+        handleSuccessfulFetchRecord(data);
+      },
+      (data, response_status) => {
+        if (requestId !== latestFetchRequestRef.current) return;
+        handleFailedFetchRecord(data, response_status);
+      },
+    );
+  }, [group_id, handleFailedFetchRecord, handleSuccessfulFetchRecord, location, params.id]);
 
   const handleChangeRecordName = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRecordName(event.target.value);
   };
 
-  const handleUpdateRecord = (newRecordData: RecordData) => {
-    if (locked) return;
+  const showError = React.useCallback((errorMessage: string) => {
+    setErrorMsg(errorMessage);
+  }, []);
+
+  const handleFailedUpdate = React.useCallback((data: any, response_status?: number) => {
+    if (response_status === 403) {
+      showError(`${data}.`);
+    } else {
+      console.error("error updating record data: ", data);
+    }
+  }, [showError]);
+
+  const handleUpdateRecord = React.useCallback((newRecordData: RecordData) => {
+    if (lockedRef.current) return;
+    const recordId = currentRecordIdRef.current;
+    if (!recordId) return;
     let body = { data: newRecordData, type: "attributesList" };
     callAPI(
       updateRecord,
-      [params.id, body],
-      handleSuccessfulDeletion,
+      [recordId, body],
+      () => {},
       handleFailedUpdate
     );
-  };
+  }, [handleFailedUpdate]);
 
   const handleUpdateRecordName = () => {
     if (locked) return;
@@ -160,23 +199,10 @@ const Record = () => {
     );
   };
 
-  const handleSuccessfulDeletion = (data: any) => {};
-
   const handleSuccessfulAttributeUpdate = React.useCallback((data: any) => {
-    const { fieldId, v, review_status } = data;
+    const { fieldId, v, review_status, recordId } = data;
+    if (recordId && recordId !== currentRecordIdRef.current) return;
     handleChangeAttribute(v, fieldId, review_status);
-  }, []);
-
-  const handleFailedUpdate = (data: any, response_status?: number) => {
-    if (response_status === 403) {
-      showError(`${data}.`);
-    } else {
-      console.error("error updating record data: ", data);
-    }
-  };
-
-  const showError = React.useCallback((errorMessage: string) => {
-    setErrorMsg(errorMessage);
   }, []);
 
   const insertField: insertFieldSignature = React.useCallback((fieldID, parentAttribute) => {
@@ -278,7 +304,7 @@ const Record = () => {
       }, 0);
     }
         
-  }, []);
+  }, [handleUpdateRecord]);
 
   const deleteField: deleteFieldSignature = React.useCallback((fieldID: FieldID) => {
     const primaryIndex = fieldID.primaryIndex;
@@ -309,10 +335,10 @@ const Record = () => {
         return newRecordData;
       });
     }
-  }, []);
+  }, [handleUpdateRecord]);
 
   const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldId, new_coordinates, pageNumber) => {
-    if (locked) return true;
+    if (lockedRef.current) return true;
     let rightNow = Date.now();
     // TODO: need to update backend as well
     if (!fieldId.isSubattribute) {
@@ -323,7 +349,7 @@ const Record = () => {
             fieldId.primaryIndex === idx ? { 
               ...tempAttribute,
               lastUpdated: rightNow,
-              lastUpdatedBy: userEmail,
+              lastUpdatedBy: userEmailRef.current,
               edited: true,
               user_provided_coordinates: new_coordinates,
               page: pageNumber,
@@ -345,7 +371,7 @@ const Record = () => {
                   return {
                     ...tempSubattribute,
                     lastUpdated: rightNow,
-                    lastUpdatedBy: userEmail,
+                    lastUpdatedBy: userEmailRef.current,
                     edited: true,
                     user_provided_coordinates: new_coordinates,
                     page: pageNumber,
@@ -360,10 +386,10 @@ const Record = () => {
         return newRecordData;
       });
     }
-  }, []);
+  }, [handleUpdateRecord]);
 
   const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string) => {
-    if (locked) return true;
+    if (lockedRef.current) return true;
     const newValue = newAttribute.value;
     const newNormalizedValue = newAttribute.normalized_value;
     const new_uncleaned_value = newAttribute.uncleaned_value;
@@ -434,21 +460,21 @@ const Record = () => {
     const primaryIndex = fieldId.primaryIndex;
     const isSubattribute = fieldId.isSubattribute;
     const subIndex = fieldId.subIndex;
-    if (locked) return true;
+    if (lockedRef.current) return true;
     let value = event.target.value;
     let rightNow = Date.now();
     if (!isSubattribute) {
       setRecordData(tempRecordData => ({
         ...tempRecordData,
         lastUpdated: rightNow,
-        lastUpdatedBy: userEmail,
+        lastUpdatedBy: userEmailRef.current,
         attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
           primaryIndex === idx ? { 
             ...tempAttribute, 
             value: value,
             edited: true,
             lastUpdated: rightNow,
-            lastUpdatedBy: userEmail,
+            lastUpdatedBy: userEmailRef.current,
           } : tempAttribute
         )
       }));
@@ -456,13 +482,13 @@ const Record = () => {
       setRecordData(tempRecordData => ({
         ...tempRecordData,
         lastUpdated: rightNow,
-        lastUpdatedBy: userEmail,
+        lastUpdatedBy: userEmailRef.current,
         attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
           primaryIndex === idx ? { 
             ...tempAttribute, 
             edited: true,
             lastUpdated: rightNow,
-            lastUpdatedBy: userEmail,
+            lastUpdatedBy: userEmailRef.current,
             subattributes: tempAttribute.subattributes.map((tempSubattribute: Attribute, subidx: number) => {
               if (subIndex === subidx) {
                 return {
@@ -470,7 +496,7 @@ const Record = () => {
                   value: value,
                   edited: true,
                   lastUpdated: rightNow,
-                  lastUpdatedBy: userEmail,
+                  lastUpdatedBy: userEmailRef.current,
                 };
               } else return tempSubattribute;
             }

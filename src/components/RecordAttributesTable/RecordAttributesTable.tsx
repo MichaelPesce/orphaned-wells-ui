@@ -262,9 +262,11 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             fieldId: FieldID,
             v: any;
             review_status?: string;
+            recordId?: string;
           } = {
             fieldId,
             v: newV,
+            recordId: record_id,
           };
     if (resp?.review_status) data.review_status = resp?.review_status;
     handleSuccessfulAttributeUpdate(data);
