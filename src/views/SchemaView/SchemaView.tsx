@@ -4,7 +4,11 @@ import { Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Subheader from "../../components/Subheader/Subheader";
 import { callAPI } from "../../util";
-import { getSchema, uploadProcessorSchema } from "../../services/app.service";
+import {
+  getCleaningFunctions,
+  getSchema,
+  uploadProcessorSchema,
+} from "../../services/app.service";
 import SchemaTable from "../../components/SchemaTable/SchemaTable";
 import { SchemaOverview, MongoProcessor } from "../../types";
 import UploadProcessorDialog from "../../components/UploadProcessorDialog/UploadProcessorDialog";
@@ -19,19 +23,29 @@ const SchemaView = () => {
   const [updating, setUpdating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [updateProcessorCSV, setUpdateProcessorCSV] = useState<MongoProcessor>();
+  const [cleaningFunctions, setCleaningFunctions] = useState<string[]>([]);
 
 
   useEffect(() => {
     const hasAccess = hasPermission("manage_schema");
-    if (!hasAccess) navigate("/");
+    if (!hasAccess) {
+      navigate("/");
+      return;
+    }
     callAPI(
       getSchema,
       [],
       fetchedSchema,
       handleError
     );
+    callAPI(
+      getCleaningFunctions,
+      [],
+      fetchedCleaningFunctions,
+      handleError
+    );
         
-  }, [hasPermission]);
+  }, [hasPermission, navigate]);
 
   const fetchedSchema = (processors: MongoProcessor[]) => {
     setSchemaData({
@@ -40,9 +54,43 @@ const SchemaView = () => {
     setLoading(false);
   };
 
+  const fetchedCleaningFunctions = (
+    data: { cleaning_functions?: string[] }
+  ) => {
+    setCleaningFunctions(data.cleaning_functions || []);
+  };
+
   const handleError = (e: string) => {
     setErrorMsg(`Error: ${e}`);
     setLoading(false);
+  };
+
+  const handleCleaningFunctionChange = (
+    processorName: string,
+    fieldName: string,
+    cleaningFunction: string
+  ) => {
+    setSchemaData((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        processors: prev.processors.map((processor) => {
+          if (processor.name !== processorName) return processor;
+
+          return {
+            ...processor,
+            attributes: processor.attributes?.map((attribute) => {
+              if (attribute.name !== fieldName) return attribute;
+              return {
+                ...attribute,
+                cleaning_function: cleaningFunction || undefined,
+              };
+            }),
+          };
+        }),
+      };
+    });
   };
 
   const styles = {
@@ -113,6 +161,8 @@ const SchemaView = () => {
         <SchemaTable 
           schema={schemaData} 
           loading={loading}
+          cleaningFunctions={cleaningFunctions}
+          onCleaningFunctionChange={handleCleaningFunctionChange}
           setErrorMessage={setErrorMsg}
           clickUpdateFields={clickUpdateFields}
           updating={updating}
@@ -120,11 +170,11 @@ const SchemaView = () => {
       </Box>
       {
         showUploadProcessor && 
-                <UploadProcessorDialog
-                  handleUploadDocument={handleUploadDocument}
-                  onClose={handleCloseUploadDialog}
-                  updatingProcessor={updateProcessorCSV}
-                />
+          <UploadProcessorDialog
+            handleUploadDocument={handleUploadDocument}
+            onClose={handleCloseUploadDialog}
+            updatingProcessor={updateProcessorCSV}
+          />
       }
       <ErrorBar
         errorMessage={errorMsg}

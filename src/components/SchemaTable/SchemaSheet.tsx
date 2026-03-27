@@ -4,19 +4,39 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  FormControl,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
 } from "@mui/material";
 import { MongoProcessor } from "../../types";
 import { schemaProcessorColumns as columns } from "../../util";
 
 interface SchemaSheetProps {
   processor?: MongoProcessor;
+  cleaningFunctions?: string[];
+  onCleaningFunctionChange: (
+    processorName: string,
+    fieldName: string,
+    cleaningFunction: string
+  ) => void;
 }
 
 const SchemaSheet = (props: SchemaSheetProps) => {
-  const { processor } = props;
+  const {
+    processor,
+    cleaningFunctions = [],
+    onCleaningFunctionChange,
+  } = props;
   const { attributes } = processor || { attributes: [] };
-  // console.log(processor)
-  
+
+  const handleCleaningFunctionChange = (
+    event: SelectChangeEvent<string>,
+    fieldName: string
+  ) => {
+    if (!processor?.name) return;
+    onCleaningFunctionChange(processor.name, fieldName, event.target.value);
+  };
 
   return (
     <Table stickyHeader sx={{ minWidth: 650 }}>
@@ -45,7 +65,33 @@ const SchemaSheet = (props: SchemaSheetProps) => {
             }}
           >
             {columns.map((col) => (
-              <TableCell key={`${col.key}_${idx}`}>{row[col.key]}</TableCell>
+              <TableCell key={`${col.key}_${idx}`}>
+                {col.key === "cleaning_function" ? (
+                  <FormControl size="small">
+                    <Select
+                      value={row[col.key] || ""}
+                      displayEmpty
+                      onChange={(event) =>
+                        handleCleaningFunctionChange(event, row.name)
+                      }
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {cleaningFunctions.map((cleaningFunction) => (
+                        <MenuItem
+                          key={cleaningFunction}
+                          value={cleaningFunction}
+                        >
+                          {cleaningFunction}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                ) : (
+                  row[col.key]
+                )}
+              </TableCell>
             ))}
           </TableRow>
         ))}

@@ -349,6 +349,13 @@ export const getSchema = () => {
   });
 };
 
+export const getCleaningFunctions = () => {
+  return fetch(BACKEND_URL + "/get_cleaning_functions", {
+    mode: "cors",
+    headers: { "Authorization": "Bearer " + localStorage.getItem("id_token") }
+  });
+};
+
 export const uploadProcessorSchema = (
   data: FormData,
   name: string,
