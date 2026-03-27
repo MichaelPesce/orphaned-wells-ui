@@ -7,6 +7,7 @@ import { callAPI } from "../../util";
 import {
   getCleaningFunctions,
   getSchema,
+  updateProcessorAttribute,
   uploadProcessorSchema,
 } from "../../services/app.service";
 import SchemaTable from "../../components/SchemaTable/SchemaTable";
@@ -65,7 +66,7 @@ const SchemaView = () => {
     setLoading(false);
   };
 
-  const handleCleaningFunctionChange = (
+  const updateCleaningFunctionInState = (
     processorName: string,
     fieldName: string,
     cleaningFunction: string
@@ -91,6 +92,40 @@ const SchemaView = () => {
         }),
       };
     });
+  };
+
+  const handleCleaningFunctionChange = (
+    processorName: string,
+    fieldName: string,
+    cleaningFunction: string
+  ) => {
+    const previousCleaningFunction = schemaData?.processors
+      ?.find((processor) => processor.name === processorName)
+      ?.attributes?.find((attribute) => attribute.name === fieldName)
+      ?.cleaning_function || "";
+
+    updateCleaningFunctionInState(processorName, fieldName, cleaningFunction);
+    setUpdating(true);
+    callAPI(
+      updateProcessorAttribute,
+      [
+        processorName,
+        fieldName,
+        { cleaning_function: cleaningFunction || null },
+      ],
+      () => {
+        setUpdating(false);
+      },
+      (e: string) => {
+        updateCleaningFunctionInState(
+          processorName,
+          fieldName,
+          previousCleaningFunction
+        );
+        setUpdating(false);
+        setErrorMsg(`Failed to update cleaning function: ${e}`);
+      }
+    );
   };
 
   const styles = {

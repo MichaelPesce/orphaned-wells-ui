@@ -19,7 +19,7 @@ interface SchemaSheetProps {
     processorName: string,
     fieldName: string,
     cleaningFunction: string
-  ) => void;
+  ) => void | Promise<void>;
 }
 
 const SchemaSheet = (props: SchemaSheetProps) => {
@@ -60,20 +60,40 @@ const SchemaSheet = (props: SchemaSheetProps) => {
               "&:hover": { backgroundColor: "rgba(0,0,0,0.03)" },
               "& td": {
                 borderBottom: "1px solid #eee",
-                padding: "12px 16px",
+                padding: "8px 16px",
               },
             }}
           >
             {columns.map((col) => (
-              <TableCell key={`${col.key}_${idx}`}>
+              <TableCell
+                key={`${col.key}_${idx}`}
+                sx={
+                  col.key === "cleaning_function"
+                    ? { width: 240, minWidth: 240 }
+                    : undefined
+                }
+              >
                 {col.key === "cleaning_function" ? (
-                  <FormControl size="small">
+                  <FormControl
+                    size="small"
+                    sx={{
+                      width: 220,
+                      minWidth: 220,
+                    }}
+                  >
                     <Select
                       value={row[col.key] || ""}
                       displayEmpty
                       onChange={(event) =>
                         handleCleaningFunctionChange(event, row.name)
                       }
+                      sx={{
+                        fontSize: 14,
+                        "& .MuiSelect-select": {
+                          py: 0.75,
+                          px: 1.5,
+                        },
+                      }}
                     >
                       <MenuItem value="">
                         <em>None</em>
