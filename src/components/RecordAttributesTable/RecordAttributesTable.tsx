@@ -370,10 +370,8 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   };
 
   const finishEditing = () => {
-    if (v.value !== lastSavedValue) {
-      handleUpdateRecord();
-      setLastSavedValue(v.value);
-    }
+    handleUpdateRecord();
+    setLastSavedValue(v.value);
     setEditMode(false);
   };
 
