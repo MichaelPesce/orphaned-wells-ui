@@ -11,7 +11,7 @@ import {
   uploadProcessorSchema,
 } from "../../services/app.service";
 import SchemaTable from "../../components/SchemaTable/SchemaTable";
-import { SchemaOverview, MongoProcessor } from "../../types";
+import { SchemaOverview, MongoProcessor, SchemaField } from "../../types";
 import UploadProcessorDialog from "../../components/UploadProcessorDialog/UploadProcessorDialog";
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
 
@@ -66,10 +66,10 @@ const SchemaView = () => {
     setLoading(false);
   };
 
-  const updateCleaningFunctionInState = (
+  const updateProcessorAttributeInState = (
     processorName: string,
     fieldName: string,
-    cleaningFunction: string
+    updates: Record<string, string | null>
   ) => {
     setSchemaData((prev) => {
       if (!prev) return prev;
@@ -83,10 +83,18 @@ const SchemaView = () => {
             ...processor,
             attributes: processor.attributes?.map((attribute) => {
               if (attribute.name !== fieldName) return attribute;
-              return {
-                ...attribute,
-                cleaning_function: cleaningFunction || undefined,
-              };
+              const nextAttribute = { ...attribute } as SchemaField;
+              const mutableAttribute = nextAttribute as unknown as Record<string, string | undefined>;
+
+              Object.entries(updates).forEach(([key, value]) => {
+                if (value === null || value === "") {
+                  delete nextAttribute[key as keyof typeof nextAttribute];
+                } else {
+                  mutableAttribute[key] = value;
+                }
+              });
+
+              return nextAttribute;
             }),
           };
         }),
@@ -94,36 +102,43 @@ const SchemaView = () => {
     });
   };
 
-  const handleCleaningFunctionChange = (
+  const handleAttributeChange = (
     processorName: string,
     fieldName: string,
-    cleaningFunction: string
+    updates: Record<string, string | null>
   ) => {
-    const previousCleaningFunction = schemaData?.processors
+    const previousAttribute = schemaData?.processors
       ?.find((processor) => processor.name === processorName)
-      ?.attributes?.find((attribute) => attribute.name === fieldName)
-      ?.cleaning_function || "";
+      ?.attributes?.find((attribute) => attribute.name === fieldName);
 
-    updateCleaningFunctionInState(processorName, fieldName, cleaningFunction);
+    if (!previousAttribute) return;
+
+    const previousAttributeRecord = previousAttribute as unknown as Record<string, string | undefined>;
+    const previousValues = Object.keys(updates).reduce<Record<string, string | null>>(
+      (acc, key) => {
+        const value = previousAttributeRecord[key];
+        acc[key] = value || null;
+        return acc;
+      },
+      {}
+    );
+
+    updateProcessorAttributeInState(processorName, fieldName, updates);
     setUpdating(true);
     callAPI(
       updateProcessorAttribute,
       [
         processorName,
         fieldName,
-        { cleaning_function: cleaningFunction || null },
+        updates,
       ],
       () => {
         setUpdating(false);
       },
       (e: string) => {
-        updateCleaningFunctionInState(
-          processorName,
-          fieldName,
-          previousCleaningFunction
-        );
+        updateProcessorAttributeInState(processorName, fieldName, previousValues);
         setUpdating(false);
-        setErrorMsg(`Failed to update cleaning function: ${e}`);
+        setErrorMsg(`Failed to update schema field: ${e}`);
       }
     );
   };
@@ -197,7 +212,7 @@ const SchemaView = () => {
           schema={schemaData} 
           loading={loading}
           cleaningFunctions={cleaningFunctions}
-          onCleaningFunctionChange={handleCleaningFunctionChange}
+          onAttributeChange={handleAttributeChange}
           setErrorMessage={setErrorMsg}
           clickUpdateFields={clickUpdateFields}
           updating={updating}
