@@ -12,10 +12,11 @@ interface SchemaTableProps {
   updating?: boolean;
   schema?: SchemaOverview;
   cleaningFunctions?: string[];
-  onCleaningFunctionChange: (
+  onAttributeChange: (
     processorName: string,
     fieldName: string,
-    cleaningFunction: string
+    updates: Record<string, string | number | null>,
+    operation?: "update" | "add" | "delete"
   ) => void;
   setErrorMessage: (v: string | null) => void;
   clickUpdateFields: (v: MongoProcessor) => void;
@@ -55,7 +56,7 @@ const SchemaTable = (props: SchemaTableProps) => {
     schema,
     loading,
     cleaningFunctions,
-    onCleaningFunctionChange,
+    onAttributeChange,
     setErrorMessage,
     clickUpdateFields,
     updating,
@@ -114,7 +115,7 @@ const SchemaTable = (props: SchemaTableProps) => {
             <SchemaSheet
               processor={processors?.[tabValue-1]}
               cleaningFunctions={cleaningFunctions}
-              onCleaningFunctionChange={onCleaningFunctionChange}
+              onAttributeChange={onAttributeChange}
             />
           )
         }

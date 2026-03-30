@@ -72,6 +72,7 @@ export interface SchemaOverview {
 
 export interface SchemaField {
     name: string;
+    alias?: string;
     data_type?: string;
     google_data_type?: string;
     database_data_type?: string;
