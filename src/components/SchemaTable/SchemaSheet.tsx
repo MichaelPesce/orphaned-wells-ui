@@ -36,8 +36,9 @@ const DATABASE_DATA_TYPE_OPTIONS: Record<string, string[]> = {
 };
 
 const EDIT_CONTROL_SX = {
-  width: 220,
-  minWidth: 220,
+  width: "100%",
+  minWidth: 0,
+  maxWidth: 180,
   "& .MuiInputBase-root": {
     fontSize: 14,
   },
@@ -168,7 +169,18 @@ const SchemaSheet = (props: SchemaSheetProps) => {
   };
 
   return (
-    <Table stickyHeader sx={{ minWidth: 650 }}>
+    <Table
+      stickyHeader
+      sx={{
+        minWidth: 650,
+        tableLayout: "fixed",
+        "& th, & td": {
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        },
+      }}
+    >
       <TableHead>
         <TableRow sx={{ backgroundColor: "#fbfbfb" }}>
           {columns.map((col) => (
@@ -207,12 +219,14 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                 return (
                   <TableCell
                     key={`${col.key}_${idx}`}
-                    sx={
-                      col.key === "cleaning_function"
-                        ? { width: 240, minWidth: 240 }
+                  sx={
+                    col.key === "cleaning_function"
+                      ? { width: 190, minWidth: 190 }
+                      : col.key === "page_order_sort"
+                        ? { width: 110, minWidth: 110 }
                         : undefined
-                    }
-                  >
+                  }
+                >
                     {isEditing && (col.key === "name" || col.key === "alias") ? (
                       <TextField
                         size="small"
@@ -224,10 +238,7 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                         sx={EDIT_CONTROL_SX}
                       />
                     ) : isEditing && col.key === "cleaning_function" ? (
-                      <FormControl
-                        size="small"
-                        sx={EDIT_CONTROL_SX}
-                      >
+                      <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
                         <Select
                           value={draft.cleaning_function}
                           displayEmpty
@@ -254,7 +265,7 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                         </Select>
                       </FormControl>
                   ) : isEditing && col.key === "data_type" ? (
-                    <FormControl size="small" sx={EDIT_CONTROL_SX}>
+                    <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
                       <Select
                         value={draft.data_type}
                         displayEmpty
@@ -275,7 +286,7 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                       </Select>
                     </FormControl>
                   ) : isEditing && col.key === "database_data_type" ? (
-                    <FormControl size="small" sx={EDIT_CONTROL_SX}>
+                    <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
                       <Select
                         value={draft.database_data_type}
                         onChange={handleSelectChange("database_data_type")}
@@ -306,6 +317,7 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                         inputProps={{ min: 1, step: 1 }}
                         sx={{
                           ...EDIT_CONTROL_SX,
+                          maxWidth: 96,
                           "& .MuiFormHelperText-root": {
                             display: "none",
                           },
@@ -317,18 +329,23 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                   </TableCell>
                 );
               })}
-              <TableCell sx={{ width: 170 }}>
+              <TableCell sx={{ width: 130 }}>
                 {editingRowKey === getRowKey(row, idx) ? (
-                  <Stack direction="row" spacing={1}>
+                  <Stack direction="row" spacing={0.5}>
                     <Button
                       size="small"
                       variant="contained"
                       disabled={pageOrderSortInvalid}
                       onClick={() => handleSaveRow(row)}
+                      sx={{ minWidth: 56, px: 1 }}
                     >
                       Save
                     </Button>
-                    <Button size="small" onClick={stopEditingRow}>
+                    <Button
+                      size="small"
+                      onClick={stopEditingRow}
+                      sx={{ minWidth: 56, px: 1 }}
+                    >
                       Cancel
                     </Button>
                   </Stack>
@@ -337,6 +354,7 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                     size="small"
                     variant="outlined"
                     onClick={() => startEditingRow(row, idx)}
+                    sx={{ minWidth: 64, px: 1 }}
                   >
                     Edit
                   </Button>
