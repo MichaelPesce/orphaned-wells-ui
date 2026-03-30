@@ -1,21 +1,25 @@
 import {
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
+  Button,
   FormControl,
+  IconButton,
   MenuItem,
   Select,
   SelectChangeEvent,
-  Button,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   TextField,
+  Tooltip,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import { useEffect, useState } from "react";
 import { MongoProcessor, SchemaField } from "../../types";
 import { schemaProcessorColumns as columns } from "../../util";
 import PopupModal from "../PopupModal/PopupModal";
+import AddSchemaFieldDialog from "./AddSchemaFieldDialog";
 
 interface SchemaSheetProps {
   processor?: MongoProcessor;
@@ -62,7 +66,10 @@ const EDITABLE_KEYS = [
 type EditableKey = typeof EDITABLE_KEYS[number];
 type DraftState = Record<EditableKey, string>;
 
-const getDraftFromRow = (row: SchemaField & { alias?: string }): DraftState => ({
+const getDatabaseOptions = (dataType?: string) =>
+  DATABASE_DATA_TYPE_OPTIONS[dataType || ""] || [];
+
+const getDraftFromRow = (row: SchemaField): DraftState => ({
   name: row.name || "",
   alias: row.alias || "",
   cleaning_function: row.cleaning_function || "",
@@ -72,26 +79,27 @@ const getDraftFromRow = (row: SchemaField & { alias?: string }): DraftState => (
     row.page_order_sort !== undefined ? String(row.page_order_sort) : "",
 });
 
-const SchemaSheet = (props: SchemaSheetProps) => {
-  const {
-    processor,
-    cleaningFunctions = [],
-    onAttributeChange,
-  } = props;
-  const { attributes } = processor || { attributes: [] };
+const SchemaSheet = ({
+  processor,
+  cleaningFunctions = [],
+  onAttributeChange,
+}: SchemaSheetProps) => {
+  const { attributes = [] } = processor || {};
   const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [pendingDeleteRow, setPendingDeleteRow] = useState<SchemaField | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
     setEditingRowKey(null);
     setDraft(null);
     setPendingDeleteRow(null);
-  }, [processor?.name]);
+    setShowAddDialog(false);
+  }, [processor?.name, attributes]);
 
   const getRowKey = (row: SchemaField, idx: number) => `${idx}-${row.name}`;
 
-  const startEditingRow = (row: SchemaField & { alias?: string }, idx: number) => {
+  const startEditingRow = (row: SchemaField, idx: number) => {
     setEditingRowKey(getRowKey(row, idx));
     setDraft(getDraftFromRow(row));
   };
@@ -101,19 +109,10 @@ const SchemaSheet = (props: SchemaSheetProps) => {
     setDraft(null);
   };
 
-  const handleDeleteRow = async () => {
-    if (!processor?.name || !pendingDeleteRow?.name) return;
-    await onAttributeChange(processor.name, pendingDeleteRow.name, {}, "delete");
-    if (editingRowKey && pendingDeleteRow.name === draft?.name) {
-      stopEditingRow();
-    }
-    setPendingDeleteRow(null);
-  };
-
-  const getDatabaseOptions = (dataType?: string) =>
-    DATABASE_DATA_TYPE_OPTIONS[dataType || ""] || [];
-
-  const handleDraftValueChange = (key: EditableKey, value: string) => {
+  const handleDraftValueChange = (
+    key: EditableKey,
+    value: string
+  ) => {
     setDraft((prev) => {
       if (!prev) return prev;
 
@@ -137,18 +136,19 @@ const SchemaSheet = (props: SchemaSheetProps) => {
   };
 
   const handleSelectChange =
-    (key: EditableKey) => (event: SelectChangeEvent<string>) => {
+    (key: EditableKey) =>
+    (event: SelectChangeEvent<string>) => {
       handleDraftValueChange(key, event.target.value);
     };
 
-  const handleSaveRow = async (row: SchemaField & { alias?: string }) => {
+  const getPageOrderSortInvalid = (pageOrderSort: string) => {
+    const pageOrderSortValue = Number(pageOrderSort);
+    return !Number.isInteger(pageOrderSortValue) || pageOrderSortValue <= 0;
+  };
+
+  const handleSaveRow = async (row: SchemaField) => {
     if (!processor?.name || !draft) return;
-
-    const pageOrderSortValue = Number(draft.page_order_sort);
-    const pageOrderSortInvalid =
-      !Number.isInteger(pageOrderSortValue) || pageOrderSortValue <= 0;
-
-    if (pageOrderSortInvalid) return;
+    if (getPageOrderSortInvalid(draft.page_order_sort)) return;
 
     const updates = EDITABLE_KEYS.reduce<Record<string, string | number | null>>(
       (acc, key) => {
@@ -177,9 +177,69 @@ const SchemaSheet = (props: SchemaSheetProps) => {
       return;
     }
 
-    await onAttributeChange(processor.name, row.name, updates);
+    await onAttributeChange(processor.name, row.name, updates, "update");
     stopEditingRow();
   };
+
+  const handleDeleteRow = async () => {
+    if (!processor?.name || !pendingDeleteRow?.name) return;
+
+    await onAttributeChange(processor.name, pendingDeleteRow.name, {}, "delete");
+    if (editingRowKey && pendingDeleteRow.name === draft?.name) {
+      stopEditingRow();
+    }
+    setPendingDeleteRow(null);
+  };
+
+  const handleOpenAddDialog = () => {
+    setShowAddDialog(true);
+  };
+
+  const handleCloseAddDialog = () => {
+    setShowAddDialog(false);
+  };
+
+  const handleAddField = async (
+    updates: Record<string, string | number | null>
+  ) => {
+    if (!processor?.name) return;
+    const fieldName = String(updates.name || "");
+    if (!fieldName) return;
+    await onAttributeChange(processor.name, fieldName, updates, "add");
+  };
+
+  const renderSelect = (
+    value: string,
+    onChange: (event: SelectChangeEvent<string>) => void,
+    options: string[],
+    allowEmpty = false
+  ) => (
+    <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
+      <Select
+        value={value}
+        displayEmpty={allowEmpty}
+        onChange={onChange}
+        sx={{
+          fontSize: 14,
+          "& .MuiSelect-select": {
+            py: 0.75,
+            px: 1.5,
+          },
+        }}
+      >
+        {allowEmpty && (
+          <MenuItem value="">
+            <em>None</em>
+          </MenuItem>
+        )}
+        {options.map((option) => (
+          <MenuItem key={option} value={option}>
+            {option}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
 
   return (
     <>
@@ -202,18 +262,23 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                 {col.displayName}
               </TableCell>
             ))}
-            <TableCell sx={{ fontWeight: 600, width: 150 }}>Actions</TableCell>
+            <TableCell sx={{ fontWeight: 600, width: 170 }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <span>Actions</span>
+                <Tooltip title="Add field">
+                  <IconButton size="small" onClick={handleOpenAddDialog}>
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </TableCell>
           </TableRow>
         </TableHead>
 
         <TableBody>
-          {attributes?.map((row: any, idx: number) => {
+          {attributes.map((row, idx) => {
             const isEditing = editingRowKey === getRowKey(row, idx) && draft;
-            const pageOrderSortValue = Number(draft?.page_order_sort);
-            const pageOrderSortInvalid =
-              !!isEditing &&
-              (!Number.isInteger(pageOrderSortValue) ||
-                pageOrderSortValue <= 0);
+            const pageOrderSortInvalid = !!isEditing && getPageOrderSortInvalid(draft.page_order_sort);
 
             return (
               <TableRow
@@ -228,96 +293,46 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                   },
                 }}
               >
-                {columns.map((col) => {
-                  return (
-                    <TableCell
-                      key={`${col.key}_${idx}`}
-                      sx={
-                        col.key === "cleaning_function"
-                          ? { width: 190, minWidth: 190 }
-                          : col.key === "page_order_sort"
-                            ? { width: 110, minWidth: 110 }
-                            : undefined
-                      }
-                    >
+                {columns.map((col) => (
+                  <TableCell
+                    key={`${col.key}_${idx}`}
+                    sx={
+                      col.key === "cleaning_function"
+                        ? { width: 190, minWidth: 190 }
+                        : col.key === "page_order_sort"
+                          ? { width: 110, minWidth: 110 }
+                          : undefined
+                    }
+                  >
                     {isEditing && (col.key === "name" || col.key === "alias") ? (
                       <TextField
                         size="small"
                         fullWidth
-                        value={draft[col.key]}
+                        value={draft[col.key as EditableKey]}
                         onChange={(event) =>
                           handleDraftValueChange(col.key as EditableKey, event.target.value)
                         }
                         sx={EDIT_CONTROL_SX}
                       />
                     ) : isEditing && col.key === "cleaning_function" ? (
-                      <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
-                        <Select
-                          value={draft.cleaning_function}
-                          displayEmpty
-                          onChange={handleSelectChange("cleaning_function")}
-                          sx={{
-                            fontSize: 14,
-                            "& .MuiSelect-select": {
-                              py: 0.75,
-                              px: 1.5,
-                            },
-                          }}
-                        >
-                          <MenuItem value="">
-                            <em>None</em>
-                          </MenuItem>
-                          {cleaningFunctions.map((cleaningFunction) => (
-                            <MenuItem
-                              key={cleaningFunction}
-                              value={cleaningFunction}
-                            >
-                              {cleaningFunction}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                  ) : isEditing && col.key === "data_type" ? (
-                    <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
-                      <Select
-                        value={draft.data_type}
-                        displayEmpty
-                        onChange={handleSelectChange("data_type")}
-                        sx={{
-                          fontSize: 14,
-                          "& .MuiSelect-select": {
-                            py: 0.75,
-                            px: 1.5,
-                          },
-                        }}
-                      >
-                        {DATA_TYPE_OPTIONS.map((dataType) => (
-                          <MenuItem key={dataType} value={dataType}>
-                            {dataType}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  ) : isEditing && col.key === "database_data_type" ? (
-                    <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
-                      <Select
-                        value={draft.database_data_type}
-                        onChange={handleSelectChange("database_data_type")}
-                        sx={{
-                          fontSize: 14,
-                          "& .MuiSelect-select": {
-                            py: 0.75,
-                            px: 1.5,
-                          },
-                        }}
-                      >
-                        {getDatabaseOptions(draft.data_type).map((dataType) => (
-                          <MenuItem key={dataType} value={dataType}>
-                            {dataType}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                      renderSelect(
+                        draft.cleaning_function,
+                        handleSelectChange("cleaning_function"),
+                        cleaningFunctions,
+                        true
+                      )
+                    ) : isEditing && col.key === "data_type" ? (
+                      renderSelect(
+                        draft.data_type,
+                        handleSelectChange("data_type"),
+                        DATA_TYPE_OPTIONS
+                      )
+                    ) : isEditing && col.key === "database_data_type" ? (
+                      renderSelect(
+                        draft.database_data_type,
+                        handleSelectChange("database_data_type"),
+                        getDatabaseOptions(draft.data_type)
+                      )
                     ) : isEditing && col.key === "page_order_sort" ? (
                       <TextField
                         size="small"
@@ -337,11 +352,10 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                         }}
                       />
                     ) : (
-                      row[col.key]
+                      row[col.key as keyof SchemaField]
                     )}
-                    </TableCell>
-                  );
-                })}
+                  </TableCell>
+                ))}
                 <TableCell sx={{ width: 150 }}>
                   {editingRowKey === getRowKey(row, idx) ? (
                     <Stack direction="row" spacing={0.5}>
@@ -389,6 +403,7 @@ const SchemaSheet = (props: SchemaSheetProps) => {
           })}
         </TableBody>
       </Table>
+
       <PopupModal
         open={pendingDeleteRow !== null}
         handleClose={() => setPendingDeleteRow(null)}
@@ -402,6 +417,13 @@ const SchemaSheet = (props: SchemaSheetProps) => {
         buttonColor="error"
         buttonVariant="contained"
         width={400}
+      />
+      <AddSchemaFieldDialog
+        open={showAddDialog}
+        attributes={attributes}
+        cleaningFunctions={cleaningFunctions}
+        onClose={handleCloseAddDialog}
+        onAddField={handleAddField}
       />
     </>
   );

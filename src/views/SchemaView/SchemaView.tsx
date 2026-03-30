@@ -80,6 +80,23 @@ const SchemaView = () => {
         processors: prev.processors.map((processor) => {
           if (processor.name !== processorName) return processor;
 
+          if (operation === "add") {
+            const newAttribute = Object.entries(updates).reduce<SchemaField>(
+              (acc, [key, value]) => {
+                if (value !== null && value !== "") {
+                  (acc as unknown as Record<string, string | number | undefined>)[key] = value;
+                }
+                return acc;
+              },
+              {} as SchemaField
+            );
+
+            return {
+              ...processor,
+              attributes: [...(processor.attributes || []), newAttribute],
+            };
+          }
+
           if (operation === "delete") {
             return {
               ...processor,
@@ -153,7 +170,7 @@ const SchemaView = () => {
         setUpdating(false);
       },
       (e: string) => {
-        if (operation === "delete") {
+        if (operation === "add" || operation === "delete") {
           callAPI(
             getSchema,
             [],
