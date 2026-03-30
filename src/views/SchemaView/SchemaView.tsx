@@ -69,7 +69,7 @@ const SchemaView = () => {
   const updateProcessorAttributeInState = (
     processorName: string,
     fieldName: string,
-    updates: Record<string, string | null>
+    updates: Record<string, string | number | null>
   ) => {
     setSchemaData((prev) => {
       if (!prev) return prev;
@@ -84,7 +84,7 @@ const SchemaView = () => {
             attributes: processor.attributes?.map((attribute) => {
               if (attribute.name !== fieldName) return attribute;
               const nextAttribute = { ...attribute } as SchemaField;
-              const mutableAttribute = nextAttribute as unknown as Record<string, string | undefined>;
+              const mutableAttribute = nextAttribute as unknown as Record<string, string | number | undefined>;
 
               Object.entries(updates).forEach(([key, value]) => {
                 if (value === null || value === "") {
@@ -105,7 +105,7 @@ const SchemaView = () => {
   const handleAttributeChange = (
     processorName: string,
     fieldName: string,
-    updates: Record<string, string | null>
+    updates: Record<string, string | number | null>
   ) => {
     const previousAttribute = schemaData?.processors
       ?.find((processor) => processor.name === processorName)
@@ -113,11 +113,11 @@ const SchemaView = () => {
 
     if (!previousAttribute) return;
 
-    const previousAttributeRecord = previousAttribute as unknown as Record<string, string | undefined>;
-    const previousValues = Object.keys(updates).reduce<Record<string, string | null>>(
+    const previousAttributeRecord = previousAttribute as unknown as Record<string, string | number | undefined>;
+    const previousValues = Object.keys(updates).reduce<Record<string, string | number | null>>(
       (acc, key) => {
         const value = previousAttributeRecord[key];
-        acc[key] = value || null;
+        acc[key] = value ?? null;
         return acc;
       },
       {}

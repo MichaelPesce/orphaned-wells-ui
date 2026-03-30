@@ -402,7 +402,7 @@ export const updateProcessor = (updated_processor: MongoProcessor) => {
 export const updateProcessorAttribute = (
   processorName: string,
   fieldName: string,
-  updates: Record<string, string | null>
+  updates: Record<string, string | number | null>
 ) => {
   return fetch(BACKEND_URL + "/update_processor_attribute", {
     method: "POST",

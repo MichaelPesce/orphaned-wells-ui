@@ -22,7 +22,7 @@ interface SchemaSheetProps {
   onAttributeChange: (
     processorName: string,
     fieldName: string,
-    updates: Record<string, string | null>
+    updates: Record<string, string | number | null>
   ) => void | Promise<void>;
 }
 
@@ -35,12 +35,25 @@ const DATABASE_DATA_TYPE_OPTIONS: Record<string, string[]> = {
   Parent: ["Table"],
 };
 
+const EDIT_CONTROL_SX = {
+  width: 220,
+  minWidth: 220,
+  "& .MuiInputBase-root": {
+    fontSize: 14,
+  },
+  "& .MuiInputBase-input": {
+    py: 0.75,
+    px: 1.5,
+  },
+};
+
 const EDITABLE_KEYS = [
   "name",
   "alias",
   "cleaning_function",
   "data_type",
   "database_data_type",
+  "page_order_sort",
 ] as const;
 
 type EditableKey = typeof EDITABLE_KEYS[number];
@@ -52,6 +65,8 @@ const getDraftFromRow = (row: SchemaField & { alias?: string }): DraftState => (
   cleaning_function: row.cleaning_function || "",
   data_type: row.data_type || "",
   database_data_type: row.database_data_type || "",
+  page_order_sort:
+    row.page_order_sort !== undefined ? String(row.page_order_sort) : "",
 });
 
 const SchemaSheet = (props: SchemaSheetProps) => {
@@ -115,13 +130,27 @@ const SchemaSheet = (props: SchemaSheetProps) => {
   const handleSaveRow = async (row: SchemaField & { alias?: string }) => {
     if (!processor?.name || !draft) return;
 
-    const updates = EDITABLE_KEYS.reduce<Record<string, string | null>>(
+    const pageOrderSortValue = Number(draft.page_order_sort);
+    const pageOrderSortInvalid =
+      !Number.isInteger(pageOrderSortValue) || pageOrderSortValue <= 0;
+
+    if (pageOrderSortInvalid) return;
+
+    const updates = EDITABLE_KEYS.reduce<Record<string, string | number | null>>(
       (acc, key) => {
-        const previousValue = (row[key] || "") as string;
+        const previousValue =
+          key === "page_order_sort"
+            ? row.page_order_sort !== undefined
+              ? String(row.page_order_sort)
+              : ""
+            : ((row[key] || "") as string);
         const nextValue = draft[key];
 
         if (previousValue !== nextValue) {
-          acc[key] = nextValue || null;
+          acc[key] =
+            key === "page_order_sort"
+              ? Number(nextValue)
+              : nextValue || null;
         }
 
         return acc;
@@ -152,52 +181,84 @@ const SchemaSheet = (props: SchemaSheetProps) => {
       </TableHead>
 
       <TableBody>
-        {attributes?.map((row: any, idx: number) => (
-          <TableRow
-            key={idx}
-            hover
-            sx={{
-              cursor: "pointer",
-              "&:hover": { backgroundColor: "rgba(0,0,0,0.03)" },
-              "& td": {
-                borderBottom: "1px solid #eee",
-                padding: "8px 16px",
-              },
-            }}
-          >
-            {columns.map((col) => {
-              const isEditing = editingRowKey === getRowKey(row, idx) && draft;
+        {attributes?.map((row: any, idx: number) => {
+          const isEditing = editingRowKey === getRowKey(row, idx) && draft;
+          const pageOrderSortValue = Number(draft?.page_order_sort);
+          const pageOrderSortInvalid =
+            !!isEditing &&
+            (!Number.isInteger(pageOrderSortValue) ||
+              pageOrderSortValue <= 0);
 
-              return (
-                <TableCell
-                  key={`${col.key}_${idx}`}
-                  sx={
-                    col.key === "cleaning_function"
-                      ? { width: 240, minWidth: 240 }
-                      : undefined
-                  }
-                >
-                  {isEditing && (col.key === "name" || col.key === "alias") ? (
-                    <TextField
-                      size="small"
-                      fullWidth
-                      value={draft[col.key]}
-                      onChange={(event) =>
-                        handleDraftValueChange(col.key as EditableKey, event.target.value)
-                      }
-                    />
-                  ) : isEditing && col.key === "cleaning_function" ? (
-                    <FormControl
-                      size="small"
-                      sx={{
-                        width: 220,
-                        minWidth: 220,
-                      }}
-                    >
+          return (
+            <TableRow
+              key={idx}
+              hover
+              sx={{
+                cursor: "pointer",
+                "&:hover": { backgroundColor: "rgba(0,0,0,0.03)" },
+                "& td": {
+                  borderBottom: "1px solid #eee",
+                  padding: "8px 16px",
+                },
+              }}
+            >
+              {columns.map((col) => {
+
+                return (
+                  <TableCell
+                    key={`${col.key}_${idx}`}
+                    sx={
+                      col.key === "cleaning_function"
+                        ? { width: 240, minWidth: 240 }
+                        : undefined
+                    }
+                  >
+                    {isEditing && (col.key === "name" || col.key === "alias") ? (
+                      <TextField
+                        size="small"
+                        fullWidth
+                        value={draft[col.key]}
+                        onChange={(event) =>
+                          handleDraftValueChange(col.key as EditableKey, event.target.value)
+                        }
+                        sx={EDIT_CONTROL_SX}
+                      />
+                    ) : isEditing && col.key === "cleaning_function" ? (
+                      <FormControl
+                        size="small"
+                        sx={EDIT_CONTROL_SX}
+                      >
+                        <Select
+                          value={draft.cleaning_function}
+                          displayEmpty
+                          onChange={handleSelectChange("cleaning_function")}
+                          sx={{
+                            fontSize: 14,
+                            "& .MuiSelect-select": {
+                              py: 0.75,
+                              px: 1.5,
+                            },
+                          }}
+                        >
+                          <MenuItem value="">
+                            <em>None</em>
+                          </MenuItem>
+                          {cleaningFunctions.map((cleaningFunction) => (
+                            <MenuItem
+                              key={cleaningFunction}
+                              value={cleaningFunction}
+                            >
+                              {cleaningFunction}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                  ) : isEditing && col.key === "data_type" ? (
+                    <FormControl size="small" sx={EDIT_CONTROL_SX}>
                       <Select
-                        value={draft.cleaning_function}
+                        value={draft.data_type}
                         displayEmpty
-                        onChange={handleSelectChange("cleaning_function")}
+                        onChange={handleSelectChange("data_type")}
                         sx={{
                           fontSize: 14,
                           "& .MuiSelect-select": {
@@ -205,26 +266,6 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                             px: 1.5,
                           },
                         }}
-                      >
-                        <MenuItem value="">
-                          <em>None</em>
-                        </MenuItem>
-                        {cleaningFunctions.map((cleaningFunction) => (
-                          <MenuItem
-                            key={cleaningFunction}
-                            value={cleaningFunction}
-                          >
-                            {cleaningFunction}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  ) : isEditing && col.key === "data_type" ? (
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
-                      <Select
-                        value={draft.data_type}
-                        displayEmpty
-                        onChange={handleSelectChange("data_type")}
                       >
                         {DATA_TYPE_OPTIONS.map((dataType) => (
                           <MenuItem key={dataType} value={dataType}>
@@ -234,10 +275,17 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                       </Select>
                     </FormControl>
                   ) : isEditing && col.key === "database_data_type" ? (
-                    <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <FormControl size="small" sx={EDIT_CONTROL_SX}>
                       <Select
                         value={draft.database_data_type}
                         onChange={handleSelectChange("database_data_type")}
+                        sx={{
+                          fontSize: 14,
+                          "& .MuiSelect-select": {
+                            py: 0.75,
+                            px: 1.5,
+                          },
+                        }}
                       >
                         {getDatabaseOptions(draft.data_type).map((dataType) => (
                           <MenuItem key={dataType} value={dataType}>
@@ -246,38 +294,57 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                         ))}
                       </Select>
                     </FormControl>
-                  ) : (
-                    row[col.key]
-                  )}
-                </TableCell>
-              );
-            })}
-            <TableCell sx={{ width: 170 }}>
-              {editingRowKey === getRowKey(row, idx) ? (
-                <Stack direction="row" spacing={1}>
+                    ) : isEditing && col.key === "page_order_sort" ? (
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={draft.page_order_sort}
+                        onChange={(event) =>
+                          handleDraftValueChange("page_order_sort", event.target.value)
+                        }
+                        error={pageOrderSortInvalid}
+                        inputProps={{ min: 1, step: 1 }}
+                        sx={{
+                          ...EDIT_CONTROL_SX,
+                          "& .MuiFormHelperText-root": {
+                            display: "none",
+                          },
+                        }}
+                      />
+                    ) : (
+                      row[col.key]
+                    )}
+                  </TableCell>
+                );
+              })}
+              <TableCell sx={{ width: 170 }}>
+                {editingRowKey === getRowKey(row, idx) ? (
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      disabled={pageOrderSortInvalid}
+                      onClick={() => handleSaveRow(row)}
+                    >
+                      Save
+                    </Button>
+                    <Button size="small" onClick={stopEditingRow}>
+                      Cancel
+                    </Button>
+                  </Stack>
+                ) : (
                   <Button
                     size="small"
-                    variant="contained"
-                    onClick={() => handleSaveRow(row)}
+                    variant="outlined"
+                    onClick={() => startEditingRow(row, idx)}
                   >
-                    Save
+                    Edit
                   </Button>
-                  <Button size="small" onClick={stopEditingRow}>
-                    Cancel
-                  </Button>
-                </Stack>
-              ) : (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => startEditingRow(row, idx)}
-                >
-                  Edit
-                </Button>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
