@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from "react";
 import { MongoProcessor, SchemaField } from "../../types";
 import { schemaProcessorColumns as columns } from "../../util";
+import PopupModal from "../PopupModal/PopupModal";
 
 interface SchemaSheetProps {
   processor?: MongoProcessor;
@@ -22,7 +23,8 @@ interface SchemaSheetProps {
   onAttributeChange: (
     processorName: string,
     fieldName: string,
-    updates: Record<string, string | number | null>
+    updates: Record<string, string | number | null>,
+    operation?: "update" | "add" | "delete"
   ) => void | Promise<void>;
 }
 
@@ -79,10 +81,12 @@ const SchemaSheet = (props: SchemaSheetProps) => {
   const { attributes } = processor || { attributes: [] };
   const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
+  const [pendingDeleteRow, setPendingDeleteRow] = useState<SchemaField | null>(null);
 
   useEffect(() => {
     setEditingRowKey(null);
     setDraft(null);
+    setPendingDeleteRow(null);
   }, [processor?.name]);
 
   const getRowKey = (row: SchemaField, idx: number) => `${idx}-${row.name}`;
@@ -95,6 +99,15 @@ const SchemaSheet = (props: SchemaSheetProps) => {
   const stopEditingRow = () => {
     setEditingRowKey(null);
     setDraft(null);
+  };
+
+  const handleDeleteRow = async () => {
+    if (!processor?.name || !pendingDeleteRow?.name) return;
+    await onAttributeChange(processor.name, pendingDeleteRow.name, {}, "delete");
+    if (editingRowKey && pendingDeleteRow.name === draft?.name) {
+      stopEditingRow();
+    }
+    setPendingDeleteRow(null);
   };
 
   const getDatabaseOptions = (dataType?: string) =>
@@ -169,64 +182,64 @@ const SchemaSheet = (props: SchemaSheetProps) => {
   };
 
   return (
-    <Table
-      stickyHeader
-      sx={{
-        minWidth: 650,
-        tableLayout: "fixed",
-        "& th, & td": {
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        },
-      }}
-    >
-      <TableHead>
-        <TableRow sx={{ backgroundColor: "#fbfbfb" }}>
-          {columns.map((col) => (
-            <TableCell key={col.key} sx={{ fontWeight: 600 }}>
-              {col.displayName}
-            </TableCell>
-          ))}
-          <TableCell sx={{ fontWeight: 600, width: 170 }}>Actions</TableCell>
-        </TableRow>
-      </TableHead>
+    <>
+      <Table
+        stickyHeader
+        sx={{
+          minWidth: 650,
+          tableLayout: "fixed",
+          "& th, & td": {
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          },
+        }}
+      >
+        <TableHead>
+          <TableRow sx={{ backgroundColor: "#fbfbfb" }}>
+            {columns.map((col) => (
+              <TableCell key={col.key} sx={{ fontWeight: 600 }}>
+                {col.displayName}
+              </TableCell>
+            ))}
+            <TableCell sx={{ fontWeight: 600, width: 150 }}>Actions</TableCell>
+          </TableRow>
+        </TableHead>
 
-      <TableBody>
-        {attributes?.map((row: any, idx: number) => {
-          const isEditing = editingRowKey === getRowKey(row, idx) && draft;
-          const pageOrderSortValue = Number(draft?.page_order_sort);
-          const pageOrderSortInvalid =
-            !!isEditing &&
-            (!Number.isInteger(pageOrderSortValue) ||
-              pageOrderSortValue <= 0);
+        <TableBody>
+          {attributes?.map((row: any, idx: number) => {
+            const isEditing = editingRowKey === getRowKey(row, idx) && draft;
+            const pageOrderSortValue = Number(draft?.page_order_sort);
+            const pageOrderSortInvalid =
+              !!isEditing &&
+              (!Number.isInteger(pageOrderSortValue) ||
+                pageOrderSortValue <= 0);
 
-          return (
-            <TableRow
-              key={idx}
-              hover
-              sx={{
-                cursor: "pointer",
-                "&:hover": { backgroundColor: "rgba(0,0,0,0.03)" },
-                "& td": {
-                  borderBottom: "1px solid #eee",
-                  padding: "8px 16px",
-                },
-              }}
-            >
-              {columns.map((col) => {
-
-                return (
-                  <TableCell
-                    key={`${col.key}_${idx}`}
-                  sx={
-                    col.key === "cleaning_function"
-                      ? { width: 190, minWidth: 190 }
-                      : col.key === "page_order_sort"
-                        ? { width: 110, minWidth: 110 }
-                        : undefined
-                  }
-                >
+            return (
+              <TableRow
+                key={idx}
+                hover
+                sx={{
+                  cursor: "pointer",
+                  "&:hover": { backgroundColor: "rgba(0,0,0,0.03)" },
+                  "& td": {
+                    borderBottom: "1px solid #eee",
+                    padding: "8px 16px",
+                  },
+                }}
+              >
+                {columns.map((col) => {
+                  return (
+                    <TableCell
+                      key={`${col.key}_${idx}`}
+                      sx={
+                        col.key === "cleaning_function"
+                          ? { width: 190, minWidth: 190 }
+                          : col.key === "page_order_sort"
+                            ? { width: 110, minWidth: 110 }
+                            : undefined
+                      }
+                    >
                     {isEditing && (col.key === "name" || col.key === "alias") ? (
                       <TextField
                         size="small"
@@ -326,45 +339,71 @@ const SchemaSheet = (props: SchemaSheetProps) => {
                     ) : (
                       row[col.key]
                     )}
-                  </TableCell>
-                );
-              })}
-              <TableCell sx={{ width: 130 }}>
-                {editingRowKey === getRowKey(row, idx) ? (
-                  <Stack direction="row" spacing={0.5}>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      disabled={pageOrderSortInvalid}
-                      onClick={() => handleSaveRow(row)}
-                      sx={{ minWidth: 56, px: 1 }}
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={stopEditingRow}
-                      sx={{ minWidth: 56, px: 1 }}
-                    >
-                      Cancel
-                    </Button>
-                  </Stack>
-                ) : (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => startEditingRow(row, idx)}
-                    sx={{ minWidth: 64, px: 1 }}
-                  >
-                    Edit
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                    </TableCell>
+                  );
+                })}
+                <TableCell sx={{ width: 150 }}>
+                  {editingRowKey === getRowKey(row, idx) ? (
+                    <Stack direction="row" spacing={0.5}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        disabled={pageOrderSortInvalid}
+                        onClick={() => handleSaveRow(row)}
+                        sx={{ minWidth: 56, px: 1 }}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={stopEditingRow}
+                        sx={{ minWidth: 56, px: 1 }}
+                      >
+                        Cancel
+                      </Button>
+                    </Stack>
+                  ) : (
+                    <Stack direction="row" spacing={0.5}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => startEditingRow(row, idx)}
+                        sx={{ minWidth: 56, px: 1 }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        onClick={() => setPendingDeleteRow(row)}
+                        sx={{ minWidth: 72, px: 1 }}
+                      >
+                        Remove
+                      </Button>
+                    </Stack>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      <PopupModal
+        open={pendingDeleteRow !== null}
+        handleClose={() => setPendingDeleteRow(null)}
+        text={
+          pendingDeleteRow
+            ? `Are you sure you would like to remove ${pendingDeleteRow.name}?`
+            : ""
+        }
+        handleSave={handleDeleteRow}
+        buttonText="Remove"
+        buttonColor="error"
+        buttonVariant="contained"
+        width={400}
+      />
+    </>
   );
 };
 

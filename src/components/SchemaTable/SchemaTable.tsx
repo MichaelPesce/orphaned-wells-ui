@@ -15,7 +15,8 @@ interface SchemaTableProps {
   onAttributeChange: (
     processorName: string,
     fieldName: string,
-    updates: Record<string, string | number | null>
+    updates: Record<string, string | number | null>,
+    operation?: "update" | "add" | "delete"
   ) => void;
   setErrorMessage: (v: string | null) => void;
   clickUpdateFields: (v: MongoProcessor) => void;

@@ -69,7 +69,8 @@ const SchemaView = () => {
   const updateProcessorAttributeInState = (
     processorName: string,
     fieldName: string,
-    updates: Record<string, string | number | null>
+    updates: Record<string, string | number | null>,
+    operation: "update" | "add" | "delete" = "update"
   ) => {
     setSchemaData((prev) => {
       if (!prev) return prev;
@@ -78,6 +79,15 @@ const SchemaView = () => {
         ...prev,
         processors: prev.processors.map((processor) => {
           if (processor.name !== processorName) return processor;
+
+          if (operation === "delete") {
+            return {
+              ...processor,
+              attributes: processor.attributes?.filter(
+                (attribute) => attribute.name !== fieldName
+              ),
+            };
+          }
 
           return {
             ...processor,
@@ -105,25 +115,31 @@ const SchemaView = () => {
   const handleAttributeChange = (
     processorName: string,
     fieldName: string,
-    updates: Record<string, string | number | null>
+    updates: Record<string, string | number | null>,
+    operation: "update" | "add" | "delete" = "update"
   ) => {
     const previousAttribute = schemaData?.processors
       ?.find((processor) => processor.name === processorName)
       ?.attributes?.find((attribute) => attribute.name === fieldName);
 
-    if (!previousAttribute) return;
+    if (operation === "update" && !previousAttribute) return;
 
-    const previousAttributeRecord = previousAttribute as unknown as Record<string, string | number | undefined>;
-    const previousValues = Object.keys(updates).reduce<Record<string, string | number | null>>(
-      (acc, key) => {
-        const value = previousAttributeRecord[key];
-        acc[key] = value ?? null;
-        return acc;
-      },
-      {}
-    );
+    const previousAttributeRecord = previousAttribute as unknown as
+      | Record<string, string | number | undefined>
+      | undefined;
+    const previousValues =
+      operation === "update"
+        ? Object.keys(updates).reduce<Record<string, string | number | null>>(
+            (acc, key) => {
+              const value = previousAttributeRecord?.[key];
+              acc[key] = value ?? null;
+              return acc;
+            },
+            {}
+          )
+        : {};
 
-    updateProcessorAttributeInState(processorName, fieldName, updates);
+    updateProcessorAttributeInState(processorName, fieldName, updates, operation);
     setUpdating(true);
     callAPI(
       updateProcessorAttribute,
@@ -131,13 +147,29 @@ const SchemaView = () => {
         processorName,
         fieldName,
         updates,
+        operation,
       ],
       () => {
         setUpdating(false);
       },
       (e: string) => {
-        updateProcessorAttributeInState(processorName, fieldName, previousValues);
-        setUpdating(false);
+        if (operation === "delete") {
+          callAPI(
+            getSchema,
+            [],
+            (processors: MongoProcessor[]) => {
+              fetchedSchema(processors);
+              setUpdating(false);
+            },
+            (schemaError: string) => {
+              setUpdating(false);
+              handleError(schemaError);
+            }
+          );
+        } else {
+          updateProcessorAttributeInState(processorName, fieldName, previousValues);
+          setUpdating(false);
+        }
         setErrorMsg(`Failed to update schema field: ${e}`);
       }
     );
