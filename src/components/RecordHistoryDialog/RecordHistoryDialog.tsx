@@ -52,7 +52,9 @@ const QuerySummaryBlock = ({ querySummary }: { querySummary: QuerySummary }) => 
               <Box component="span" sx={{ fontWeight: 700 }}>
                 {formatHistoryKey(line.key)}:
               </Box>{" "}
-              {formatHistoryValue(line.currentValue)}
+              {line.previousValue !== undefined
+                ? `${formatHistoryValue(line.previousValue)} -> ${formatHistoryValue(line.currentValue)}`
+                : formatHistoryValue(line.currentValue)}
             </Typography>
           ))}
         </Stack>

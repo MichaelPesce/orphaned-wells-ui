@@ -394,10 +394,15 @@ const areHistoryValuesEqual = (left: unknown, right: unknown): boolean => {
 
 export const formatHistoryKey = (key: string): string =>
   key
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+    .split("::")
+    .map((segment) =>
+      segment
+        .split("_")
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    )
+    .join("::");
 
 export const formatHistoryValue = (value: unknown): string => {
   if (value === null || value === undefined) return "empty";
@@ -460,33 +465,72 @@ export const buildRecordHistoryCleanSummary = (
 
   if (beforeList.length === 0 && afterList.length === 0) return null;
 
-  const beforeValuesByKey = new Map<string, unknown[]>();
-  beforeList.forEach((attr) => {
-    if (typeof attr.key !== "string" || !attr.key) return;
-    const currentValues = beforeValuesByKey.get(attr.key) || [];
-    currentValues.push(getHistoryAttributeValue(attr));
-    beforeValuesByKey.set(attr.key, currentValues);
-  });
+  const flattenHistoryAttributes = (
+    attributes: HistoryAttribute[],
+    parentKey?: string
+  ): QuerySummaryLine[] => {
+    const lines: QuerySummaryLine[] = [];
+
+    attributes.forEach((attr) => {
+      if (typeof attr.key !== "string" || !attr.key) return;
+
+      const key = parentKey ? `${parentKey}::${attr.key}` : attr.key;
+      lines.push({
+        key,
+        currentValue: getHistoryAttributeValue(attr),
+      });
+
+      if (Array.isArray(attr.subattributes) && attr.subattributes.length > 0) {
+        lines.push(...flattenHistoryAttributes(attr.subattributes, key));
+      }
+    });
+
+    return lines;
+  };
+
+  const groupValuesByKey = (lines: QuerySummaryLine[]): Map<string, unknown[]> => {
+    const valuesByKey = new Map<string, unknown[]>();
+
+    lines.forEach((line) => {
+      const values = valuesByKey.get(line.key) || [];
+      values.push(line.currentValue);
+      valuesByKey.set(line.key, values);
+    });
+
+    return valuesByKey;
+  };
+
+  const beforeLines = flattenHistoryAttributes(beforeList);
+  const afterLines = flattenHistoryAttributes(afterList);
+  const beforeValuesByKey = groupValuesByKey(beforeLines);
+  const afterValuesByKey = groupValuesByKey(afterLines);
 
   const changedLines: QuerySummaryLine[] = [];
-  const comparedCountsByKey = new Map<string, number>();
+  const orderedKeys: string[] = [];
+  const seenKeys = new Set<string>();
 
-  afterList.forEach((attr) => {
-    if (typeof attr.key !== "string" || !attr.key) return;
+  [...afterLines, ...beforeLines].forEach((line) => {
+    if (seenKeys.has(line.key)) return;
+    seenKeys.add(line.key);
+    orderedKeys.push(line.key);
+  });
 
-    const key = attr.key;
-    const currentValue = getHistoryAttributeValue(attr);
-    const comparedCount = comparedCountsByKey.get(key) || 0;
+  orderedKeys.forEach((key) => {
     const previousValues = beforeValuesByKey.get(key) || [];
-    const previousValue = previousValues[comparedCount];
+    const currentValues = afterValuesByKey.get(key) || [];
+    const maxCount = Math.max(previousValues.length, currentValues.length);
 
-    comparedCountsByKey.set(key, comparedCount + 1);
+    for (let idx = 0; idx < maxCount; idx += 1) {
+      const previousValue = previousValues[idx];
+      const currentValue = currentValues[idx];
 
-    if (!areHistoryValuesEqual(previousValue, currentValue)) {
-      changedLines.push({
-        key,
-        currentValue,
-      });
+      if (!areHistoryValuesEqual(previousValue, currentValue)) {
+        changedLines.push({
+          key,
+          previousValue,
+          currentValue,
+        });
+      }
     }
   });
 

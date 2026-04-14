@@ -189,10 +189,12 @@ export interface HistoryAttribute {
     normalized_value?: unknown;
     text_value?: unknown;
     raw_text?: unknown;
+    subattributes?: HistoryAttribute[] | null;
 }
 
 export interface QuerySummaryLine {
     key: string;
+    previousValue?: unknown;
     currentValue?: unknown;
 }
 
