@@ -326,14 +326,6 @@ const isMeaningfulHistoryValue = (value: unknown): boolean => {
 const getHistoryAttributeValue = (attr: HistoryAttribute): unknown => {
   const hasNonEmptyString = (value: unknown): boolean =>
     typeof value === "string" ? value.trim().length > 0 : true;
-
-  if (
-    attr.normalized_value !== undefined &&
-    attr.normalized_value !== null &&
-    hasNonEmptyString(attr.normalized_value)
-  ) {
-    return attr.normalized_value;
-  }
   if (
     attr.value !== undefined &&
     attr.value !== null &&
