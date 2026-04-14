@@ -50,7 +50,11 @@ const LoginPage = (props: LoginPageProps) => {
         >
           <Box sx={styles.modalBox}>
             <Typography sx={styles.modalLogo} variant="h6" component="h2">
-              <img src={`${process.env.PUBLIC_URL}/img/OGRRE_logo.svg`} width="50%"/>
+              <img
+                src={`${process.env.PUBLIC_URL}/img/OGRRE_logo.svg`}
+                width="50%"
+                alt="OGRRE logo"
+              />
             </Typography>
             <Typography sx={styles.modalTitle} variant="h6" component="h2">
                             OGRRE
