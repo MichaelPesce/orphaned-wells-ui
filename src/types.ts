@@ -176,6 +176,8 @@ export interface RecordHistoryItem {
     record_id?: string | null;
     notes?: string | null;
     query?: Record<string, any> | null;
+    attributesList_before?: HistoryAttribute[] | Record<string, any> | null;
+    attributesList_after?: HistoryAttribute[] | Record<string, any> | null;
     previous_state?: Record<string, any> | null;
     calling_function?: string | null;
     timestamp?: number;

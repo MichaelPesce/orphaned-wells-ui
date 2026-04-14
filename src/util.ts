@@ -370,6 +370,36 @@ const getHistoryAttributesList = (
     .map((entry) => entry.value);
 };
 
+const getHistoryAttributesFromAny = (payload: unknown): HistoryAttribute[] => {
+  if (Array.isArray(payload)) return payload as HistoryAttribute[];
+  if (payload && typeof payload === "object") {
+    return getHistoryAttributesList(payload as Record<string, unknown>);
+  }
+  return [];
+};
+
+const areHistoryValuesEqual = (left: unknown, right: unknown): boolean => {
+  if (left === right) return true;
+  if (
+    left === null ||
+    left === undefined ||
+    right === null ||
+    right === undefined
+  ) {
+    return false;
+  }
+
+  if (typeof left === "object" || typeof right === "object") {
+    try {
+      return JSON.stringify(left) === JSON.stringify(right);
+    } catch {
+      return false;
+    }
+  }
+
+  return String(left) === String(right);
+};
+
 export const formatHistoryKey = (key: string): string =>
   key
     .split("_")
@@ -426,6 +456,54 @@ export const buildRecordHistoryQuerySummary = (
     title: "Query snapshot",
     subtitle: `${lines.length} populated field${lines.length === 1 ? "" : "s"}`,
     lines,
+  };
+};
+
+export const buildRecordHistoryCleanSummary = (
+  beforeAttributes?: unknown,
+  afterAttributes?: unknown
+): QuerySummary | null => {
+  const beforeList = getHistoryAttributesFromAny(beforeAttributes);
+  const afterList = getHistoryAttributesFromAny(afterAttributes);
+
+  if (beforeList.length === 0 && afterList.length === 0) return null;
+
+  const beforeMap = new Map<string, unknown>();
+  beforeList.forEach((attr) => {
+    if (typeof attr.key !== "string" || !attr.key) return;
+    beforeMap.set(attr.key, getHistoryAttributeValue(attr));
+  });
+
+  const changedLines: QuerySummaryLine[] = [];
+  const seenKeys = new Set<string>();
+
+  afterList.forEach((attr) => {
+    if (typeof attr.key !== "string" || !attr.key || seenKeys.has(attr.key)) return;
+
+    seenKeys.add(attr.key);
+    const currentValue = getHistoryAttributeValue(attr);
+    const previousValue = beforeMap.get(attr.key);
+
+    if (!areHistoryValuesEqual(previousValue, currentValue)) {
+      changedLines.push({
+        key: attr.key,
+        currentValue,
+      });
+    }
+  });
+
+  if (changedLines.length === 0) {
+    return {
+      title: "Cleaned fields",
+      subtitle: "No changed fields detected",
+      lines: [],
+    };
+  }
+
+  return {
+    title: "Cleaned fields",
+    subtitle: `${changedLines.length} changed field${changedLines.length === 1 ? "" : "s"}`,
+    lines: changedLines,
   };
 };
 
