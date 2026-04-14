@@ -392,6 +392,29 @@ const areHistoryValuesEqual = (left: unknown, right: unknown): boolean => {
   return String(left) === String(right);
 };
 
+const flattenHistoryAttributes = (
+  attributes: HistoryAttribute[],
+  parentKey?: string
+): QuerySummaryLine[] => {
+  const lines: QuerySummaryLine[] = [];
+
+  attributes.forEach((attr) => {
+    if (typeof attr.key !== "string" || !attr.key) return;
+
+    const key = parentKey ? `${parentKey}::${attr.key}` : attr.key;
+    lines.push({
+      key,
+      currentValue: getHistoryAttributeValue(attr),
+    });
+
+    if (Array.isArray(attr.subattributes) && attr.subattributes.length > 0) {
+      lines.push(...flattenHistoryAttributes(attr.subattributes, key));
+    }
+  });
+
+  return lines;
+};
+
 export const formatHistoryKey = (key: string): string =>
   key
     .split("::")
@@ -420,12 +443,7 @@ export const buildRecordHistoryQuerySummary = (
   if (!query || typeof query !== "object") return null;
 
   const queryAttributes = getHistoryAttributesList(query);
-  const attributeLines: QuerySummaryLine[] = queryAttributes
-    .filter((attr) => typeof attr.key === "string" && attr.key)
-    .map((attr) => ({
-      key: attr.key as string,
-      currentValue: getHistoryAttributeValue(attr),
-    }))
+  const attributeLines: QuerySummaryLine[] = flattenHistoryAttributes(queryAttributes)
     .filter((line) => isMeaningfulHistoryValue(line.currentValue));
 
   const nonAttributeLines: QuerySummaryLine[] = Object.entries(query)
@@ -464,29 +482,6 @@ export const buildRecordHistoryCleanSummary = (
   const afterList = getHistoryAttributesFromAny(afterAttributes);
 
   if (beforeList.length === 0 && afterList.length === 0) return null;
-
-  const flattenHistoryAttributes = (
-    attributes: HistoryAttribute[],
-    parentKey?: string
-  ): QuerySummaryLine[] => {
-    const lines: QuerySummaryLine[] = [];
-
-    attributes.forEach((attr) => {
-      if (typeof attr.key !== "string" || !attr.key) return;
-
-      const key = parentKey ? `${parentKey}::${attr.key}` : attr.key;
-      lines.push({
-        key,
-        currentValue: getHistoryAttributeValue(attr),
-      });
-
-      if (Array.isArray(attr.subattributes) && attr.subattributes.length > 0) {
-        lines.push(...flattenHistoryAttributes(attr.subattributes, key));
-      }
-    });
-
-    return lines;
-  };
 
   const groupValuesByKey = (lines: QuerySummaryLine[]): Map<string, unknown[]> => {
     const valuesByKey = new Map<string, unknown[]>();
