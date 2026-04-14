@@ -460,25 +460,31 @@ export const buildRecordHistoryCleanSummary = (
 
   if (beforeList.length === 0 && afterList.length === 0) return null;
 
-  const beforeMap = new Map<string, unknown>();
+  const beforeValuesByKey = new Map<string, unknown[]>();
   beforeList.forEach((attr) => {
     if (typeof attr.key !== "string" || !attr.key) return;
-    beforeMap.set(attr.key, getHistoryAttributeValue(attr));
+    const currentValues = beforeValuesByKey.get(attr.key) || [];
+    currentValues.push(getHistoryAttributeValue(attr));
+    beforeValuesByKey.set(attr.key, currentValues);
   });
 
   const changedLines: QuerySummaryLine[] = [];
-  const seenKeys = new Set<string>();
+  const comparedCountsByKey = new Map<string, number>();
 
   afterList.forEach((attr) => {
-    if (typeof attr.key !== "string" || !attr.key || seenKeys.has(attr.key)) return;
+    if (typeof attr.key !== "string" || !attr.key) return;
 
-    seenKeys.add(attr.key);
+    const key = attr.key;
     const currentValue = getHistoryAttributeValue(attr);
-    const previousValue = beforeMap.get(attr.key);
+    const comparedCount = comparedCountsByKey.get(key) || 0;
+    const previousValues = beforeValuesByKey.get(key) || [];
+    const previousValue = previousValues[comparedCount];
+
+    comparedCountsByKey.set(key, comparedCount + 1);
 
     if (!areHistoryValuesEqual(previousValue, currentValue)) {
       changedLines.push({
-        key: attr.key,
+        key,
         currentValue,
       });
     }
