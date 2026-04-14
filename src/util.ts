@@ -341,14 +341,7 @@ const getHistoryAttributeValue = (attr: HistoryAttribute): unknown => {
   ) {
     return attr.value;
   }
-  if (
-    attr.text_value !== undefined &&
-    attr.text_value !== null &&
-    hasNonEmptyString(attr.text_value)
-  ) {
-    return attr.text_value;
-  }
-  return attr.raw_text;
+  return attr.value;
 };
 
 const getHistoryAttributesList = (
