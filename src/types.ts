@@ -481,3 +481,5 @@ export interface HotkeyInfoProps {
   anchorEl: HTMLElement | undefined;
   onClose: () => void;
 }
+
+export type AttributesListUpdateTypes = "insertField" | "deleteField" | "updateFieldCoordinates"

@@ -18,7 +18,9 @@ import {
   RecordSchema,
   Attribute,
   updateFieldCoordinatesSignature,
-  FieldID } from "../../types";
+  FieldID,
+  AttributesListUpdateTypes,
+} from "../../types";
 import { useUserContext } from "../../usercontext";
 import { convertFiltersToMongoFormat } from "../../util";
 
@@ -198,8 +200,7 @@ const Record = () => {
       });
   }, [setRecordData]);
 
-  const handleUpdateRecordAttributesList = React.useCallback((type: "insertField" | "deleteField" | "updateFieldCoordinates", data: any, callbackFunction?: () => void) => {
-    // Accepted types: insertField, deleteField, updateFieldCoordinates
+  const handleUpdateRecordAttributesList = React.useCallback((type: AttributesListUpdateTypes, data: any, callbackFunction?: () => void) => {
     if (lockedRef.current) return;
     const recordId = currentRecordIdRef.current;
     if (!recordId) return;
