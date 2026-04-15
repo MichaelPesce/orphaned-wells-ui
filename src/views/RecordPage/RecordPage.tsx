@@ -198,7 +198,7 @@ const Record = () => {
       });
   }, [setRecordData]);
 
-  const handleUpdateRecordAttributesList = React.useCallback((fieldID: FieldID, parentAttribute?: string, type: string ="insertField") => {
+  const handleUpdateRecordAttributesList = React.useCallback((type: string ="insertField", fieldID: FieldID, parentAttribute?: string) => {
     // Use this function for inserting, removing attributes
     if (lockedRef.current) return;
     const recordId = currentRecordIdRef.current;
@@ -230,39 +230,12 @@ const Record = () => {
   }, []);
 
   const insertField: insertFieldSignature = React.useCallback((fieldID, parentAttribute) => {
-    handleUpdateRecordAttributesList(fieldID, parentAttribute, "insertField");
+    handleUpdateRecordAttributesList("insertField", fieldID, parentAttribute);
   }, [handleUpdateRecordAttributesList]);
 
   const deleteField: deleteFieldSignature = React.useCallback((fieldID: FieldID) => {
-    const primaryIndex = fieldID.primaryIndex;
-    const isSubattribute = fieldID.isSubattribute;
-    const subIndex = fieldID.subIndex || 0;
-    if (isSubattribute) {
-      setRecordData(tempRecordData => {
-        const newAttributesList = tempRecordData.attributesList.map((attribute, idx) => {
-          if (idx !== primaryIndex) return attribute;
-          else {
-            return {
-              ...attribute,
-              subattributes: attribute.subattributes.filter((_: any, subidx: number) => subidx !== subIndex)
-            };
-          }
-        });
-        const newRecordData = { ...tempRecordData, attributesList: newAttributesList };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-    } else {
-      setRecordData(tempRecordData => {
-        const newRecordData = {
-          ...tempRecordData,
-          attributesList: tempRecordData.attributesList.filter((_, i) => i !== primaryIndex),
-        };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-    }
-  }, [handleUpdateRecord]);
+    handleUpdateRecordAttributesList("deleteField", fieldID);
+  }, [handleUpdateRecordAttributesList]);
 
   const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldId, new_coordinates, pageNumber) => {
     if (lockedRef.current) return true;
