@@ -188,6 +188,30 @@ const Record = () => {
     );
   }, [handleFailedUpdate]);
 
+  const handleSuccessfulAttributesListUpdate = React.useCallback((data: any) => {
+    setRecordData(tempRecordData => {
+        const newRecordData = {
+          ...tempRecordData,
+          ...data,
+        };
+        return newRecordData;
+      });
+  }, [setRecordData]);
+
+  const handleUpdateRecordAttributesList = React.useCallback((fieldID: FieldID, parentAttribute?: string, type: string ="insertField") => {
+    // Use this function for inserting, removing attributes
+    if (lockedRef.current) return;
+    const recordId = currentRecordIdRef.current;
+    if (!recordId) return;
+    let body = { data: { fieldID: fieldID, parentAttribute: parentAttribute } , type: type };
+    callAPI(
+      updateRecord,
+      [recordId, body],
+      handleSuccessfulAttributesListUpdate,
+      handleFailedUpdate
+    );
+  }, [handleSuccessfulAttributesListUpdate, handleFailedUpdate]);
+
   const handleUpdateRecordName = () => {
     if (locked) return;
     setOpenUpdateNameModal(false);
@@ -206,6 +230,8 @@ const Record = () => {
   }, []);
 
   const insertField: insertFieldSignature = React.useCallback((fieldID, parentAttribute) => {
+    handleUpdateRecordAttributesList(fieldID, parentAttribute, "insertField");
+    return;
     const k = fieldID.key;
     const primaryIndex = fieldID.primaryIndex;
     const isSubattribute = fieldID.isSubattribute;
