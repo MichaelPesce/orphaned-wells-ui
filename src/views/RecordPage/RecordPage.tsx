@@ -198,12 +198,12 @@ const Record = () => {
       });
   }, [setRecordData]);
 
-  const handleUpdateRecordAttributesList = React.useCallback((type: string ="insertField", fieldID: FieldID, parentAttribute?: string) => {
-    // Use this function for inserting, removing attributes
+  const handleUpdateRecordAttributesList = React.useCallback((type: "insertField" | "deleteField" | "updateFieldCoordinates", data: any) => {
+    // Accepted types: insertField, deleteField, updateFieldCoordinates
     if (lockedRef.current) return;
     const recordId = currentRecordIdRef.current;
     if (!recordId) return;
-    let body = { data: { fieldID: fieldID, parentAttribute: parentAttribute } , type: type };
+    let body = { data, type: type };
     callAPI(
       updateRecord,
       [recordId, body],
@@ -230,23 +230,28 @@ const Record = () => {
   }, []);
 
   const insertField: insertFieldSignature = React.useCallback((fieldID, parentAttribute) => {
-    handleUpdateRecordAttributesList("insertField", fieldID, parentAttribute);
+    const data = { fieldID: fieldID, parentAttribute: parentAttribute };
+    handleUpdateRecordAttributesList("insertField", data);
   }, [handleUpdateRecordAttributesList]);
 
   const deleteField: deleteFieldSignature = React.useCallback((fieldID: FieldID) => {
-    handleUpdateRecordAttributesList("deleteField", fieldID);
+    const data = { fieldID: fieldID };
+    handleUpdateRecordAttributesList("deleteField", data);
   }, [handleUpdateRecordAttributesList]);
 
-  const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldId, new_coordinates, pageNumber) => {
+  const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldID, new_coordinates, pageNumber) => {
     if (lockedRef.current) return true;
+    const data = { fieldID: fieldID, new_coordinates: new_coordinates, pageNumber: pageNumber };
+    handleUpdateRecordAttributesList("updateFieldCoordinates", data);
+    return;
     let rightNow = Date.now();
     // TODO: need to update backend as well
-    if (!fieldId.isSubattribute) {
+    if (!fieldID.isSubattribute) {
       setRecordData(tempRecordData => {
         const newRecordData = {
           ...tempRecordData,
           attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-            fieldId.primaryIndex === idx ? { 
+            fieldID.primaryIndex === idx ? { 
               ...tempAttribute,
               lastUpdated: rightNow,
               lastUpdatedBy: userEmailRef.current,
@@ -264,10 +269,10 @@ const Record = () => {
         const newRecordData = {
           ...tempRecordData,
           attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-            fieldId.primaryIndex === idx ? { 
+            fieldID.primaryIndex === idx ? { 
               ...tempAttribute,
               subattributes: tempAttribute.subattributes.map((tempSubattribute: Attribute, subidx: number) => {
-                if (fieldId.subIndex === subidx) {
+                if (fieldID.subIndex === subidx) {
                   return {
                     ...tempSubattribute,
                     lastUpdated: rightNow,
