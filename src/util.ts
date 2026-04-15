@@ -317,7 +317,7 @@ const isAttributesListField = (key: string): boolean =>
 
 const isMeaningfulHistoryValue = (value: unknown): boolean => {
   if (value === null || value === undefined) return false;
-  if (typeof value === "string") return value.trim().length > 0;
+  // if (typeof value === "string") return value.trim().length > 0;
   if (typeof value === "boolean") return value;
   if (Array.isArray(value)) return value.length > 0;
   return true;
