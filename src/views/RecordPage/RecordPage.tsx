@@ -243,55 +243,7 @@ const Record = () => {
     if (lockedRef.current) return true;
     const data = { fieldID: fieldID, new_coordinates: new_coordinates, pageNumber: pageNumber };
     handleUpdateRecordAttributesList("updateFieldCoordinates", data);
-    return;
-    let rightNow = Date.now();
-    // TODO: need to update backend as well
-    if (!fieldID.isSubattribute) {
-      setRecordData(tempRecordData => {
-        const newRecordData = {
-          ...tempRecordData,
-          attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-            fieldID.primaryIndex === idx ? { 
-              ...tempAttribute,
-              lastUpdated: rightNow,
-              lastUpdatedBy: userEmailRef.current,
-              edited: true,
-              user_provided_coordinates: new_coordinates,
-              page: pageNumber,
-            } : tempAttribute
-          )
-        };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-    } else {
-      setRecordData(tempRecordData => {
-        const newRecordData = {
-          ...tempRecordData,
-          attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-            fieldID.primaryIndex === idx ? { 
-              ...tempAttribute,
-              subattributes: tempAttribute.subattributes.map((tempSubattribute: Attribute, subidx: number) => {
-                if (fieldID.subIndex === subidx) {
-                  return {
-                    ...tempSubattribute,
-                    lastUpdated: rightNow,
-                    lastUpdatedBy: userEmailRef.current,
-                    edited: true,
-                    user_provided_coordinates: new_coordinates,
-                    page: pageNumber,
-                  };
-                } else return tempSubattribute;
-              }
-              )
-            } : tempAttribute
-          )
-        };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-    }
-  }, [handleUpdateRecord]);
+  }, [handleUpdateRecordAttributesList]);
 
   const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string) => {
     if (lockedRef.current) return true;
