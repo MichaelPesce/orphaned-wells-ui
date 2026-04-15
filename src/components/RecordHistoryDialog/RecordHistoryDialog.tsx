@@ -15,6 +15,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { QuerySummary, RecordHistoryDialogProps } from "../../types";
 import {
+  buildRecordHistoryCleanSummary,
   buildRecordHistoryQuerySummary,
   formatDateTime,
   formatHistoryKey,
@@ -51,7 +52,9 @@ const QuerySummaryBlock = ({ querySummary }: { querySummary: QuerySummary }) => 
               <Box component="span" sx={{ fontWeight: 700 }}>
                 {formatHistoryKey(line.key)}:
               </Box>{" "}
-              {formatHistoryValue(line.currentValue)}
+              {line.previousValue !== undefined
+                ? `${formatHistoryValue(line.previousValue, line.previousValueNumericType)} -> ${formatHistoryValue(line.currentValue, line.currentValueNumericType)}`
+                : formatHistoryValue(line.currentValue, line.currentValueNumericType)}
             </Typography>
           ))}
         </Stack>
@@ -138,8 +141,14 @@ const RecordHistoryDialog = ({
                 const userName = item.user || "Unknown user";
                 const action = item.action || "unknown_action";
                 const noteText = (item.notes || "").trim();
-                const querySummary = SHOW_QUERY_SUMMARY
-                  ? buildRecordHistoryQuerySummary(item.query)
+                const historySummary = SHOW_QUERY_SUMMARY
+                  ? action === "cleanRecord" &&
+                    (item.attributesList_before || item.attributesList_after)
+                    ? buildRecordHistoryCleanSummary(
+                      item.attributesList_before,
+                      item.attributesList_after
+                    )
+                    : buildRecordHistoryQuerySummary(item.query)
                   : null;
                 const initial = userName[0]?.toUpperCase() || "?";
                 return (
@@ -195,8 +204,8 @@ const RecordHistoryDialog = ({
 
                     <Divider sx={{ my: 1.25 }} />
 
-                    {querySummary ? (
-                      <QuerySummaryBlock querySummary={querySummary} />
+                    {historySummary ? (
+                      <QuerySummaryBlock querySummary={historySummary} />
                     ) : noteText ? (
                       <Typography sx={{ fontSize: "13px", color: "#374151" }}>
                         {noteText}

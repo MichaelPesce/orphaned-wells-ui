@@ -317,7 +317,7 @@ const isAttributesListField = (key: string): boolean =>
 
 const isMeaningfulHistoryValue = (value: unknown): boolean => {
   if (value === null || value === undefined) return false;
-  if (typeof value === "string") return value.trim().length > 0;
+  // if (typeof value === "string") return value.trim().length > 0;
   if (typeof value === "boolean") return value;
   if (Array.isArray(value)) return value.length > 0;
   return true;
@@ -326,14 +326,6 @@ const isMeaningfulHistoryValue = (value: unknown): boolean => {
 const getHistoryAttributeValue = (attr: HistoryAttribute): unknown => {
   const hasNonEmptyString = (value: unknown): boolean =>
     typeof value === "string" ? value.trim().length > 0 : true;
-
-  if (
-    attr.normalized_value !== undefined &&
-    attr.normalized_value !== null &&
-    hasNonEmptyString(attr.normalized_value)
-  ) {
-    return attr.normalized_value;
-  }
   if (
     attr.value !== undefined &&
     attr.value !== null &&
@@ -341,14 +333,7 @@ const getHistoryAttributeValue = (attr: HistoryAttribute): unknown => {
   ) {
     return attr.value;
   }
-  if (
-    attr.text_value !== undefined &&
-    attr.text_value !== null &&
-    hasNonEmptyString(attr.text_value)
-  ) {
-    return attr.text_value;
-  }
-  return attr.raw_text;
+  return attr.value;
 };
 
 const getHistoryAttributesList = (
@@ -377,18 +362,85 @@ const getHistoryAttributesList = (
     .map((entry) => entry.value);
 };
 
+const getHistoryAttributesFromAny = (payload: unknown): HistoryAttribute[] => {
+  if (Array.isArray(payload)) return payload as HistoryAttribute[];
+  if (payload && typeof payload === "object") {
+    return getHistoryAttributesList(payload as Record<string, unknown>);
+  }
+  return [];
+};
+
+const areHistoryValuesEqual = (left: unknown, right: unknown): boolean => {
+  if (left === right) return true;
+  if (
+    left === null ||
+    left === undefined ||
+    right === null ||
+    right === undefined
+  ) {
+    return false;
+  }
+
+  if (typeof left === "object" || typeof right === "object") {
+    try {
+      return JSON.stringify(left) === JSON.stringify(right);
+    } catch {
+      return false;
+    }
+  }
+
+  return String(left) === String(right);
+};
+
+const flattenHistoryAttributes = (
+  attributes: HistoryAttribute[],
+  parentKey?: string
+): QuerySummaryLine[] => {
+  const lines: QuerySummaryLine[] = [];
+
+  attributes.forEach((attr) => {
+    if (typeof attr.key !== "string" || !attr.key) return;
+
+    const key = parentKey ? `${parentKey}::${attr.key}` : attr.key;
+    lines.push({
+      key,
+      currentValue: getHistoryAttributeValue(attr),
+      currentValueNumericType: attr.value_numeric_type as "int" | "float" | null,
+    });
+
+    if (Array.isArray(attr.subattributes) && attr.subattributes.length > 0) {
+      lines.push(...flattenHistoryAttributes(attr.subattributes, key));
+    }
+  });
+
+  return lines;
+};
+
 export const formatHistoryKey = (key: string): string =>
   key
-    .split("_")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+    .split("::")
+    .map((segment) =>
+      segment
+        .split("_")
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    )
+    .join("::");
 
-export const formatHistoryValue = (value: unknown): string => {
+export const formatHistoryValue = (
+  value: unknown,
+  numericType?: "int" | "float" | null
+): string => {
   if (value === null || value === undefined) return "empty";
   if (typeof value === "string") return value.trim() || "empty";
   if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") return String(value);
+  if (typeof value === "number") {
+    if (numericType === "float" && Number.isInteger(value)) {
+      return value.toFixed(1);
+    }
+    return String(value);
+  }
   if (Array.isArray(value)) return `[${value.length} values]`;
   if (typeof value === "object") return "{...}";
   return String(value);
@@ -400,12 +452,7 @@ export const buildRecordHistoryQuerySummary = (
   if (!query || typeof query !== "object") return null;
 
   const queryAttributes = getHistoryAttributesList(query);
-  const attributeLines: QuerySummaryLine[] = queryAttributes
-    .filter((attr) => typeof attr.key === "string" && attr.key)
-    .map((attr) => ({
-      key: attr.key as string,
-      currentValue: getHistoryAttributeValue(attr),
-    }))
+  const attributeLines: QuerySummaryLine[] = flattenHistoryAttributes(queryAttributes)
     .filter((line) => isMeaningfulHistoryValue(line.currentValue));
 
   const nonAttributeLines: QuerySummaryLine[] = Object.entries(query)
@@ -433,6 +480,82 @@ export const buildRecordHistoryQuerySummary = (
     title: "Query snapshot",
     subtitle: `${lines.length} populated field${lines.length === 1 ? "" : "s"}`,
     lines,
+  };
+};
+
+export const buildRecordHistoryCleanSummary = (
+  beforeAttributes?: unknown,
+  afterAttributes?: unknown
+): QuerySummary | null => {
+  const beforeList = getHistoryAttributesFromAny(beforeAttributes);
+  const afterList = getHistoryAttributesFromAny(afterAttributes);
+
+  if (beforeList.length === 0 && afterList.length === 0) return null;
+
+  const groupValuesByKey = (
+    lines: QuerySummaryLine[]
+  ): Map<string, QuerySummaryLine[]> => {
+    const valuesByKey = new Map<string, QuerySummaryLine[]>();
+
+    lines.forEach((line) => {
+      const values = valuesByKey.get(line.key) || [];
+      values.push(line);
+      valuesByKey.set(line.key, values);
+    });
+
+    return valuesByKey;
+  };
+
+  const beforeLines = flattenHistoryAttributes(beforeList);
+  const afterLines = flattenHistoryAttributes(afterList);
+  const beforeValuesByKey = groupValuesByKey(beforeLines);
+  const afterValuesByKey = groupValuesByKey(afterLines);
+
+  const changedLines: QuerySummaryLine[] = [];
+  const orderedKeys: string[] = [];
+  const seenKeys = new Set<string>();
+
+  [...afterLines, ...beforeLines].forEach((line) => {
+    if (seenKeys.has(line.key)) return;
+    seenKeys.add(line.key);
+    orderedKeys.push(line.key);
+  });
+
+  orderedKeys.forEach((key) => {
+    const previousValues = beforeValuesByKey.get(key) || [];
+    const currentValues = afterValuesByKey.get(key) || [];
+    const maxCount = Math.max(previousValues.length, currentValues.length);
+
+    for (let idx = 0; idx < maxCount; idx += 1) {
+      const previousLine = previousValues[idx];
+      const currentLine = currentValues[idx];
+      const previousValue = previousLine?.currentValue;
+      const currentValue = currentLine?.currentValue;
+
+      if (!areHistoryValuesEqual(previousValue, currentValue)) {
+        changedLines.push({
+          key,
+          previousValue,
+          previousValueNumericType: previousLine?.currentValueNumericType,
+          currentValue,
+          currentValueNumericType: currentLine?.currentValueNumericType,
+        });
+      }
+    }
+  });
+
+  if (changedLines.length === 0) {
+    return {
+      title: "Cleaned fields",
+      subtitle: "No changed fields detected",
+      lines: [],
+    };
+  }
+
+  return {
+    title: "Cleaned fields",
+    subtitle: `${changedLines.length} changed field${changedLines.length === 1 ? "" : "s"}`,
+    lines: changedLines,
   };
 };
 

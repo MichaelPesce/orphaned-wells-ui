@@ -264,12 +264,14 @@ export const LoginPageStyles = {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: 500,
-    maxHeight: 340,
+    width: "min(500px, calc(100vw - 32px))",
+    maxHeight: "calc(100vh - 32px)",
+    overflowY: "auto",
+    boxSizing: "border-box",
     backgroundColor: "#FAFAFA",
     boxShadow: 24,
     px: 4,
-    pb: 8,
+    pb: 4,
     pt: 4, 
     borderRadius: 4,
     "&:focus": {
@@ -291,8 +293,11 @@ export const LoginPageStyles = {
     mt: 4
   },
   unauthorized: {
-    pt: 5,
-    color: "red"
+    pt: 3,
+    color: "red",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    lineHeight: 1.5,
   }
 };
 

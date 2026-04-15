@@ -18,7 +18,9 @@ import {
   RecordSchema,
   Attribute,
   updateFieldCoordinatesSignature,
-  FieldID } from "../../types";
+  FieldID,
+  AttributesListUpdateTypes,
+} from "../../types";
 import { useUserContext } from "../../usercontext";
 import { convertFiltersToMongoFormat } from "../../util";
 
@@ -175,18 +177,31 @@ const Record = () => {
     }
   }, [showError]);
 
-  const handleUpdateRecord = React.useCallback((newRecordData: RecordData) => {
+  const handleSuccessfulAttributesListUpdate = React.useCallback((data: any) => {
+    setRecordData(tempRecordData => {
+        const newRecordData = {
+          ...tempRecordData,
+          ...data,
+        };
+        return newRecordData;
+      });
+  }, [setRecordData]);
+
+  const handleUpdateRecordAttributesList = React.useCallback((type: AttributesListUpdateTypes, data: any, callbackFunction?: () => void) => {
     if (lockedRef.current) return;
     const recordId = currentRecordIdRef.current;
     if (!recordId) return;
-    let body = { data: newRecordData, type: "attributesList" };
+    let body = { data, type: type };
     callAPI(
       updateRecord,
       [recordId, body],
-      () => {},
+      (data) => {
+        handleSuccessfulAttributesListUpdate(data);
+        callbackFunction?.();
+      },
       handleFailedUpdate
     );
-  }, [handleFailedUpdate]);
+  }, [handleSuccessfulAttributesListUpdate, handleFailedUpdate]);
 
   const handleUpdateRecordName = () => {
     if (locked) return;
@@ -206,187 +221,20 @@ const Record = () => {
   }, []);
 
   const insertField: insertFieldSignature = React.useCallback((fieldID, parentAttribute) => {
-    const k = fieldID.key;
-    const primaryIndex = fieldID.primaryIndex;
-    const isSubattribute = fieldID.isSubattribute;
-    const subIndex = fieldID.subIndex || 0;
-    if (isSubattribute) {
-      const newSubIndex = subIndex + 1;
-      const newSubField = {
-        "key": k,
-        "ai_confidence": null,
-        "confidence": null,
-        "raw_text": null,
-        "text_value": null,
-        "value": "",
-        "normalized_vertices": null,
-        "normalized_value": null,
-        "subattributes": null,
-        "isSubattribute": true,
-        "edited": false,
-        "page": null,
-        "user_added": true,
-        "topLevelAttribute": parentAttribute,
-      };
-      setRecordData(tempRecordData => {
-        const newAttributesList = tempRecordData.attributesList.map((attribute, i) => {
-          if (i !== primaryIndex) return attribute;
-
-          const currentSubattributes = attribute.subattributes;
-          if (!attribute.subattributes) {
-            return {
-              ...attribute,
-              subattributes: [newSubField],
-            };
-          } else {
-            const newSubattributes = [
-              ...currentSubattributes.slice(0, newSubIndex),
-              newSubField,
-              ...currentSubattributes.slice(newSubIndex),
-            ];
-            return {
-              ...attribute,
-              subattributes: newSubattributes,
-            };
-          }
-        });
-        let newRecordData: RecordData;
-        if (tempRecordData.review_status === "unreviewed")
-          newRecordData = { ...tempRecordData, review_status: "incomplete", attributesList: newAttributesList };
-        else
-          newRecordData = { ...tempRecordData, attributesList: newAttributesList };
-
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-      setTimeout(() => {
-        setForceEditMode([primaryIndex, newSubIndex]);
-        setTimeout(() => {
-          setForceEditMode([-1, -1]);
-        }, 0);
-      }, 0);
-    } else {
-      const newIndex = primaryIndex+1;
-      const newField = {
-        "key": k,
-        "ai_confidence": null,
-        "confidence": null,
-        "raw_text": null,
-        "text_value": null,
-        "value": "",
-        "normalized_vertices": null,
-        "normalized_value": null,
-        "subattributes": null,
-        "isSubattribute": false,
-        "edited": false,
-        "page": null,
-        "user_added": true,
-      };
-      setRecordData(tempRecordData => {
-        const newRecordData = {
-          ...tempRecordData,
-          attributesList: [
-            ...tempRecordData.attributesList.slice(0, newIndex),
-            newField,
-            ...tempRecordData.attributesList.slice(newIndex),
-          ]
-        };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-      // force new field to be in edit mode (open text field)
-      // is there a better way to do this?
-      setTimeout(() => {
-        setForceEditMode([newIndex, -1]);
-        setTimeout(() => {
-          setForceEditMode([-1, -1]);
-        }, 0);
-      }, 0);
-    }
-        
-  }, [handleUpdateRecord]);
+    const data = { fieldID: fieldID, parentAttribute: parentAttribute };
+    handleUpdateRecordAttributesList("insertField", data);
+  }, [handleUpdateRecordAttributesList]);
 
   const deleteField: deleteFieldSignature = React.useCallback((fieldID: FieldID) => {
-    const primaryIndex = fieldID.primaryIndex;
-    const isSubattribute = fieldID.isSubattribute;
-    const subIndex = fieldID.subIndex || 0;
-    if (isSubattribute) {
-      setRecordData(tempRecordData => {
-        const newAttributesList = tempRecordData.attributesList.map((attribute, idx) => {
-          if (idx !== primaryIndex) return attribute;
-          else {
-            return {
-              ...attribute,
-              subattributes: attribute.subattributes.filter((_: any, subidx: number) => subidx !== subIndex)
-            };
-          }
-        });
-        const newRecordData = { ...tempRecordData, attributesList: newAttributesList };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-    } else {
-      setRecordData(tempRecordData => {
-        const newRecordData = {
-          ...tempRecordData,
-          attributesList: tempRecordData.attributesList.filter((_, i) => i !== primaryIndex),
-        };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-    }
-  }, [handleUpdateRecord]);
+    const data = { fieldID: fieldID };
+    handleUpdateRecordAttributesList("deleteField", data);
+  }, [handleUpdateRecordAttributesList]);
 
-  const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldId, new_coordinates, pageNumber) => {
+  const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldID, new_coordinates, pageNumber, callbackFunction) => {
     if (lockedRef.current) return true;
-    let rightNow = Date.now();
-    // TODO: need to update backend as well
-    if (!fieldId.isSubattribute) {
-      setRecordData(tempRecordData => {
-        const newRecordData = {
-          ...tempRecordData,
-          attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-            fieldId.primaryIndex === idx ? { 
-              ...tempAttribute,
-              lastUpdated: rightNow,
-              lastUpdatedBy: userEmailRef.current,
-              edited: true,
-              user_provided_coordinates: new_coordinates,
-              page: pageNumber,
-            } : tempAttribute
-          )
-        };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-    } else {
-      setRecordData(tempRecordData => {
-        const newRecordData = {
-          ...tempRecordData,
-          attributesList: tempRecordData.attributesList.map((tempAttribute, idx) =>
-            fieldId.primaryIndex === idx ? { 
-              ...tempAttribute,
-              subattributes: tempAttribute.subattributes.map((tempSubattribute: Attribute, subidx: number) => {
-                if (fieldId.subIndex === subidx) {
-                  return {
-                    ...tempSubattribute,
-                    lastUpdated: rightNow,
-                    lastUpdatedBy: userEmailRef.current,
-                    edited: true,
-                    user_provided_coordinates: new_coordinates,
-                    page: pageNumber,
-                  };
-                } else return tempSubattribute;
-              }
-              )
-            } : tempAttribute
-          )
-        };
-        handleUpdateRecord(newRecordData);
-        return newRecordData;
-      });
-    }
-  }, [handleUpdateRecord]);
+    const data = { fieldID: fieldID, new_coordinates: new_coordinates, pageNumber: pageNumber };
+    handleUpdateRecordAttributesList("updateFieldCoordinates", data, callbackFunction);
+  }, [handleUpdateRecordAttributesList]);
 
   const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string) => {
     if (lockedRef.current) return true;
