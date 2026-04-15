@@ -198,7 +198,7 @@ const Record = () => {
       });
   }, [setRecordData]);
 
-  const handleUpdateRecordAttributesList = React.useCallback((type: "insertField" | "deleteField" | "updateFieldCoordinates", data: any) => {
+  const handleUpdateRecordAttributesList = React.useCallback((type: "insertField" | "deleteField" | "updateFieldCoordinates", data: any, callbackFunction?: () => void) => {
     // Accepted types: insertField, deleteField, updateFieldCoordinates
     if (lockedRef.current) return;
     const recordId = currentRecordIdRef.current;
@@ -207,7 +207,10 @@ const Record = () => {
     callAPI(
       updateRecord,
       [recordId, body],
-      handleSuccessfulAttributesListUpdate,
+      (data) => {
+        handleSuccessfulAttributesListUpdate(data);
+        callbackFunction?.();
+      },
       handleFailedUpdate
     );
   }, [handleSuccessfulAttributesListUpdate, handleFailedUpdate]);
@@ -239,10 +242,10 @@ const Record = () => {
     handleUpdateRecordAttributesList("deleteField", data);
   }, [handleUpdateRecordAttributesList]);
 
-  const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldID, new_coordinates, pageNumber) => {
+  const updateFieldCoordinates: updateFieldCoordinatesSignature = React.useCallback((fieldID, new_coordinates, pageNumber, callbackFunction) => {
     if (lockedRef.current) return true;
     const data = { fieldID: fieldID, new_coordinates: new_coordinates, pageNumber: pageNumber };
-    handleUpdateRecordAttributesList("updateFieldCoordinates", data);
+    handleUpdateRecordAttributesList("updateFieldCoordinates", data, callbackFunction);
   }, [handleUpdateRecordAttributesList]);
 
   const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string) => {

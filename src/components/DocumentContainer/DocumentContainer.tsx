@@ -265,9 +265,9 @@ const DocumentContainer = ({
   useKeyDown("ArrowUp", shiftTabCallback);
   useKeyDown("ArrowDown", tabCallback);
 
-  const handleClickField = React.useCallback((fieldID: FieldID, coordinates: number[][] | null) => {
+  const handleClickField = React.useCallback((fieldID: FieldID, coordinates: number[][] | null, forceDisplay: boolean = false, pageNumber?: number) => {
     const { key, primaryIndex, subIndex = 0, isSubattribute } = fieldID;
-    if (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex)) {
+    if (!forceDisplay && (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex))) {
       setDisplayPoints(null);
       setDisplayKeyIndex(-1);
       setDisplayKeySubattributeIndex(null);
@@ -289,6 +289,7 @@ const DocumentContainer = ({
           console.log("error getting page");
           console.log(e);
         }
+        if (pageNumber) page = pageNumber;
         const scrollTop = (coordinates[2][1] / imageFiles.length) + (page / imageFiles.length);
         setDisplayPoints(percentage_vertices);
         scrollToAttribute("image-box", "image-div", scrollTop, imageFiles);
@@ -318,7 +319,10 @@ const DocumentContainer = ({
   };
 
   const handleUpdateFieldCoordinates: updateFieldCoordinatesSignature = (fieldId, new_coordinates, pageNumber) => {
-    updateFieldCoordinates(fieldId, new_coordinates, pageNumber);
+    const callbackFunc = () => {
+      handleClickField(fieldId, new_coordinates, true, pageNumber);
+    }
+    updateFieldCoordinates(fieldId, new_coordinates, pageNumber, callbackFunc);
   };
 
   const handleToggleHotkeys = (event: React.MouseEvent<HTMLButtonElement>) => {

@@ -460,6 +460,7 @@ export interface updateFieldCoordinatesSignature {
         fieldId: FieldID,
         new_coordinates: number[][],
         pageNumber: number,
+        callbackFunction?: () => void,
     ): void;
 }
 
