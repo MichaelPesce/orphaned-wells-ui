@@ -319,11 +319,6 @@ const DocumentContainer = ({
 
   const handleUpdateFieldCoordinates: updateFieldCoordinatesSignature = (fieldId, new_coordinates, pageNumber) => {
     updateFieldCoordinates(fieldId, new_coordinates, pageNumber);
-    setTimeout(() => {
-      setDisplayKeyIndex(fieldId.primaryIndex);
-      setDisplayKeySubattributeIndex(fieldId.subIndex || null);
-      setDisplayPoints(coordinatesDecimalsToPercentage(new_coordinates));
-    }, 0);
   };
 
   const handleToggleHotkeys = (event: React.MouseEvent<HTMLButtonElement>) => {

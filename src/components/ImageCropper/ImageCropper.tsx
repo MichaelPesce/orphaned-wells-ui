@@ -52,7 +52,6 @@ export const ImageCropper = (props: ImageCropperProps) => {
   const [ transformScale, setTransformScale ] = useState(1); // 1 = normal size
   const [ transformOrigin, setTransformOrigin ] = useState([50,50]); // [0,0] = top left ; [100,100] = bottom right
   const [ translate, setTranslate ] = useState([0,0]);
-
   const styles = {
     imageDiv: {
       width: "100%",
