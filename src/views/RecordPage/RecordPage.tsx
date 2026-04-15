@@ -177,19 +177,6 @@ const Record = () => {
     }
   }, [showError]);
 
-  const handleUpdateRecord = React.useCallback((newRecordData: RecordData) => {
-    if (lockedRef.current) return;
-    const recordId = currentRecordIdRef.current;
-    if (!recordId) return;
-    let body = { data: newRecordData, type: "attributesList" };
-    callAPI(
-      updateRecord,
-      [recordId, body],
-      () => {},
-      handleFailedUpdate
-    );
-  }, [handleFailedUpdate]);
-
   const handleSuccessfulAttributesListUpdate = React.useCallback((data: any) => {
     setRecordData(tempRecordData => {
         const newRecordData = {
