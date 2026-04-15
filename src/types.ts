@@ -186,6 +186,7 @@ export interface RecordHistoryItem {
 export interface HistoryAttribute {
     key?: unknown;
     value?: unknown;
+    value_numeric_type?: "int" | "float" | null;
     normalized_value?: unknown;
     text_value?: unknown;
     raw_text?: unknown;
@@ -195,7 +196,9 @@ export interface HistoryAttribute {
 export interface QuerySummaryLine {
     key: string;
     previousValue?: unknown;
+    previousValueNumericType?: "int" | "float" | null;
     currentValue?: unknown;
+    currentValueNumericType?: "int" | "float" | null;
 }
 
 export interface QuerySummary {

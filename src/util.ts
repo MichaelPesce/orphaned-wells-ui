@@ -405,6 +405,7 @@ const flattenHistoryAttributes = (
     lines.push({
       key,
       currentValue: getHistoryAttributeValue(attr),
+      currentValueNumericType: attr.value_numeric_type as "int" | "float" | null,
     });
 
     if (Array.isArray(attr.subattributes) && attr.subattributes.length > 0) {
@@ -427,11 +428,19 @@ export const formatHistoryKey = (key: string): string =>
     )
     .join("::");
 
-export const formatHistoryValue = (value: unknown): string => {
+export const formatHistoryValue = (
+  value: unknown,
+  numericType?: "int" | "float" | null
+): string => {
   if (value === null || value === undefined) return "empty";
   if (typeof value === "string") return value.trim() || "empty";
   if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") return String(value);
+  if (typeof value === "number") {
+    if (numericType === "float" && Number.isInteger(value)) {
+      return value.toFixed(1);
+    }
+    return String(value);
+  }
   if (Array.isArray(value)) return `[${value.length} values]`;
   if (typeof value === "object") return "{...}";
   return String(value);
@@ -483,12 +492,14 @@ export const buildRecordHistoryCleanSummary = (
 
   if (beforeList.length === 0 && afterList.length === 0) return null;
 
-  const groupValuesByKey = (lines: QuerySummaryLine[]): Map<string, unknown[]> => {
-    const valuesByKey = new Map<string, unknown[]>();
+  const groupValuesByKey = (
+    lines: QuerySummaryLine[]
+  ): Map<string, QuerySummaryLine[]> => {
+    const valuesByKey = new Map<string, QuerySummaryLine[]>();
 
     lines.forEach((line) => {
       const values = valuesByKey.get(line.key) || [];
-      values.push(line.currentValue);
+      values.push(line);
       valuesByKey.set(line.key, values);
     });
 
@@ -516,14 +527,18 @@ export const buildRecordHistoryCleanSummary = (
     const maxCount = Math.max(previousValues.length, currentValues.length);
 
     for (let idx = 0; idx < maxCount; idx += 1) {
-      const previousValue = previousValues[idx];
-      const currentValue = currentValues[idx];
+      const previousLine = previousValues[idx];
+      const currentLine = currentValues[idx];
+      const previousValue = previousLine?.currentValue;
+      const currentValue = currentLine?.currentValue;
 
       if (!areHistoryValuesEqual(previousValue, currentValue)) {
         changedLines.push({
           key,
           previousValue,
+          previousValueNumericType: previousLine?.currentValueNumericType,
           currentValue,
+          currentValueNumericType: currentLine?.currentValueNumericType,
         });
       }
     }
