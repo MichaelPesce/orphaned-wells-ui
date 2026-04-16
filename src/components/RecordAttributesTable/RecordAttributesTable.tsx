@@ -443,7 +443,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     return (
       <TableCell>
         {
-          (allowMultiple || isParent || showUpdateCoordinatesOption) && (
+          (allowMultiple || isParent || showUpdateCoordinatesOption || v.user_added) && (
             <IconButton size='small' onClick={handleClickShowActions}>
               <MoreVertIcon sx={{fontSize: "18px"}}/>
             </IconButton>
