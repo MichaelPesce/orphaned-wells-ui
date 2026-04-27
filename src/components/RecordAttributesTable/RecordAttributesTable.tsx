@@ -28,7 +28,7 @@ interface AttributesTableProps extends RecordAttributesTableProps {
 }
 
 function showEditedValue(v: Attribute){
-  if (v.edited && v.uncleaned_value) {
+  if (v.edited && v.uncleaned_value !== undefined) {
     return true;
   }
   return false;
@@ -50,6 +50,8 @@ const AttributesTable = (props: AttributesTableProps) => {
     forceOpenSubtable=false,
     ...childProps
   } = props;
+
+  console.log(attributesList)
 
   const {
     handleClickField,
