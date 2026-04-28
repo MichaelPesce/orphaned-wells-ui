@@ -36,7 +36,9 @@
   "scripts": {
     "start": "react-scripts start",
     "docker:dev": "sh deployment/start-dev-stack.sh",
-    "docker:down": "sh deployment/stop-dev-stack.sh",
+    "docker:stop": "sh deployment/stop-dev-stack.sh",
+    "docker:down": "sh deployment/down-dev-stack.sh",
+    "docker:clean": "sh deployment/clean-dev-stack.sh",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

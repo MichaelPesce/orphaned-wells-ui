@@ -57,6 +57,7 @@ services:
       USE_DB_PROCESSORS: ${USE_DB_PROCESSORS:-true}
       STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
       LOCAL_STORAGE_ROOT: /data/uploads
+      LOCAL_STORAGE_URL_BASE: ${LOCAL_STORAGE_URL_BASE:-http://localhost:8001/local-storage}
       LOG_DIR: /logs
       IMG_DIR: /data/uploaded_images
       EXPORT_DIR: /data/exports

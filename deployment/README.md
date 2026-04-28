@@ -22,11 +22,23 @@ If `BACKEND_IMAGE` is private, authenticate with the registry before running `np
 
 ## Stop Everything
 
+To stop the running containers without removing containers, networks, or named volumes:
+
+```sh
+npm run docker:stop
+```
+
+To stop and remove containers and the network, while keeping named volumes:
+
 ```sh
 npm run docker:down
 ```
 
-This stops and removes the containers and network, but keeps named volumes such as MongoDB data and `node_modules`.
+To remove containers, the network, and named volumes:
+
+```sh
+npm run docker:clean
+```
 
 You can also run Compose directly:
 
@@ -43,6 +55,8 @@ docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml -
 
 The app runs at `http://localhost:3000`, and the backend health endpoint is `http://localhost:8001/health`.
 
+When `STORAGE_BACKEND=local`, uploaded files are stored in the backend `backend_data` volume under `/data/uploads` and served by the backend at `LOCAL_STORAGE_URL_BASE`. If you change `BACKEND_HOST_PORT`, update `LOCAL_STORAGE_URL_BASE` in `deployment/.env` to match.
+
 ## MongoDB Seed Data
 
 The sample dump lives at `deployment/mongo-dumps/sample_mongodump`. MongoDB restores it automatically the first time the `mongodb_data` volume is created.
@@ -50,7 +64,7 @@ The sample dump lives at `deployment/mongo-dumps/sample_mongodump`. MongoDB rest
 To reset and reinitialize from the dump:
 
 ```sh
-npm run docker:down -- -v
+npm run docker:clean
 npm run docker:dev
 ```
 

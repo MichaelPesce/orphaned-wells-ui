@@ -27,4 +27,4 @@ if { [ "${backend_mode}" = "source" ] || [ "${backend_mode}" = "auto" ]; } && [ 
 fi
 
 # shellcheck disable=SC2086
-docker compose --env-file "${env_file}" ${compose_files} stop "$@"
+docker compose --env-file "${env_file}" ${compose_files} down -v --remove-orphans "$@"
