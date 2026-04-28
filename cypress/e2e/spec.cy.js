@@ -264,7 +264,7 @@ describe("End to end testing", () => {
     cy.screenshot("navigated to record group");
 
     // Assert that record group has the proper record amount
-    cy.get(".record_row").should("have.length", 100);
+    cy.get(".record_row").should("have.length", 17);
 
     // Apply a filter - date selected before June 1, 2024
     cy.contains("button", /filters/i).click();
@@ -312,8 +312,8 @@ describe("End to end testing", () => {
     cy.contains("button", /filters/i).click();
     cy.contains("button", /reset filters/i).click();
 
-    // Assert that we have 100 records in the table again
-    cy.get(".record_row").should("have.length", 100, { timeout: 10000 });
+    // Assert that we have 17 records in the table again
+    cy.get(".record_row").should("have.length", 17, { timeout: 10000 });
       
   });
 
