@@ -1,0 +1,132 @@
+name: ${COMPOSE_PROJECT_NAME:-orphaned-wells-dev}
+
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${DB_NAME:-isgs}
+      MONGO_INIT_SAMPLE_DUMP: ${MONGO_INIT_SAMPLE_DUMP:-true}
+      MONGO_DUMP_DIR: /docker-entrypoint-initdb.d/sample_mongodump
+      MONGO_DUMP_SOURCE_DB: ${MONGO_DUMP_SOURCE_DB:-isgs}
+    ports:
+      - "${MONGODB_HOST_PORT:-27018}:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init/restore-sample-dump.sh:/docker-entrypoint-initdb.d/restore-sample-dump.sh:ro
+      - ./mongo-dumps/sample_mongodump:/docker-entrypoint-initdb.d/sample_mongodump:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mongo-restore:
+    image: mongo:7
+    profiles:
+      - seed
+    environment:
+      DB_NAME: ${DB_NAME:-isgs}
+      MONGO_DUMP_SOURCE_DB: ${MONGO_DUMP_SOURCE_DB:-isgs}
+    volumes:
+      - ./mongo-dumps/sample_mongodump:/dumps/sample_mongodump:ro
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    command: >
+      sh -c 'if [ -d "/dumps/sample_mongodump/${MONGO_DUMP_SOURCE_DB:-isgs}" ]; then
+        mongorestore --host mongodb:27017 --drop --db "${DB_NAME:-isgs}" "/dumps/sample_mongodump/${MONGO_DUMP_SOURCE_DB:-isgs}";
+      else
+        mongorestore --host mongodb:27017 --drop "/dumps/sample_mongodump";
+      fi'
+
+  backend:
+    build:
+      context: ${BACKEND_DIR:-../../orphaned-wells-ui-server}
+      dockerfile: deployment/dockerfile
+    restart: unless-stopped
+    command:
+      - uvicorn
+      - ogrre.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8001"
+      - --reload
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      COLLABORATOR: ${COLLABORATOR:-isgs}
+      BACKEND_URL: http://backend:8001
+      LOCATION: ${LOCATION:-us}
+      DB_CONNECTION: mongodb://mongodb:27017
+      DB_NAME: ${DB_NAME:-isgs}
+      DB_USERNAME: ""
+      DB_PASSWORD: ""
+      REQUIRE_AUTH: ${REQUIRE_AUTH:-false}
+      USE_DB_PROCESSORS: ${USE_DB_PROCESSORS:-true}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      LOCAL_STORAGE_ROOT: /data/uploads
+      LOG_DIR: /logs
+      IMG_DIR: /data/uploaded_images
+      EXPORT_DIR: /data/exports
+      DOCUMENT_AI_BACKEND: ${DOCUMENT_AI_BACKEND:-google}
+      DOCUMENT_AI_URL: ${DOCUMENT_AI_URL:-}
+      DOCUMENT_AI_TIMEOUT: ${DOCUMENT_AI_TIMEOUT:-60}
+      PROJECT_ID: ${PROJECT_ID:-}
+      STORAGE_SERVICE_KEY: ${STORAGE_SERVICE_KEY:-}
+      STORAGE_BUCKET_NAME: ${STORAGE_BUCKET_NAME:-}
+      token_uri: ${token_uri:-}
+      client_id: ${client_id:-}
+      client_secret: ${client_secret:-}
+      MEMORY_PROFILE: ${MEMORY_PROFILE:-false}
+      PROCESS_IMAGE_IN_SUBPROCESS: ${PROCESS_IMAGE_IN_SUBPROCESS:-false}
+    ports:
+      - "${BACKEND_HOST_PORT:-8001}:8001"
+    volumes:
+      - ${BACKEND_DIR:-../../orphaned-wells-ui-server}:/code
+      - backend_logs:/logs
+      - backend_data:/data
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=2).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  frontend:
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "[ -x node_modules/.bin/react-scripts ] || npm ci; npm start"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-http://localhost:8001}
+      REACT_APP_COLLABORATOR: ${REACT_APP_COLLABORATOR:-isgs}
+      REACT_APP_ENVIRONMENT: ${REACT_APP_ENVIRONMENT:-development}
+      REACT_APP_STATE: ${REACT_APP_STATE:-IL}
+      REACT_APP_CLIENT_ID: ${REACT_APP_CLIENT_ID:-}
+      REACT_APP_GOOGLE_CLIENTID: ${REACT_APP_GOOGLE_CLIENTID:-}
+      REACT_APP_GOOGLE_CLIENT_SECRET: ${REACT_APP_GOOGLE_CLIENT_SECRET:-}
+    ports:
+      - "${FRONTEND_HOST_PORT:-3000}:3000"
+    volumes:
+      - ..:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+volumes:
+  mongodb_data:
+  backend_logs:
+  backend_data:
+  frontend_node_modules:
