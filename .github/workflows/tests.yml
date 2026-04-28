@@ -1,6 +1,6 @@
 name: App Tests
 on:
-    push:
+    workflow_dispatch:
 defaults:
   run:
     shell: bash -l {0}
