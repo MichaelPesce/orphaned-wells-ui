@@ -42,18 +42,8 @@ services:
       fi'
 
   backend:
-    build:
-      context: ${BACKEND_DIR:-../../orphaned-wells-ui-server}
-      dockerfile: deployment/dockerfile
+    image: ${BACKEND_IMAGE:-michaelpescelbl/fastapiwithnginx:latest}
     restart: unless-stopped
-    command:
-      - uvicorn
-      - ogrre.main:app
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8001"
-      - --reload
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       COLLABORATOR: ${COLLABORATOR:-isgs}
@@ -84,14 +74,13 @@ services:
     ports:
       - "${BACKEND_HOST_PORT:-8001}:8001"
     volumes:
-      - ${BACKEND_DIR:-../../orphaned-wells-ui-server}:/code
       - backend_logs:/logs
       - backend_data:/data
     depends_on:
       mongodb:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=2).read()"]
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('localhost', 8001), 2); s.close()"]
       interval: 10s
       timeout: 5s
       retries: 10

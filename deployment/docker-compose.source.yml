@@ -1,0 +1,18 @@
+services:
+  backend:
+    image: ${BACKEND_DEV_IMAGE:-orphaned-wells-ui-server-dev}
+    build:
+      context: ${BACKEND_DIR:-../../orphaned-wells-ui-server}
+      dockerfile: deployment/dockerfile
+    command:
+      - uvicorn
+      - ogrre.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8001"
+      - --reload
+    volumes:
+      - ${BACKEND_DIR:-../../orphaned-wells-ui-server}:/code
+      - backend_logs:/logs
+      - backend_data:/data
