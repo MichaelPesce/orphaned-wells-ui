@@ -264,6 +264,10 @@ const TableFilter = (props: TableFilterProps) => {
                 autoComplete="off"
               >
                 <TextField
+                  inputProps={{
+                    "className": "string-filter-input",
+                    "step": 1,
+                  }}
                   id="string-value"
                   label="Value"
                   variant="standard"
