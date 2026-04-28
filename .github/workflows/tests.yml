@@ -41,7 +41,7 @@ jobs:
 
       - name: Add Google client secret to .env file
         run: |
-            echo REACT_APP_GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} >> .env
+            echo GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} >> .env
 
       - name: Add Google refresh token to .env file
         run: |

@@ -14,6 +14,11 @@ import "@testing-library/cypress/add-commands";
  * Runs before every test.
  */
 Cypress.Commands.add("loginByGoogleApi", () => {
+  const bypassAuth = String(Cypress.env("BYPASS_AUTH")).toLowerCase() === "true";
+  if (bypassAuth) {
+    cy.log("Bypassing authentication");
+    return;
+  }
   cy.log("Logging in to Google");
   let request_body = {
     grant_type: "refresh_token",
