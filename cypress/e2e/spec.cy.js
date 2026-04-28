@@ -1,21 +1,21 @@
 const path = require("path");
-const test_record_group_name = "Illinois Test Project";
+const test_record_group_name = "Precambrian_WellCompletion_1";
 const test_project_name = "ISGS Project";
 const test_record_group = {
-  id: "6656476a448c4d1812645c07",
-  name: "Illinois Test Project",
+  id: "6674a33a398907ecaeb2e574",
+  name: "Precambrian_WellCompletion_1",
 };
 const test_record = {
-  id: "665647e58294448787521760",
-  name: "120190021400_WELL_COMPLETION_REPORT_1"
+  id: "6674a36da6bd70da99aa03ff",
+  name: "121190087702_WELL_COMPLETION_REPORT_1"
 };
 const next_record = {
-  id: "665647e549e025f35668c67d",
-  name: "120190139500_WELL_COMPLETION_REPORT_1"
+  id: "6674a36d4cde4e8ee6caec8b",
+  name: "120650345000_WELL_COMPLETION_REPORT_1"
 };
 const prev_record = {
-  id: "665647e45642b536ded828ad",
-  name: "120190129000_WELL_COMPLETION_REPORT_1",
+  id: "6674a36da6bd70da99aa03fd",
+  name: "120272454800_WELL_COMPLETION_REPORT_1",
 };
 
 describe("End to end testing", () => {

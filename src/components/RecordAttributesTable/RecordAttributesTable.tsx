@@ -51,8 +51,6 @@ const AttributesTable = (props: AttributesTableProps) => {
     ...childProps
   } = props;
 
-  console.log(attributesList)
-
   const {
     handleClickField,
     showRawValues
