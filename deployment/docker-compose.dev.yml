@@ -42,7 +42,7 @@ services:
       fi'
 
   backend:
-    image: ${BACKEND_IMAGE:-michaelpescelbl/fastapiwithnginx:latest}
+    image: ${BACKEND_IMAGE:-michaelpescelbl/orphaned-wells-ui-server:latest}
     restart: unless-stopped
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-development}
