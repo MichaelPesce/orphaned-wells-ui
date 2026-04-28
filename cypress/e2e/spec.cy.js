@@ -275,6 +275,8 @@ describe("End to end testing", () => {
     cy.contains("li", "Contains").click();
     cy.get(".string-filter-input").type("_2", {force: true});
     cy.contains("button", /apply filters/i).click({force: true});
+    cy.wait(2000);
+    cy.screenshot("applied record name filter");
 
     // Assert that we now have 20 records
     cy.get(".record_row").should("have.length", 1, { timeout: 10000 });
@@ -282,6 +284,8 @@ describe("End to end testing", () => {
     // Clear filters
     cy.contains("button", /filters/i).click();
     cy.contains("button", /reset filters/i).click();
+    cy.wait(2000);
+    cy.screenshot("reset filters");
 
     // Test sorting. We have 17 records in this group by default
     // Assert we have the right element in the 10th row
@@ -289,28 +293,38 @@ describe("End to end testing", () => {
     const record_number_9 = "120973414200_WELL_COMPLETION_REPORT_2";
     cy.get(".record_row").eq(9).should("contain", record_number_10);
     cy.contains("p", /date uploaded/i).click();
+    cy.wait(2000);
+    cy.screenshot("sorted by date uploaded");
 
     // Assert that the 10th element is now the 8th
     cy.get(".record_row").eq(7).should("contain", record_number_10, { timeout: 10000 });
 
     // Navigate to record
-    cy.get(".record_row").eq(7).click();
+    cy.get(".record_row").eq(7).click({force: true});
+    cy.wait(2000);
+    cy.screenshot("clicked record row #8");
 
     // Assert that we have the right record name and index
     cy.contains("div", `8. ${record_number_10}`, { timeout: 20000 });
 
     // Navigate to next record
     cy.contains("button", /next/i).click();
+    cy.wait(2000);
+    cy.screenshot("clicked next record");
 
     // Assert that we have the right record name and index
     cy.contains("div", `9. ${record_number_9}`, { timeout: 20000 });
       
     // Go back to record page
     cy.contains("button", test_record_group.name).click();
+    cy.wait(2000);
+    cy.screenshot("navitated back to record group");
     cy.contains("div", test_record_group.name).should("be.visible", {timeout: 10000});
 
     // Reverse date sort
     cy.contains("p", /date uploaded/i).click();
+    cy.wait(2000);
+    cy.screenshot("sorted by date uploaded again");
 
     // Assert that we have 17 records in the table again
     cy.get(".record_row").should("have.length", 17, { timeout: 10000 });
