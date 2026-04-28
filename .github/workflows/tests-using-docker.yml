@@ -1,6 +1,9 @@
 name: App Tests
 on:
     push:
+
+    pull_request:
+        branches: [main]
 defaults:
   run:
     shell: bash -l {0}
@@ -40,20 +43,12 @@ jobs:
         run: |
             echo REACT_APP_STATE=illinois >> .env
 
-    #   - name: Add Google client id to .env file
-    #     run: |
-    #         echo REACT_APP_GOOGLE_CLIENTID=${{ secrets.GOOGLE_CLIENTID }} >> .env
-
-    #   - name: Add Google refresh token to .env file
-    #     run: |
-    #         echo GOOGLE_REFRESH_TOKEN=${{ secrets.GOOGLE_REFRESH_TOKEN }} >> .env
-
       - name: Start docker containers
         run: npm run docker:dev
 
       - name: Wait for docker app health
         run: |
-            for i in {1..60}; do
+            for i in {1..180}; do
               if curl -fsS http://localhost:8001/docs >/dev/null && curl -fsS http://localhost:3000 >/dev/null; then
                 exit 0
               fi
@@ -69,7 +64,7 @@ jobs:
 
       - name: Shut down docker containers
         if: always()
-        run: npm run docker:down -- -v
+        run: npm run docker:clean
 
       - name: Upload artifact for screenshots & videos
         uses: actions/upload-artifact@v4
