@@ -48,4 +48,4 @@ jobs:
 
       - name: Deploy
         run: |
-            gcloud app deploy
+            gcloud app deploy . --appyaml deployment/app-engine/app.yaml

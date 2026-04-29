@@ -104,6 +104,7 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
               aria-label="close"
               onClick={() => handleClose()}
               sx={styles.closeIcon}
+              id="close-filters-button"
             >
               <CloseIcon />
             </IconButton>
@@ -264,6 +265,10 @@ const TableFilter = (props: TableFilterProps) => {
                 autoComplete="off"
               >
                 <TextField
+                  inputProps={{
+                    "className": "string-filter-input",
+                    "step": 1,
+                  }}
                   id="string-value"
                   label="Value"
                   variant="standard"

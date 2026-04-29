@@ -1,0 +1,76 @@
+name: App Tests
+on:
+    push:
+
+    pull_request:
+        branches: [main]
+defaults:
+  run:
+    shell: bash -l {0}
+jobs:
+  frontend-tests:
+    name: Frontend testing (${{ matrix.os }})
+    runs-on: ${{ matrix.os-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - linux
+        include:
+          - os: linux
+            os-version: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - name: Install JS dependencies
+        run: |
+            npm clean-install
+
+      - name: run component tests
+        run: npm test
+
+      - name: Add backend url to .env file
+        run: |
+            echo REACT_APP_BACKEND_URL=http://localhost:8001 >> .env
+
+      - name: Add BYPASS_AUTH to .env file
+        run: |
+            echo BYPASS_AUTH=true >> .env
+
+      - name: Add state to .env file
+        run: |
+            echo REACT_APP_STATE=illinois >> .env
+
+      - name: Start docker containers
+        run: npm run docker:dev
+
+      - name: Wait for docker app health
+        run: |
+            for i in {1..180}; do
+              if curl -fsS http://localhost:8001/docs >/dev/null && curl -fsS http://localhost:3000 >/dev/null; then
+                exit 0
+              fi
+              docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml ps
+              sleep 2
+            done
+
+            docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml logs --no-color --tail=200
+            exit 1
+
+      - name: run E2E tests
+        run: npx cypress run
+
+      - name: Shut down docker containers
+        if: always()
+        run: npm run docker:clean
+
+      - name: Upload artifact for screenshots & videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+            name: cypress_results-${{ matrix.os }}
+            path: |
+              cypress/screenshots/
+              cypress/videos/

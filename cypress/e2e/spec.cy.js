@@ -1,21 +1,21 @@
 const path = require("path");
-const test_record_group_name = "Illinois Test Project";
+const test_record_group_name = "Precambrian_WellCompletion_1";
 const test_project_name = "ISGS Project";
 const test_record_group = {
-  id: "6656476a448c4d1812645c07",
-  name: "Illinois Test Project",
+  id: "6674a33a398907ecaeb2e574",
+  name: "Precambrian_WellCompletion_1",
 };
 const test_record = {
-  id: "665647e58294448787521760",
-  name: "120190021400_WELL_COMPLETION_REPORT_1"
+  id: "6674a36da6bd70da99aa03ff",
+  name: "121190087702_WELL_COMPLETION_REPORT_1"
 };
 const next_record = {
-  id: "665647e549e025f35668c67d",
-  name: "120190139500_WELL_COMPLETION_REPORT_1"
+  id: "6674a36d4cde4e8ee6caec8b",
+  name: "120650345000_WELL_COMPLETION_REPORT_1"
 };
 const prev_record = {
-  id: "665647e45642b536ded828ad",
-  name: "120190129000_WELL_COMPLETION_REPORT_1",
+  id: "6674a36da6bd70da99aa03fd",
+  name: "120272454800_WELL_COMPLETION_REPORT_1",
 };
 
 describe("End to end testing", () => {
@@ -32,9 +32,9 @@ describe("End to end testing", () => {
     cy.findByRole("button", {
       name: /new project/i
     }).should("be.visible");
-    cy.findByRole("tab", {
-      name: /users/i
-    }).should("be.visible");
+    // cy.findByRole("tab", {
+    //   name: /users/i
+    // }).should("be.visible");
 
     cy.screenshot("homepage");
 
@@ -179,7 +179,7 @@ describe("End to end testing", () => {
     cy.get("#fullscreen-table-button").click();
 
     // click on field
-    let field_name = "Acidized";
+    let field_name = "Fractured";
     cy.get("#"+field_name+"_confidence").contains(/not found/i);
     cy.findByText(field_name).click();
     cy.screenshot("clicked on "+field_name);
@@ -264,56 +264,77 @@ describe("End to end testing", () => {
     cy.screenshot("navigated to record group");
 
     // Assert that record group has the proper record amount
-    cy.get(".record_row").should("have.length", 100);
+    cy.get(".record_row").should("have.length", 17);
 
     // Apply a filter - date selected before June 1, 2024
     cy.contains("button", /filters/i).click();
     cy.contains("button", /new filter/i).click();
     cy.get("#column-select").click();
-    cy.contains("li", "Date Uploaded").click();
+    cy.contains("li", "Record Name").click();
     cy.get("#operator-select").click();
-    cy.contains("li", "Is Before").click();
-    cy.get(".date-filter-input").type("2024-06-01", {force: true});
+    cy.contains("li", "Contains").click();
+    cy.get(".string-filter-input").type("_2", {force: true});
     cy.contains("button", /apply filters/i).click({force: true});
+    cy.wait(2000);
+    cy.screenshot("applied record name filter");
 
     // Assert that we now have 20 records
-    cy.get(".record_row").should("have.length", 20, { timeout: 10000 });
+    cy.get(".record_row").should("have.length", 1, { timeout: 10000 });
 
-    // Test sorting. 
-    // Assert we have the right element in the 20th row
-    const record_number_20 = "120190132100_WELL_COMPLETION_REPORT_1";
-    const record_number_19 = "120190131200_WELL_COMPLETION_REPORT_1";
-    cy.get(".record_row").eq(19).should("contain", record_number_20);
-    cy.contains("p", /date uploaded/i).click();
+    cy.reload()
+    cy.screenshot("reloaded page");
 
-    // Assert that the 20th element is now first
-    cy.get(".record_row").eq(0).should("contain", record_number_20, { timeout: 10000 });
-
-    // Navigate to record
-    cy.get(".record_row").eq(0).click();
-
-    // Assert that we have the right record name and index
-    cy.contains("div", `1. ${record_number_20}`, { timeout: 20000 });
-
-    // Navigate to next record
-    cy.contains("button", /next/i).click();
-
-    // Assert that we have the right record name and index
-    cy.contains("div", `2. ${record_number_19}`, { timeout: 20000 });
-      
-    // Go back to record page
-    cy.contains("button", test_record_group.name).click();
-    cy.contains("div", test_record_group.name).should("be.visible", {timeout: 10000});
-
-    // Reverse date sort
-    cy.contains("p", /date uploaded/i).click();
 
     // Clear filters
     cy.contains("button", /filters/i).click();
     cy.contains("button", /reset filters/i).click();
+    cy.wait(2000);
+    cy.screenshot("reset filters");
 
-    // Assert that we have 100 records in the table again
-    cy.get(".record_row").should("have.length", 100, { timeout: 10000 });
+    cy.get("#close-filters-button").click();
+    cy.screenshot("closed filter panel");
+
+    // Test sorting. We have 17 records in this group by default
+    // Assert we have the right element in the 10th row
+    const record_number_10 = "120710031700_WELL_COMPLETION_REPORT_1";
+    const record_number_9 = "120973414200_WELL_COMPLETION_REPORT_2";
+    cy.get(".record_row").eq(9).should("contain", record_number_10);
+    cy.contains("p", /date uploaded/i).click();
+    cy.wait(2000);
+    cy.screenshot("sorted by date uploaded");
+
+    // Assert that the 10th element is now the 8th
+    cy.get(".record_row").eq(7).should("contain", record_number_10, { timeout: 10000 });
+
+    // Navigate to record
+    cy.get(".record_row").eq(7).click({force: true});
+    cy.wait(2000);
+    cy.screenshot("clicked record row #8");
+
+    // Assert that we have the right record name and index
+    cy.contains("div", `8. ${record_number_10}`, { timeout: 20000 });
+
+    // Navigate to next record
+    cy.contains("button", /next/i).click();
+    cy.wait(2000);
+    cy.screenshot("clicked next record");
+
+    // Assert that we have the right record name and index
+    cy.contains("div", `9. ${record_number_9}`, { timeout: 20000 });
+      
+    // Go back to record page
+    cy.contains("button", test_record_group.name).click();
+    cy.wait(2000);
+    cy.screenshot("navitated back to record group");
+    cy.contains("div", test_record_group.name).should("be.visible", {timeout: 10000});
+
+    // Reverse date sort
+    cy.contains("p", /date uploaded/i).click();
+    cy.wait(2000);
+    cy.screenshot("sorted by date uploaded again");
+
+    // Assert that we have 17 records in the table again
+    cy.get(".record_row").should("have.length", 17, { timeout: 10000 });
       
   });
 

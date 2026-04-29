@@ -21,6 +21,13 @@ interface AuthResponse {
   environment: string;
 }
 
+const anonymousDisabledPermissions = new Set([
+  "add_user",
+  "manage_team",
+  "manage_system",
+  "system_administration",
+]);
+
 const UserContext = createContext({} as UserContextObject);
 
 export const useUserContext = () => {
@@ -98,7 +105,7 @@ export const UserContextProvider = ({ children }: any) => {
   };
 
   const hasPermission = (permission: string) => {
-    if (user?.anonymous) return true;
+    if (user?.anonymous) return !anonymousDisabledPermissions.has(permission);
     if (userPermissions?.includes(permission)) return true;
     return false;
   };
