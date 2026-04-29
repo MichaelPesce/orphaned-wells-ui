@@ -33,13 +33,12 @@ backend, and MongoDB together.
 
 ```console
 cd <orphaned-wells-ui-path>
-npm run docker:dev:start
+npm run docker:start
 ```
 
 The app runs at `http://localhost:3000`.
 The backend runs at `http://localhost:8001`.
-
-The shorter command `npm run docker:dev` is also available as an alias.
+The Docker-published dev ports bind to localhost by default.
 
 For stop, clean, backend mode, seed data, and advanced Docker configuration,
 see [deployment/README.md](deployment/README.md).
