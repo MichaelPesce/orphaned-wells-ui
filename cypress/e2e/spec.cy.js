@@ -281,11 +281,18 @@ describe("End to end testing", () => {
     // Assert that we now have 20 records
     cy.get(".record_row").should("have.length", 1, { timeout: 10000 });
 
+    cy.reload()
+    cy.screenshot("reloaded page");
+
+
     // Clear filters
     cy.contains("button", /filters/i).click();
     cy.contains("button", /reset filters/i).click();
     cy.wait(2000);
     cy.screenshot("reset filters");
+
+    cy.get("#close-filters-button").click();
+    cy.screenshot("closed filter panel");
 
     // Test sorting. We have 17 records in this group by default
     // Assert we have the right element in the 10th row

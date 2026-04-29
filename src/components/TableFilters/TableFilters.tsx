@@ -104,6 +104,7 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
               aria-label="close"
               onClick={() => handleClose()}
               sx={styles.closeIcon}
+              id="close-filters-button"
             >
               <CloseIcon />
             </IconButton>
