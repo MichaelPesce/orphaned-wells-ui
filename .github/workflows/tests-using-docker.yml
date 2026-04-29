@@ -1,9 +1,52 @@
 name: App Tests
 on:
-    push:
+  push:
 
-    pull_request:
-        branches: [main]
+  pull_request:
+    branches: [main]
+
+  workflow_call:
+    inputs:
+      checkout_repository:
+        description: Repository to check out and test.
+        required: false
+        type: string
+        default: CATALOG-Historic-Records/orphaned-wells-ui
+      checkout_ref:
+        description: Branch, tag, or SHA to check out when called from another repository.
+        required: false
+        type: string
+        default: main
+      app_state:
+        description: Value for REACT_APP_STATE.
+        required: false
+        type: string
+        default: illinois
+      install_python_package:
+        description: Install an additional Python package into the backend container before E2E tests.
+        required: false
+        type: boolean
+        default: false
+      python_package_repository:
+        description: Python package repository to check out. Defaults to the caller repository when install_python_package is true.
+        required: false
+        type: string
+        default: ""
+      python_package_ref:
+        description: Branch, tag, or SHA for the Python package checkout. Defaults to the caller SHA when install_python_package is true.
+        required: false
+        type: string
+        default: ""
+      python_package_path:
+        description: Workspace path for the Python package checkout.
+        required: false
+        type: string
+        default: caller-python-package
+    secrets:
+      checkout_token:
+        description: Optional token for checking out a private or internal repository.
+        required: false
+
 defaults:
   run:
     shell: bash -l {0}
@@ -22,7 +65,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.ref }}
+          token: ${{ secrets.checkout_token || github.token }}
 
+      - name: Check out Python package under test
+        if: ${{ inputs.install_python_package }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.python_package_repository || github.repository }}
+          ref: ${{ inputs.python_package_ref || github.sha }}
+          path: ${{ inputs.python_package_path }}
+          token: ${{ secrets.checkout_token || github.token }}
 
       - name: Install JS dependencies
         run: |
@@ -41,10 +96,37 @@ jobs:
 
       - name: Add state to .env file
         run: |
-            echo REACT_APP_STATE=illinois >> .env
+            echo REACT_APP_STATE=${{ inputs.app_state || 'illinois' }} >> .env
 
       - name: Start docker containers
         run: npm run docker:start
+
+      ## Use install_python_package input to initiate this step 
+      ## for installing an additional python package, sucha as OGRRE_data_cleaning
+      - name: Install Python package under test in backend container
+        if: ${{ inputs.install_python_package }}
+        env:
+          PYTHON_PACKAGE_PATH: ${{ inputs.python_package_path }}
+        run: |
+            compose=(docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml)
+
+            for i in {1..180}; do
+              if [ -n "$("${compose[@]}" ps --status running -q backend)" ]; then
+                break
+              fi
+              "${compose[@]}" ps
+              sleep 2
+            done
+
+            if [ -z "$("${compose[@]}" ps --status running -q backend)" ]; then
+              "${compose[@]}" logs --no-color --tail=200 backend
+              exit 1
+            fi
+
+            "${compose[@]}" exec -T backend rm -rf /tmp/python-package-under-test
+            "${compose[@]}" cp "${PYTHON_PACKAGE_PATH}" backend:/tmp/python-package-under-test
+            "${compose[@]}" exec -T backend python -m pip install --no-cache-dir --upgrade --force-reinstall /tmp/python-package-under-test
+            "${compose[@]}" restart backend
 
       - name: Wait for docker app health
         run: |
