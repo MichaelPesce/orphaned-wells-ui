@@ -25,7 +25,7 @@ export function GCPInstructions() {
 export function GCPEnvironmentVariables() {
   return (
     <div>
-        The OGRRE backend requires 7 environment variables from your GCP project. As explained in the <a href="getting_started">backend installation section</a>, the following variables must go inside your <code>.env</code> file.
+        When using Google Cloud for storage, Document AI, or authentication, configure the relevant GCP environment variables in your backend <code>.env</code> file. See the <a href="install_ogrre#3-set-environment-variables-1">backend environment variables section</a> for when each variable is required.
       <ul>
         <li>
           <b>PROJECT_ID</b>: The project ID of your GCP project.

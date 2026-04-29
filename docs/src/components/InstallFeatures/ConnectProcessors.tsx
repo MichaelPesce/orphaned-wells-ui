@@ -48,10 +48,10 @@ export function AddFilesToRepo() {
                     Fork and clone <a target='_blank' href="https://github.com/CATALOG-Historic-Records/OGRRE_data_cleaning" rel="noreferrer">OGRRE_data_cleaning</a>
         </li>
         <li>
-                    Inside the repository, you will find the directory <code>OGRRE_data_cleaning/src/ogrre_data_cleaning/processor_schemas</code>. Inside this directory, create a subdirectory called <code>&lt;your-project&gt;_extractors</code>. <i>Note: The project name must match the backend environment variable <code>ENVIRONMENT</code>. For more information see the <a href="install_ogrre#3-set-required-environment-variables-1">backend environment variables section.</a></i>
+                    Inside the repository, you will find the directory <code>OGRRE_data_cleaning/src/ogrre_data_cleaning/processor_schemas</code>. Inside this directory, create a subdirectory called <code>&lt;collaborator&gt;_extractors</code>. <i>Note: The collaborator name must match the backend environment variable <code>COLLABORATOR</code>. For more information see the <a href="install_ogrre#3-set-environment-variables-1">backend environment variables section.</a></i>
         </li>
         <li>
-                    Inside <code>&lt;your-project&gt;_extractors</code>, add your <code>Extractor Processors.json</code> file and all your processor schemas.
+                    Inside <code>&lt;collaborator&gt;_extractors</code>, add your <code>Extractor Processors.json</code> file and all your processor schemas.
         </li>
       </ol>
     </div>

@@ -45,7 +45,7 @@ export function InitializeDatabase() {
 export function MongoEnvironmentVariables() {
   return (
     <div>
-      The OGRRE backend requires 4 environment variables from your MongoDB setup. As explained in the <a href="getting_started">backend installation section</a>, the following variables must go inside your <code>.env</code> file.
+      For manual MongoDB setup, configure the database connection values in your backend <code>.env</code> file. See the <a href="install_ogrre#3-set-environment-variables-1">backend environment variables section</a> for the full backend configuration.
       <ul>
         <li>
           <b>DB_USERNAME</b>: The username for the database user you created.

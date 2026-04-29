@@ -43,6 +43,7 @@
     "docker:stop:shell": "sh deployment/stop-dev-stack.sh",
     "docker:down:shell": "sh deployment/down-dev-stack.sh",
     "docker:clean:shell": "sh deployment/clean-dev-stack.sh",
+    "docs:start": "npm --prefix docs run start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

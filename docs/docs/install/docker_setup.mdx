@@ -1,0 +1,179 @@
+---
+description: Run OGRRE locally with Docker
+sidebar_position: 3.5
+---
+
+# Run OGRRE with Docker
+
+The Docker development stack is the recommended way to run OGRRE locally. It starts the React frontend, FastAPI backend, and MongoDB together with one command.
+
+## Prerequisites
+
+- Node.js with npm
+- Docker Desktop or Docker Engine
+- Docker Compose v2, available as `docker compose`
+- Docker running before you start the stack
+
+## Clone the frontend repository
+
+Clone the frontend repository and go to the repository root:
+
+```console
+git clone https://github.com/CATALOG-Historic-Records/orphaned-wells-ui.git
+cd orphaned-wells-ui
+```
+
+## Start the stack
+
+Run:
+
+```console
+npm run docker:start
+```
+
+The startup script creates `deployment/.env` from `deployment/.env.example` if the file does not already exist.
+
+When startup finishes, open:
+
+- Frontend: `http://localhost:3000`
+- Backend health endpoint: `http://localhost:8001/health`
+- MongoDB host port: `127.0.0.1:27018`
+
+The Docker-published ports bind to `127.0.0.1` by default, so the development stack is reachable from your local machine without exposing the frontend, backend, or MongoDB on all host interfaces.
+
+## Backend mode
+
+By default, `BACKEND_MODE=auto`.
+
+In auto mode, the Docker script checks for a sibling backend repository at `../orphaned-wells-ui-server`:
+
+- If the backend repository exists, Docker builds and runs the backend from local source.
+- If the backend repository does not exist, Docker pulls and runs the backend image configured by `BACKEND_IMAGE`.
+
+For backend development, clone the backend repository next to the frontend repository:
+
+```console
+cd ..
+git clone https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server.git
+cd orphaned-wells-ui
+npm run docker:start
+```
+
+You can also set `BACKEND_MODE` in `deployment/.env`:
+
+```dotenv
+BACKEND_MODE=auto
+BACKEND_MODE=source
+BACKEND_MODE=image
+```
+
+Use `source` when you want to require a local backend checkout. Use `image` when you want to ignore local backend source and run the configured backend image.
+
+## Configure local settings
+
+Most local Docker settings live in `deployment/.env`.
+
+Common frontend settings:
+
+```dotenv
+REACT_APP_BACKEND_URL=http://localhost:8001
+REACT_APP_ENVIRONMENT=development
+REACT_APP_STATE=IL
+REACT_APP_COLLABORATOR=isgs
+```
+
+Common backend settings:
+
+```dotenv
+ENVIRONMENT=development
+COLLABORATOR=isgs
+LOCATION=us
+DB_NAME=isgs
+REQUIRE_AUTH=false
+USE_DB_PROCESSORS=true
+STORAGE_BACKEND=local
+LOCAL_STORAGE_URL_BASE=http://localhost:8001/local-storage
+DOCUMENT_AI_BACKEND=google
+```
+
+With the default Docker settings, authentication is disabled and files are stored in the backend Docker volume. This is suitable for local development and CI, but not for production.
+
+If you enable Google Cloud integrations, add the relevant project, bucket, service account, and OAuth values in `deployment/.env`.
+
+## Stop or reset the stack
+
+Stop containers without removing them:
+
+```console
+npm run docker:stop
+```
+
+Stop and remove containers and the Docker network, while keeping named volumes:
+
+```console
+npm run docker:down
+```
+
+Stop and remove containers, the Docker network, and named volumes:
+
+```console
+npm run docker:clean
+```
+
+Use `docker:clean` when you want MongoDB and backend uploaded-file data to be reset.
+
+## Seed data
+
+The local MongoDB container restores the sample dump in `deployment/mongo-dumps/sample_mongodump` automatically the first time the `mongodb_data` volume is created.
+
+To reset MongoDB and reinitialize from the sample dump:
+
+```console
+npm run docker:clean
+npm run docker:start
+```
+
+To restore the sample dump into an existing Docker MongoDB volume:
+
+```console
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml --profile seed run --rm mongo-restore
+```
+
+## Shell script variants
+
+The Node-backed npm commands are the cross-platform path for macOS, Linux, and Windows.
+
+Legacy shell script variants are also available for macOS, Linux, Git Bash, and WSL:
+
+```console
+npm run docker:start:shell
+npm run docker:stop:shell
+npm run docker:down:shell
+npm run docker:clean:shell
+```
+
+## Troubleshooting
+
+If ports are already in use, change the host ports in `deployment/.env`:
+
+```dotenv
+FRONTEND_HOST_PORT=3000
+BACKEND_HOST_PORT=8001
+MONGODB_HOST_PORT=27018
+```
+
+If you change `BACKEND_HOST_PORT`, also update:
+
+```dotenv
+REACT_APP_BACKEND_URL=http://localhost:<BACKEND_HOST_PORT>
+LOCAL_STORAGE_URL_BASE=http://localhost:<BACKEND_HOST_PORT>/local-storage
+```
+
+To inspect the running stack:
+
+```console
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml ps
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml logs --tail=200
+```
+
+If `BACKEND_MODE=image` uses a private backend image, authenticate with the container registry before running `npm run docker:start`.
