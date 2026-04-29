@@ -1,0 +1,65 @@
+name: Deploy Frontend Dispatch
+
+on:
+  workflow_call:
+    inputs:
+      app_yaml:
+        required: true
+        type: string
+      state:
+        required: true
+        type: string
+      collaborator:
+        required: false
+        type: string
+        default: ""
+      app_environment:
+        required: true
+        type: string
+    secrets:
+      backend_url:
+        required: true
+      google_clientid:
+        required: true
+      gcloud_service_account_json:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to Google App Engine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.gcloud_service_account_json }}
+
+      - name: Install packages
+        run: npm clean-install
+
+      - name: Configure frontend environment
+        env:
+          REACT_APP_BACKEND_URL: ${{ secrets.backend_url }}
+          REACT_APP_GOOGLE_CLIENTID: ${{ secrets.google_clientid }}
+          REACT_APP_STATE: ${{ inputs.state }}
+          REACT_APP_COLLABORATOR: ${{ inputs.collaborator }}
+          REACT_APP_ENVIRONMENT: ${{ inputs.app_environment }}
+        run: |
+          {
+            echo "REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL}"
+            echo "REACT_APP_GOOGLE_CLIENTID=${REACT_APP_GOOGLE_CLIENTID}"
+            echo "REACT_APP_STATE=${REACT_APP_STATE}"
+            if [ -n "${REACT_APP_COLLABORATOR}" ]; then
+              echo "REACT_APP_COLLABORATOR=${REACT_APP_COLLABORATOR}"
+            fi
+            echo "REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}"
+          } >> .env
+
+      - name: Build frontend
+        env:
+          CI: false
+        run: npm run build
+
+      - name: Deploy
+        run: gcloud app deploy . --appyaml "${{ inputs.app_yaml }}"
