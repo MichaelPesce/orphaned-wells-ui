@@ -1,63 +1,16 @@
 name: App Tests
+
 on:
-    workflow_dispatch:
-defaults:
-  run:
-    shell: bash -l {0}
+  push:
+
+  pull_request:
+    branches: [main]
+
 jobs:
   frontend-tests:
-    name: Frontend testing (${{ matrix.os }})
-    runs-on: ${{ matrix.os-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - win64
-        include:
-          - os: win64
-            os-version: windows-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install JS dependencies
-        run: |
-          npm clean-install
-
-      - name: run component tests
-        run: npm test
-
-      - name: Add backend url to .env file
-        run: |
-            echo REACT_APP_BACKEND_URL=${{ secrets.DEV_BACKEND_URL }} >> .env
-
-      - name: Add state to .env file
-        run: |
-            echo REACT_APP_STATE=illinois >> .env
-
-      - name: Add Google client id to .env file
-        run: |
-            echo REACT_APP_GOOGLE_CLIENTID=${{ secrets.GOOGLE_CLIENTID }} >> .env
-
-      - name: Add Google client secret to .env file
-        run: |
-            echo GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} >> .env
-
-      - name: Add Google refresh token to .env file
-        run: |
-            echo GOOGLE_REFRESH_TOKEN=${{ secrets.GOOGLE_REFRESH_TOKEN }} >> .env
-
-      - name: run frontend
-        run: npm start & sleep 30
-
-      - name: run E2E tests
-        run: npx cypress run
-
-      - name: Upload artifact for screenshots & videos
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-            name: cypress_results-${{ matrix.os }}
-            path: |
-              cypress/screenshots/
-              cypress/videos/
+    name: Frontend testing
+    uses: ./.github/workflows/frontend-tests-dispatch.yml
+    with:
+      checkout_repository: ${{ github.repository }}
+      checkout_ref: ${{ github.sha }}
+      app_state: illinois

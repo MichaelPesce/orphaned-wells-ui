@@ -1,10 +1,6 @@
-name: App Tests
+name: App Tests Dispatch
+
 on:
-  push:
-
-  pull_request:
-    branches: [main]
-
   workflow_call:
     inputs:
       checkout_repository:
@@ -13,7 +9,7 @@ on:
         type: string
         default: CATALOG-Historic-Records/orphaned-wells-ui
       checkout_ref:
-        description: Branch, tag, or SHA to check out when called from another repository.
+        description: Branch, tag, or SHA to check out.
         required: false
         type: string
         default: main
@@ -23,7 +19,7 @@ on:
         type: string
         default: illinois
       install_python_package:
-        description: Install an additional Python package into the backend container before E2E tests.
+        description: Install an additional Python package into the backend container before E2E tests. Use this when calling the workflow from OGRRE_data_cleaning.
         required: false
         type: boolean
         default: false
@@ -50,6 +46,7 @@ on:
 defaults:
   run:
     shell: bash -l {0}
+
 jobs:
   frontend-tests:
     name: Frontend testing (${{ matrix.os }})
@@ -80,68 +77,62 @@ jobs:
           token: ${{ secrets.checkout_token || github.token }}
 
       - name: Install JS dependencies
-        run: |
-            npm clean-install
+        run: npm clean-install
 
-      - name: run component tests
+      - name: Run component tests
         run: npm test
 
       - name: Add backend url to .env file
-        run: |
-            echo REACT_APP_BACKEND_URL=http://localhost:8001 >> .env
+        run: echo REACT_APP_BACKEND_URL=http://localhost:8001 >> .env
 
       - name: Add BYPASS_AUTH to .env file
-        run: |
-            echo BYPASS_AUTH=true >> .env
+        run: echo BYPASS_AUTH=true >> .env
 
       - name: Add state to .env file
-        run: |
-            echo REACT_APP_STATE=${{ inputs.app_state || 'illinois' }} >> .env
+        run: echo REACT_APP_STATE=${{ inputs.app_state || 'illinois' }} >> .env
 
       - name: Start docker containers
         run: npm run docker:start
 
-      ## Use install_python_package input to initiate this step 
-      ## for installing an additional python package, sucha as OGRRE_data_cleaning
       - name: Install Python package under test in backend container
         if: ${{ inputs.install_python_package }}
         env:
           PYTHON_PACKAGE_PATH: ${{ inputs.python_package_path }}
         run: |
-            compose=(docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml)
+          compose=(docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml)
 
-            for i in {1..180}; do
-              if [ -n "$("${compose[@]}" ps --status running -q backend)" ]; then
-                break
-              fi
-              "${compose[@]}" ps
-              sleep 2
-            done
-
-            if [ -z "$("${compose[@]}" ps --status running -q backend)" ]; then
-              "${compose[@]}" logs --no-color --tail=200 backend
-              exit 1
+          for i in {1..180}; do
+            if [ -n "$("${compose[@]}" ps --status running -q backend)" ]; then
+              break
             fi
+            "${compose[@]}" ps
+            sleep 2
+          done
 
-            "${compose[@]}" exec -T backend rm -rf /tmp/python-package-under-test
-            "${compose[@]}" cp "${PYTHON_PACKAGE_PATH}" backend:/tmp/python-package-under-test
-            "${compose[@]}" exec -T backend python -m pip install --no-cache-dir --upgrade --force-reinstall /tmp/python-package-under-test
-            "${compose[@]}" restart backend
+          if [ -z "$("${compose[@]}" ps --status running -q backend)" ]; then
+            "${compose[@]}" logs --no-color --tail=200 backend
+            exit 1
+          fi
+
+          "${compose[@]}" exec -T backend rm -rf /tmp/python-package-under-test
+          "${compose[@]}" cp "${PYTHON_PACKAGE_PATH}" backend:/tmp/python-package-under-test
+          "${compose[@]}" exec -T backend python -m pip install --no-cache-dir --upgrade --force-reinstall /tmp/python-package-under-test
+          "${compose[@]}" restart backend
 
       - name: Wait for docker app health
         run: |
-            for i in {1..180}; do
-              if curl -fsS http://localhost:8001/docs >/dev/null && curl -fsS http://localhost:3000 >/dev/null; then
-                exit 0
-              fi
-              docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml ps
-              sleep 2
-            done
+          for i in {1..180}; do
+            if curl -fsS http://localhost:8001/docs >/dev/null && curl -fsS http://localhost:3000 >/dev/null; then
+              exit 0
+            fi
+            docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml ps
+            sleep 2
+          done
 
-            docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml logs --no-color --tail=200
-            exit 1
+          docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml logs --no-color --tail=200
+          exit 1
 
-      - name: run E2E tests
+      - name: Run E2E tests
         run: npx cypress run
 
       - name: Shut down docker containers
@@ -152,7 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-            name: cypress_results-${{ matrix.os }}
-            path: |
-              cypress/screenshots/
-              cypress/videos/
+          name: cypress_results-${{ matrix.os }}
+          path: |
+            cypress/screenshots/
+            cypress/videos/
