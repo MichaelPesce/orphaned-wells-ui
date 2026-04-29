@@ -44,4 +44,4 @@ jobs:
 
       - name: Deploy
         run: |
-            gcloud app deploy app-ca.yaml
+            gcloud app deploy . --appyaml deployment/app-engine/app-ca.yaml
