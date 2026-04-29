@@ -44,7 +44,7 @@ jobs:
             echo REACT_APP_STATE=illinois >> .env
 
       - name: Start docker containers
-        run: npm run docker:dev
+        run: npm run docker:start
 
       - name: Wait for docker app health
         run: |

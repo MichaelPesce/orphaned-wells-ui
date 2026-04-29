@@ -7,10 +7,11 @@ This stack runs the frontend, backend, and MongoDB for local development.
 From the frontend repository:
 
 ```sh
-npm run docker:dev
+npm run docker:start
 ```
 
-The script creates `deployment/.env` from `.env.example` if needed.
+The Node script creates `deployment/.env` from `.env.example` if needed.
+These Node-backed commands are the cross-platform path for macOS, Linux, and Windows.
 
 By default, `BACKEND_MODE=auto` uses a sibling backend checkout at `../orphaned-wells-ui-server` when it exists. If the backend repo is not present, it pulls `BACKEND_IMAGE` instead. In both cases, Compose overrides the backend environment so it connects to local Docker MongoDB at `mongodb://mongodb:27017`.
 
@@ -18,7 +19,7 @@ For frontend-only CI, set `BACKEND_MODE=image` and make sure the workflow can pu
 
 For local backend development, keep the backend repo checked out as a sibling or set `BACKEND_AUTO_CLONE=true`.
 
-If `BACKEND_IMAGE` is private, authenticate with the registry before running `npm run docker:dev`. For Docker Hub in GitHub Actions, that usually means adding repository secrets and running `docker/login-action` before the npm command.
+If `BACKEND_IMAGE` is private, authenticate with the registry before running `npm run docker:start`. For Docker Hub in GitHub Actions, that usually means adding repository secrets and running `docker/login-action` before the npm command.
 
 ## Stop Everything
 
@@ -40,6 +41,17 @@ To remove containers, the network, and named volumes:
 npm run docker:clean
 ```
 
+## Shell Script Variants
+
+The legacy shell scripts are still available for macOS, Linux, Git Bash, and WSL:
+
+```sh
+npm run docker:start:shell
+npm run docker:stop:shell
+npm run docker:down:shell
+npm run docker:clean:shell
+```
+
 You can also run Compose directly:
 
 ```sh
@@ -55,6 +67,8 @@ docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml -
 
 The app runs at `http://localhost:3000`, and the backend health endpoint is `http://localhost:8001/health`.
 
+Published ports are bound to `127.0.0.1` by default through `DEV_HOST_BIND`, so the dev stack is reachable from the local machine without exposing MongoDB, the backend, or the frontend on all host interfaces. Inside Docker, services bind to their Compose hostnames so the containers can still communicate with each other.
+
 When `STORAGE_BACKEND=local`, uploaded files are stored in the backend `backend_data` volume under `/data/uploads` and served by the backend at `LOCAL_STORAGE_URL_BASE`. If you change `BACKEND_HOST_PORT`, update `LOCAL_STORAGE_URL_BASE` in `deployment/.env` to match.
 
 ## MongoDB Seed Data
@@ -65,7 +79,7 @@ To reset and reinitialize from the dump:
 
 ```sh
 npm run docker:clean
-npm run docker:dev
+npm run docker:start
 ```
 
 To restore the dump into an existing MongoDB volume:
