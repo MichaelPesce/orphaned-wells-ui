@@ -98,6 +98,14 @@ const Header = (props: any) => {
         <div className="right">
           <Button 
             style={styles.issueButton}
+            href='https://catalog-historic-records.github.io/orphaned-wells-ui/'
+            target='_blank'
+            endIcon={<OpenInNewIcon/>}
+          >
+            View Documentation
+          </Button>
+          <Button 
+            style={styles.issueButton}
             href='https://github.com/orgs/CATALOG-Historic-Records/discussions/171'
             target='_blank'
             endIcon={<OpenInNewIcon/>}
