@@ -27,6 +27,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       "json": true,
       "image_files": false
     } : {
+      "csv": false,
       "json": true,
       "image_files": false
     }
@@ -253,7 +254,7 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
               <FormControlLabel
                 key={export_type}
                 control={
-                  <Checkbox disabled={export_type === "csv" && (location === "team" || location === "project")} checked={is_selected} onChange={handleChangeExportTypes} name={export_type} />
+                  <Checkbox checked={is_selected} onChange={handleChangeExportTypes} name={export_type} />
                 }
                 label={export_type.replace("_", " ")}
               />
