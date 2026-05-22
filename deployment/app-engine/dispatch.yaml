@@ -10,3 +10,6 @@ dispatch:
   
   - url: "osage.uow-carbon.org/*"
     service: osage-uow
+
+  - url: "newts.uow-carbon.org/*"
+    service: newts-uow
