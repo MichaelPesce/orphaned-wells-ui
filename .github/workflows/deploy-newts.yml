@@ -2,7 +2,7 @@ name: Deploy NEWTS Frontend
 
 on:
   push:
-    branches: [newts, add-newts]
+    branches: [newts]
 
 jobs:
   newts-production-deploy:
