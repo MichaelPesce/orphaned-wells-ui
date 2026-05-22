@@ -1,0 +1,20 @@
+name: Deploy NEWTS Frontend
+
+on:
+  push:
+    branches: [newts]
+
+jobs:
+  newts-production-deploy:
+    if: github.repository == 'CATALOG-Historic-Records/orphaned-wells-ui'
+    name: Deploy to Google App Engine
+    uses: ./.github/workflows/deploy-dispatch.yml
+    with:
+      app_yaml: deployment/app-engine/app-newts.yaml
+      state: newts
+      collaborator: newts
+      app_environment: newts
+    secrets:
+      backend_url: ${{ secrets.NEWTS_BACKEND_URL }}
+      google_clientid: ${{ secrets.GOOGLE_CLIENTID }}
+      gcloud_service_account_json: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_JSON }}
