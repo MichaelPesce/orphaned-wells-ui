@@ -87,9 +87,9 @@ export function DeployNewGCPInstanceHelper() {
           <strong>Note:</strong> the collaborator value entered above is used to generate the example hostnames, workflow filenames, and deployment values throughout this page.
         </p>
 
-        <h2>Backend Deployment</h2>
+        <h2 id="backend-deployment">Backend Deployment</h2>
 
-        <h3>1. Create the Compute Engine VM</h3>
+        <h3 id="1-create-the-compute-engine-vm">1. Create the Compute Engine VM</h3>
         <ul>
           <li>Create a new Compute Engine instance using the default settings.</li>
           <li>Set the name to: <code>{backendName}</code></li>
@@ -101,7 +101,7 @@ export function DeployNewGCPInstanceHelper() {
             <a href="https://console.cloud.google.com/compute/disks?invt=Abuaug&project=tidy-outlet-412020" target="_blank">Increase the boot disk size</a> from <code>10 GB</code> to <code>20 GB</code>.</li>
         </ul>
 
-        <h3>2. Configure the VM</h3>
+        <h3 id="2-configure-the-vm">2. Configure the VM</h3>
         <p>SSH into the VM and install required packages.</p>
         <pre style={boxStyle}>
           <code>
@@ -115,7 +115,7 @@ export function DeployNewGCPInstanceHelper() {
             <a href="https://docs.docker.com/engine/install/debian/" target="_blank"> Install Docker</a> following the standard Docker installation steps for Ubuntu.</li>
         </ul>
 
-        <h3>3. Domain name and DNS</h3>
+        <h3 id="3-domain-name-and-dns">3. Domain name and DNS</h3>
         <ul>
           <li>In 
             <a href="https://console.cloud.google.com/net-services/dns/zones?project=tidy-outlet-412020" target="_blank"> Google Cloud DNS</a>, add a new A record using the reserved static IP address.</li>
@@ -123,7 +123,7 @@ export function DeployNewGCPInstanceHelper() {
           <li>Ensure the DNS entry points to the VM’s static external IP.</li>
         </ul>
 
-        <h3>4. Set up NGINX and Docker Compose</h3>
+        <h3 id="4-set-up-nginx-and-docker-compose">4. Set up NGINX and Docker Compose</h3>
         <ul>
           <li>On the VM, add or copy the Docker Compose and NGINX configuration files.</li>
           <li>The new collaborator should start with a simple <code>default.conf</code> that only defines the HTTP server block.</li>
@@ -140,7 +140,7 @@ export function DeployNewGCPInstanceHelper() {
         </pre>
         <p>If you see a missing file or path error, it is likely from attempting HTTPS configuration before the certificate is available.</p>
 
-        <h3>5. Request TLS certificates</h3>
+        <h3 id="5-request-tls-certificates">5. Request TLS certificates</h3>
         <p>After the HTTP configuration is running, create the certificate using Certbot:</p>
         <pre style={boxStyle}>
           <code>{certbotCommand}</code>
@@ -156,7 +156,7 @@ export function DeployNewGCPInstanceHelper() {
           </code>
         </pre>
 
-        <h3>6. Renewal and cronjob</h3>
+        <h3 id="6-renewal-and-cronjob">6. Renewal and cronjob</h3>
         <ul>
           <li>To renew certificates manually:</li>
         </ul>
@@ -176,7 +176,7 @@ export function DeployNewGCPInstanceHelper() {
         </pre>
         <p>This will run every day at 3 am and reload NGINX if certificates are renewed.</p>
 
-        <h3>7. GitHub Actions and repo setup</h3>
+        <h3 id="7-github-actions-and-repo-setup">7. GitHub Actions and repo setup</h3>
         <ul>
           <li>Create a new workflow file in the backend repository:
             <ul>
@@ -193,9 +193,9 @@ export function DeployNewGCPInstanceHelper() {
           <li>Deploy to the new VM by creating a new Git branch and pushing that branch.</li>
         </ul>
 
-        <h2>Frontend Deployment</h2>
+        <h2 id="frontend-deployment">Frontend Deployment</h2>
 
-        <h3>1. App Engine workflow</h3>
+        <h3 id="1-app-engine-workflow">1. App Engine workflow</h3>
         <ul>
           <li>Add new workflow files for the frontend deployment:</li>
           <ul>
@@ -207,7 +207,7 @@ export function DeployNewGCPInstanceHelper() {
           <li>Deploy the frontend by pushing to the correct branch configured for that collaborator.</li>
         </ul>
 
-        <h3>2. Domain name and dispatch</h3>
+        <h3 id="2-domain-name-and-dispatch">2. Domain name and dispatch</h3>
         <ul>
           <li>In <code>orphaned-wells-ui/dispatch.yml</code>, add the new URL route.</li>
           <li>Deploy the dispatch file:</li>
@@ -228,7 +228,7 @@ export function DeployNewGCPInstanceHelper() {
           <li>The <code>dispatch.yml</code> file defines how App Engine routes requests for the new URL.</li>
         </ul>
 
-        <h3>3. Add custom domain and OAuth</h3>
+        <h3 id="3-add-custom-domain-and-oauth">3. Add custom domain and OAuth</h3>
         <ul>
           <li>Add the new custom domain record in Google Cloud App Engine.</li>
           <li>In 
@@ -239,13 +239,14 @@ export function DeployNewGCPInstanceHelper() {
             <li>the custom domain URL defined in <code>dispatch.yml</code></li>
           </ul>
         </ul>
-
+        
+        <span id="database-deployment---mongodb"></span>
         <h2>Database Deployment - MongoDB</h2>
         <ul>
           <li>Use the <code>InitializeMongo.py</code> script available in the documentation to initialize the database.</li>
           <li>Confirm that your new backend can connect to the MongoDB instance and that the required collections and indexes are created.</li>
         </ul>
-
+        <span id="notes"></span>
         <h2>Notes</h2>
         <ul>
           <li>Keep the collaborator and hostname names consistent across VM naming, DNS records, workflow filenames, and configuration files.</li>
