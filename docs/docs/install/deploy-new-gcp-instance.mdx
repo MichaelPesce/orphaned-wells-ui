@@ -12,7 +12,35 @@ This page describes the manual deployment flow for a new OGRRE instance on Googl
 
 import { DeployNewGCPInstanceHelper } from '@site/src/components/UsageFeatures/DeployNewGCPInstance';
 
+## Manual Deployment Steps
+
 <DeployNewGCPInstanceHelper />
+
+<div style={{display: 'none'}}>
+
+## Backend Deployment
+
+### 1. Create the Compute Engine VM
+### 2. Configure the VM
+### 3. Domain name and DNS
+### 4. Set up NGINX and Docker Compose
+### 5. Request TLS certificates
+### 6. Renewal and cronjob
+### 7. GitHub Actions and repo setup
+
+## Frontend Deployment
+
+### 1. App Engine workflow
+### 2. Domain name and dispatch
+### 3. Add custom domain and OAuth
+
+## Database Deployment - MongoDB
+
+## Notes
+
+</div>
+
+## Additional Notes
 
 :::note
 The sections above include everything needed for a complete deployment. If using [Terraform](./terraform_deployment), you can automate steps 1-3 (backend VM creation and DNS setup), but you must still complete steps 4-7 (NGINX, TLS certificates, and GitHub Actions setup), as well as frontend and database deployment.
