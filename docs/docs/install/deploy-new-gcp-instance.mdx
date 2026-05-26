@@ -1,0 +1,45 @@
+---
+title: Deploy New GCP Instance
+sidebar_position: 6
+description: Step-by-step instructions for deploying a new OGRRE backend and frontend instance on Google Cloud Platform.
+---
+
+:::info Automated Backend VM Deployment Alternative
+For an infrastructure-as-code approach to **backend VM creation and DNS setup only**, see [Deploy with Terraform](./terraform_deployment). Terraform automates the VM, static IP, and DNS record creation. You will still need to complete the NGINX, certificate, and GitHub Actions setup sections below.
+:::
+
+This page describes the manual deployment flow for a new OGRRE instance on Google Cloud Platform. The backend VM setup steps can optionally be replaced with Terraform; all other steps remain the same.
+
+import { DeployNewGCPInstanceHelper } from '@site/src/components/UsageFeatures/DeployNewGCPInstance';
+
+<DeployNewGCPInstanceHelper />
+
+<div style={{display: 'none'}}>
+
+## Backend Deployment
+
+### 1. Create the Compute Engine VM
+### 2. Configure the VM
+### 3. Domain name and DNS
+### 4. Set up NGINX and Docker Compose
+### 5. Request TLS certificates
+### 6. Renewal and cronjob
+### 7. GitHub Actions and repo setup
+
+## Frontend Deployment
+
+### 1. App Engine workflow
+### 2. Domain name and dispatch
+### 3. Add custom domain and OAuth
+
+## Database Deployment - MongoDB
+
+## Notes
+
+</div>
+
+## Additional Notes
+
+:::note
+The sections above include everything needed for a complete deployment. If using [Terraform](./terraform_deployment), you can automate steps 1-3 (backend VM creation and DNS setup), but you must still complete steps 4-7 (NGINX, TLS certificates, and GitHub Actions setup), as well as frontend and database deployment.
+:::

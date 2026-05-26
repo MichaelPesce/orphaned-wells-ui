@@ -1,0 +1,237 @@
+---
+title: Deploy with Terraform
+sidebar_position: 5
+description: Automated GCP instance deployment using Terraform infrastructure as code.
+---
+
+# Deploy Backend VM with Terraform
+
+This page describes how to use Terraform for automated deployment of backend VMs for OGRRE collaborators on Google Cloud Platform. Terraform provides infrastructure-as-code management, making it easier to create, update, and manage multiple backend instances consistently.
+
+:::caution
+If the backend VMs already exist in Google Cloud, it is important to import the existing infrastructure into the correct Terraform state before applying changes. Use the provided import script to import modules and ensure Terraform state is synchronized with the current VM resources.
+:::
+
+:::info
+This is an automated alternative to the [manual deployment process](./deploy-new-gcp-instance). Use this approach for infrastructure management at scale or when you need version control and automated deployment workflows.
+:::
+
+## What is included
+
+The Terraform configuration includes:
+
+- `main.tf` - Defines a `local.collaborators` map and creates a backend VM module for each entry
+- `modules/backend_vm` - Reusable VM module including compute instance, static IP, and DNS record
+- `variables.tf` - Declares Terraform input variables
+- `terraform.tfvars` - Provides Google Cloud project. **NOTE: this variable is not stored in the repo and must be added inside of `orphaned-wells-ui-server/deployment/terraform` with project_id value**.
+- `scripts/import_backend_vms.sh` - Imports existing GCP instances, static IPs, and DNS records into Terraform state
+
+## Prerequisites
+
+- Terraform installed (compatible with Terraform 1.x)
+- Google Cloud SDK installed
+- Access to the target GCP project for this deployment
+- A supported shell to run `bash` scripts
+
+## Google Cloud Authentication
+
+From the Terraform directory, authenticate to Google Cloud and set the project:
+
+```bash
+cd orphaned-wells-ui-server/deployment/terraform
+
+gcloud auth login
+
+gcloud config set project <YOUR_PROJECT_ID>
+
+gcloud auth application-default login
+```
+
+The import script also unsets environment variables (`GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_AUTHORIZED_USER_CREDENTIALS`, and `CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE`) to avoid conflicts with existing credentials.
+
+## Basic Terraform Commands
+
+### Initialize
+
+Initialize the working directory and download providers:
+
+```bash
+terraform init
+```
+
+### Plan
+
+Create an execution plan with the configured variables:
+
+```bash
+terraform plan -var-file=terraform.tfvars
+```
+
+### Apply
+
+Apply the planned changes:
+
+```bash
+terraform apply -var-file=terraform.tfvars
+```
+
+### Destroy
+
+If you need to destroy infrastructure:
+
+```bash
+terraform destroy -var-file=terraform.tfvars
+```
+
+:::warning
+Local state management: This repository currently uses local state by default (`terraform.tfstate`). Do not delete or lose this file unless you intend to recreate the infrastructure.
+:::
+
+## Workspaces
+
+Terraform workspaces allow you to manage multiple state files for the same configuration, useful for separating environments (e.g., staging, production) or testing changes.
+
+### List workspaces
+
+```bash
+terraform workspace list
+```
+
+### Create a new workspace
+
+```bash
+terraform workspace new <workspace_name>
+```
+
+### Switch workspaces
+
+```bash
+terraform workspace select <workspace_name>
+```
+
+### Show current workspace
+
+```bash
+terraform workspace show
+```
+
+Each workspace maintains its own state file and can have different variable values.
+
+## Targeting Specific Modules or Resources
+
+Use the `-target` flag to plan or apply changes to only specific modules, useful when testing changes for one collaborator without affecting others.
+
+### Plan changes for a specific collaborator
+
+```bash
+terraform plan -target="module.backend_vms[\"staging\"]" -var-file=terraform.tfvars
+```
+
+### Apply changes for a specific collaborator
+
+```bash
+terraform apply -target="module.backend_vms[\"staging\"]" -var-file=terraform.tfvars
+```
+
+### Target individual resources within a module
+
+```bash
+terraform plan -target="module.backend_vms[\"staging\"].google_compute_instance.vm" -var-file=terraform.tfvars
+```
+
+:::caution
+Using `-target` modifies state tracking and should only be used for specific, isolated changes. Always review the plan output carefully before applying.
+:::
+
+## Import Existing Infrastructure
+
+The import script is designed to import existing backend VM resources for collaborators that already exist in Google Cloud.
+
+```bash
+bash scripts/import_backend_vms.sh
+```
+
+This script imports:
+
+- The Compute Engine instance
+- The reserved static IP address
+- The DNS record in the `uow-carbon-org` managed zone
+
+### Update the import script for a new collaborator
+
+If you add a collaborator, update `scripts/import_backend_vms.sh`:
+
+- Add the collaborator key to the `COLLABORATORS` array
+- Add the collaborator zone mapping to the `ZONES` associative array
+
+For example:
+
+```bash
+declare -A ZONES=(
+  [isgs]="us-central1-a"
+  [osage]="us-central1-f"
+  [ca]="us-central1-f"
+  [newts]="us-central1-b"
+  [staging]="us-central1-a"
+  [boots]="us-central1-a"
+)
+
+COLLABORATORS=("isgs" "osage" "ca" "newts" "staging" "boots")
+```
+
+Then rerun the import script.
+
+## Adding a New Collaborator
+
+To add a new collaborator VM, update the `local.collaborators` map in `main.tf`.
+
+Example collaborator block:
+
+```hcl
+locals {
+  collaborators = {
+    boots = {
+      enable_startup_script  = false
+      zone                   = "us-central1-a"
+      machine_type           = "e2-standard-2"
+      boot_image             = "https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/debian-12-bookworm-v20260513"
+      boot_disk_size         = 20
+      boot_resource_policies = []
+      boot_disk_device_name  = "boots-uow-server"
+    }
+
+    # existing collaborators...
+  }
+}
+```
+
+After updating `main.tf`, run:
+
+```bash
+terraform plan -var-file=terraform.tfvars
+```
+
+If the new VM already exists in the GCP project, also add it to `scripts/import_backend_vms.sh` and run the script to import the resources into state.
+
+## Implementation Details
+
+### Module instantiation
+
+`main.tf` uses a `for_each` loop to instantiate the `backend_vm` module for each collaborator.
+
+### Resource protection
+
+The module creates:
+- A compute instance
+- A reserved static IP address
+- A DNS record in `uow-carbon-org`
+
+Each managed resource uses `prevent_destroy = true` to protect production infrastructure from accidental deletion.
+
+### Configuration management
+
+Keep `terraform.tfvars` updated if the project or region changes.
+
+## See Also
+
+- [Manual deployment process](./deploy-new-gcp-instance) - Step-by-step instructions for manual GCP instance setup
