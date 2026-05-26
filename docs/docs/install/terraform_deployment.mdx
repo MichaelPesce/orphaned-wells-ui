@@ -23,7 +23,7 @@ The Terraform configuration includes:
 - `main.tf` - Defines a `local.collaborators` map and creates a backend VM module for each entry
 - `modules/backend_vm` - Reusable VM module including compute instance, static IP, and DNS record
 - `variables.tf` - Declares Terraform input variables
-- `terraform.tfvars` - Provides default Google Cloud project and region values
+- `terraform.tfvars` - Provides Google Cloud project. **NOTE: this variable is not stored in the repo and must be added inside of `orphaned-wells-ui-server/deployment/terraform` with project_id value**.
 - `scripts/import_backend_vms.sh` - Imports existing GCP instances, static IPs, and DNS records into Terraform state
 
 ## Prerequisites
