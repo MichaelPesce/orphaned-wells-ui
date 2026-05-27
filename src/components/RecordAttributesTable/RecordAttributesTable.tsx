@@ -489,7 +489,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       <TableRow id={tableId} sx={(isSelected) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
         <TableCell sx={styles.fieldKey}>
           <span>
-            {k}
+            {v.alias || k}
           </span>
           {
             v.subattributes &&

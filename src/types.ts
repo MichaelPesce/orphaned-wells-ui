@@ -109,6 +109,7 @@ export interface Attribute {
     user_added?: boolean;
     topLevelAttribute?: string;
     user_provided_coordinates?: number[][];
+    alias?: string | null;
 }
 
 export interface WhitespaceDetectionResult {
