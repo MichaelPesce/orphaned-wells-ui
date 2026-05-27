@@ -27,6 +27,7 @@ export interface RecordData {
     range?: string;
     error_message?: string;
     rank?: number; // index of record based on current sorting, filtering
+    image_whitespace?: WhitespaceDetectionResult[];
 }
 
 export interface ProjectData {
@@ -108,6 +109,19 @@ export interface Attribute {
     user_added?: boolean;
     topLevelAttribute?: string;
     user_provided_coordinates?: number[][];
+    alias?: string | null;
+}
+
+export interface WhitespaceDetectionResult {
+    whitespace_pct: number;
+    ink_pct: number;
+    total_pixels: number;
+    white_pixels: number;
+    threshold: number;
+    min_whitespace_pct: number;
+    meets_threshold: boolean;
+    is_mostly_whitespace: boolean;
+    error?: string | null;
 }
 
 export interface RepoProcessor {
@@ -373,6 +387,7 @@ export interface DocumentContainerProps {
     loading: boolean;
     recordStatus?: string;
     errorMessage?: string | null;
+    image_whitespace?: WhitespaceDetectionResult[];
 }
 
 export interface ColumnSelectDialogProps {

@@ -16,6 +16,8 @@ import HotkeyInfo from "../HotkeyInfo/HotkeyInfo";
 import { getRecordHistory } from "../../services/app.service";
 import RecordHistoryDialog from "../RecordHistoryDialog/RecordHistoryDialog";
 
+const HIDE_BLANK_PAGES = true;
+
 const DocumentContainer = ({
   imageFiles,
   attributesList,
@@ -23,6 +25,7 @@ const DocumentContainer = ({
   loading,
   recordStatus,
   errorMessage,
+  image_whitespace,
   ...attributeTableProps
 }: DocumentContainerProps) => {
 
@@ -49,6 +52,7 @@ const DocumentContainer = ({
   const imageDivStyle = {
     width: width,
     height: height,
+    borderBottom: "1px solid #9a9c9a"
   };
   const params = useParams(); 
   const checkForErrors = () => {
@@ -121,6 +125,17 @@ const DocumentContainer = ({
     setDisplayPoints(null);
     setDisplayKeyIndex(-1);
   }, [params.id]);
+
+  const getVisualPageNumber = (pageNumber: number) => {
+    if (!HIDE_BLANK_PAGES || !image_whitespace) return pageNumber;
+    let visualPageNumber = 0;
+    image_whitespace?.forEach((img, idx) => {
+      if (idx < pageNumber && !img.is_mostly_whitespace) 
+        visualPageNumber +=1;
+    })
+    // console.log(`${pageNumber} -> ${visualPageNumber}`)
+    return visualPageNumber;
+  }
 
   const getNextField = (direction: string = "down", currentIndex: number = displayKeyIndex, currentSubindex: number | null = displayKeySubattributeIndex) => {
     let nextIndex: number;
@@ -290,6 +305,7 @@ const DocumentContainer = ({
           console.log(e);
         }
         if (pageNumber) page = pageNumber;
+        page = getVisualPageNumber(page);
         const scrollTop = (coordinates[2][1] / imageFiles.length) + (page / imageFiles.length);
         setDisplayPoints(percentage_vertices);
         scrollToAttribute("image-box", "image-div", scrollTop, imageFiles);
@@ -427,23 +443,28 @@ const DocumentContainer = ({
                         <Box id="image-box" sx={styles.imageBox}>
                                 
                           {imageFiles &&
-                                imageFiles.map((imageFile, idx) => (
-                                  <div key={imageFile} style={imageDivStyle} id="image-div">
-                                    <ImageCropper 
-                                      image={imageFile}
-                                      imageIdx={idx}
-                                      highlightedImageIdxIndex={imgIndex}
-                                      displayPoints={displayPoints}
-                                      disabled
-                                      fullscreen={fullscreen}
-                                      zoomOnToken={false}
-                                      updateFieldLocationID={updateFieldLocationID}
-                                      setUpdateFieldLocationID={setUpdateFieldLocationID}
-                                      handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
-                                    />
-                                  </div>
-                                ))
-                                
+                                imageFiles.map((imageFile, idx) => {
+                                  let display_image = true;
+                                  if (HIDE_BLANK_PAGES && image_whitespace?.[idx] && image_whitespace?.[idx].is_mostly_whitespace) {
+                                    display_image = false;
+                                  }
+                                  if (display_image) return (
+                                    <div key={imageFile} style={imageDivStyle} id="image-div">
+                                      <ImageCropper 
+                                        image={imageFile}
+                                        imageIdx={idx}
+                                        highlightedImageIdxIndex={imgIndex}
+                                        displayPoints={displayPoints}
+                                        disabled
+                                        fullscreen={fullscreen}
+                                        zoomOnToken={false}
+                                        updateFieldLocationID={updateFieldLocationID}
+                                        setUpdateFieldLocationID={setUpdateFieldLocationID}
+                                        handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
+                                      />
+                                    </div>
+                                  )
+                                })
                           }
                         </Box>
                       </Box>

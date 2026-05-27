@@ -492,6 +492,7 @@ const Record = () => {
           loading={loading}
           recordStatus={recordData.status}
           errorMessage={recordData.error_message}
+          image_whitespace={recordData.image_whitespace}
         />
       </Box>
       <Bottombar
