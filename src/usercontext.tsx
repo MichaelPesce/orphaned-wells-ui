@@ -48,11 +48,9 @@ export const UserContextProvider = ({ children }: any) => {
 
   useEffect(() => {
     if (!authenticated) {
-      // check if logged in
-      let id_token = localStorage.getItem("id_token");
       callAPI(
         checkAuth,
-        [id_token],
+        [],
         handlePassedAuthentication,
         handleFailedAuthentication,
         true,
@@ -91,14 +89,10 @@ export const UserContextProvider = ({ children }: any) => {
     }
   };
 
-  const handleSuccessfulLogin = (access_token: string, refresh_token: string, id_token: string) => {
-    // gotta store credentials so they stay logged in
-    localStorage.setItem("access_token", access_token);
-    localStorage.setItem("refresh_token", refresh_token);
-    localStorage.setItem("id_token", id_token);
+  const handleSuccessfulLogin = () => {
     callAPI(
       checkAuth,
-      [id_token],
+      [],
       handlePassedAuthentication,
       handleFailedAuthentication
     );

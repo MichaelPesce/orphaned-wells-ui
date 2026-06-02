@@ -647,10 +647,13 @@ export const useOutsideClick = (callback: () => void): React.RefObject<HTMLTable
   return ref;
 };
 
-export const logout = (): void => {
-  revokeToken();
+export const logout = async (): Promise<void> => {
+  try {
+    await revokeToken();
+  } catch (error) {
+    console.error("logout request failed", error);
+  }
   console.log("logging out");
-  localStorage.clear();
   window.location.replace("/login");
 };
 
@@ -793,7 +796,8 @@ export const callAPI = async (
   onSuccess: (data: any) => void, 
   onError: (error: any, status?: number) => void, 
   isJson: boolean = true,
-  logoutOn401: boolean = true
+  logoutOn401: boolean = true,
+  attemptRefreshOn401: boolean = true
 ): Promise<void> => {
   try {
     let response = await apiFunc(...apiParams);
@@ -807,16 +811,11 @@ export const callAPI = async (
       return onError(data, response.status);
     }
 
-    else if (response.status === 401) {
+    else if (response.status === 401 && attemptRefreshOn401) {
       try {
         const refreshResponse = await refreshAuth();
-        const refreshData = await refreshResponse.json();
 
         if (refreshResponse.status === 200) {
-          console.log("Refreshed tokens:");
-          localStorage.setItem("id_token", refreshData.id_token);
-          localStorage.setItem("access_token", refreshData.access_token);
-
           response = await apiFunc(...apiParams);
 
           if (response.status === 200) {
@@ -828,15 +827,24 @@ export const callAPI = async (
           return onError(errorData, response.status);
         } else {
           console.error(`Received response status ${refreshResponse.status} when attempting to refresh tokens`);
-          if (logoutOn401)
-            return logout();
+          if (logoutOn401) {
+            await logout();
+            return;
+          }
         }
       } catch (error) {
         console.error(error);
-        if (logoutOn401)
-          return logout();
+        if (logoutOn401) {
+          await logout();
+          return;
+        }
       }
     } 
+
+    if (response.status === 401 && logoutOn401) {
+      await logout();
+      return;
+    }
 
     const errorData = await response.json();
     return onError(errorData.detail, response.status);

@@ -6,6 +6,25 @@ import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { UserContextProvider } from "./usercontext";
 
+// Remove legacy token storage keys from the pre-cookie auth flow.
+localStorage.removeItem("id_token");
+localStorage.removeItem("access_token");
+localStorage.removeItem("refresh_token");
+
+const defaultFetch = window.fetch.bind(window);
+window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+  const headers = new Headers(init?.headers || undefined);
+  // Cookie sessions are authoritative; strip legacy bearer token headers.
+  if (headers.has("Authorization")) {
+    headers.delete("Authorization");
+  }
+  return defaultFetch(input, {
+    ...init,
+    credentials: "include",
+    headers,
+  });
+};
+
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );

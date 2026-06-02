@@ -6,7 +6,7 @@ import GoogleIcon from "@mui/icons-material/Google";
 import { LoginPageStyles as styles } from "../../styles";
 
 interface LoginPageProps {
-    handleSuccessfulAuthentication: (accessToken: string, refreshToken: string, idToken: string) => void;
+    handleSuccessfulAuthentication: () => void;
 }
 
 const LoginPage = (props: LoginPageProps) => {
@@ -18,19 +18,14 @@ const LoginPage = (props: LoginPageProps) => {
       authLogin(code)
         .then(response => {
           response.json()
-            .then((data: { access_token?: string; refresh_token?: string; id_token?: string }) => {
+            .then((data: { detail?: { message?: string } }) => {
               if (response.status === 200) {
-                if (data.access_token !== undefined) {
-                  const access_token: string = data.access_token;
-                  const refresh_token: any = data.refresh_token;
-                  const id_token: any = data.id_token;
-                  handleSuccessfulAuthentication(access_token, refresh_token, id_token);
-                } else {
-                  console.error("error trying to login");
-                }
+                handleSuccessfulAuthentication();
               } else if (response.status === 403) {
                 console.error("403 error: user is pending");
                 setShowUnauthorizedMessage(true);
+              } else {
+                console.error(data?.detail?.message || "error trying to login");
               }
             }).catch((e: Error) => {
               console.error("error trying to login: " + e);
