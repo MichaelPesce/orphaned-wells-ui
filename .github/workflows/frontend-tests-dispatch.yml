@@ -153,6 +153,11 @@ jobs:
           docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml logs --no-color --tail=200
           exit 1
 
+      - name: Verify backend auth test config
+        run: |
+          docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -c 'import os; print("REQUIRE_AUTH=" + repr(os.getenv("REQUIRE_AUTH"))); print("ALLOWED_ORIGINS=" + repr(os.getenv("ALLOWED_ORIGINS")))'
+          curl -fsS -X POST -H "Origin: http://localhost:3000" http://localhost:8001/check_auth
+
       - name: Run E2E tests
         run: npx cypress run
 
