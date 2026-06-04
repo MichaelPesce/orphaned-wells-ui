@@ -82,14 +82,35 @@ jobs:
       - name: Run component tests
         run: npm test
 
-      - name: Add backend url to .env file
-        run: echo REACT_APP_BACKEND_URL=http://localhost:8001 >> .env
+      - name: Configure test environment
+        run: |
+          cp deployment/.env.example deployment/.env
 
-      - name: Add BYPASS_AUTH to .env file
-        run: echo BYPASS_AUTH=true >> .env
+          set_env() {
+            file="$1"
+            key="$2"
+            value="$3"
+            if grep -q "^${key}=" "$file"; then
+              sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+            else
+              echo "${key}=${value}" >> "$file"
+            fi
+          }
 
-      - name: Add state to .env file
-        run: echo REACT_APP_STATE=${{ inputs.app_state || 'illinois' }} >> .env
+          touch .env
+          set_env .env REACT_APP_BACKEND_URL http://localhost:8001
+          set_env .env BYPASS_AUTH true
+          set_env .env REACT_APP_STATE ${{ inputs.app_state || 'illinois' }}
+          set_env .env REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
+
+          set_env deployment/.env REACT_APP_BACKEND_URL http://localhost:8001
+          set_env deployment/.env REACT_APP_STATE ${{ inputs.app_state || 'illinois' }}
+          set_env deployment/.env REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
+          set_env deployment/.env REQUIRE_AUTH false
+          set_env deployment/.env ALLOWED_ORIGINS http://localhost:3000
+          set_env deployment/.env SESSION_COOKIE_DOMAIN ""
+          set_env deployment/.env SESSION_COOKIE_SECURE false
+          set_env deployment/.env SESSION_COOKIE_SAMESITE lax
 
       - name: Start docker containers
         run: npm run docker:start
