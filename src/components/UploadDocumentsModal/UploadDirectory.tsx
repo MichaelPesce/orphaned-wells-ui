@@ -163,7 +163,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
     <Grid container>
       <Grid item xs={12}>
         <p style={{marginBottom: 0}}>How many files would you like to upload from the directory <i>{directoryName}</i>? Please enter an amount between 0 and {MAX_UPLOAD_AMT}.</p>
-        <Stack direction='row' alignItems={"baseline"} justifyContent={"center"}>
+        <Stack direction='row' alignItems={"baseline"} justifyContent="space-around">
           <TextField 
             id="amt-to_upload" 
             label="Upload Amount" 
@@ -173,6 +173,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
             onChange={handleUpdateAmountToUpload}
             disabled={uploading}
           />
+          <p><b>{filesToUpload.length}</b> files to be uploaded</p>
         </Stack>
                 
                 
