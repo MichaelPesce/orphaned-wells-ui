@@ -173,7 +173,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
             onChange={handleUpdateAmountToUpload}
             disabled={uploading}
           />
-          <p><b>{filesToUpload.length}</b> original files to be uploaded</p>
+          <p><b>{filesToUpload.length}</b> files to be uploaded</p>
         </Stack>
                 
                 
