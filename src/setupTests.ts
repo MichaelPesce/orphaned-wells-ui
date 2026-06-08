@@ -13,6 +13,9 @@ jest.mock("./usercontext", () => ({
     userPhoto: "",
     hasPermission: () => true,
     databaseEnvironment: "test",
+    isAuthenticated: true,
+    authLoading: false,
+    handleSuccessfulAuthentication: jest.fn(),
   }),
   UserContextProvider: ({ children }: { children: any }) => children,
 }));

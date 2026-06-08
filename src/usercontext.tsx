@@ -1,9 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { checkAuth, } from "./services/app.service";
 import { callAPI } from "./util";
 import { User } from "./types";
-import LoginPage from "./views/LoginPage/LoginPage";
 import { ThemeProvider } from "@mui/material/styles";
 import { ogrre_theme } from "./themes/primaryTheme";
 
@@ -14,6 +12,9 @@ interface UserContextObject {
   userPhoto: string;
   hasPermission: (permission: string) => boolean;
   databaseEnvironment: string;
+  isAuthenticated: boolean;
+  authLoading: boolean;
+  handleSuccessfulAuthentication: () => void;
 }
 
 interface AuthResponse {
@@ -35,33 +36,25 @@ export const useUserContext = () => {
 };
 
 export const UserContextProvider = ({ children }: any) => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [user, setUser] = useState<any>(null);
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
   const [userPhoto, setUserPhoto] = useState("");
-  const [userPermissions, setUserPermissions] = useState<any>(undefined);
+  const [userPermissions, setUserPermissions] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [databaseEnvironment, setDatabaseEnvironment] = useState("");
 
-  useEffect(() => {
-    if (!authenticated) {
-      callAPI(
-        checkAuth,
-        [],
-        handlePassedAuthentication,
-        handleFailedAuthentication,
-        true,
-        false
-      );
-    }
-    else setLoading(false);
-    
-  },[location]);
+  const resetUser = useCallback(() => {
+    setUser(null);
+    setUserEmail("");
+    setUserName("");
+    setUserPhoto("");
+    setUserPermissions(new Set());
+    setDatabaseEnvironment("");
+  }, []);
 
-  const handlePassedAuthentication = (data: AuthResponse) => {
+  const handlePassedAuthentication = useCallback((data: AuthResponse) => {
     const {
       user_data,
       environment,
@@ -69,57 +62,70 @@ export const UserContextProvider = ({ children }: any) => {
     setAuthenticated(true);
     setUser(user_data);
     setUserEmail(user_data.email);
-    setUserPermissions(JSON.stringify(user_data.permissions));
-    if (user_data.name && user_data.name !== "") setUserName(user_data.name);
-    if (user_data.picture) setUserPhoto(user_data.picture);
-    if (window.location.href.includes("login")){
-      navigate("/projects", { replace: true });
-    }
+    setUserPermissions(new Set(Array.isArray(user_data.permissions) ? user_data.permissions : []));
+    setUserName(user_data.name || "");
+    setUserPhoto(user_data.picture || "");
     setLoading(false);
-    setDatabaseEnvironment(environment);
-  };
+    setDatabaseEnvironment(environment || "");
+  }, []);
 
-  const handleFailedAuthentication = () => {
+  const handleFailedAuthentication = useCallback(() => {
     setAuthenticated(false);
+    resetUser();
     setLoading(false);
-    console.log("handle failed authentication");
-    if (!window.location.href.includes("login")) {
-      console.log("navigating to login");
-      navigate("/login", {replace: true});
-    }
-  };
+  }, [resetUser]);
 
-  const handleSuccessfulLogin = () => {
+  const checkCurrentAuthentication = useCallback((showLoading = true) => {
+    if (showLoading) setLoading(true);
     callAPI(
       checkAuth,
       [],
       handlePassedAuthentication,
-      handleFailedAuthentication
+      handleFailedAuthentication,
+      true,
+      false
     );
-  };
+  }, [handlePassedAuthentication, handleFailedAuthentication]);
 
-  const hasPermission = (permission: string) => {
+  useEffect(() => {
+    checkCurrentAuthentication();
+  }, [checkCurrentAuthentication]);
+
+  const handleSuccessfulLogin = useCallback(() => {
+    checkCurrentAuthentication(false);
+  }, [checkCurrentAuthentication]);
+
+  const hasPermission = useCallback((permission: string) => {
     if (user?.anonymous) return !anonymousDisabledPermissions.has(permission);
-    if (userPermissions?.includes(permission)) return true;
-    return false;
-  };
+    return userPermissions.has(permission);
+  }, [user, userPermissions]);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     userEmail,
     userName,
     userPhoto,
     hasPermission,
     databaseEnvironment,
-  };
+    isAuthenticated: authenticated,
+    authLoading: loading,
+    handleSuccessfulAuthentication: handleSuccessfulLogin,
+  }), [
+    user,
+    userEmail,
+    userName,
+    userPhoto,
+    hasPermission,
+    databaseEnvironment,
+    authenticated,
+    loading,
+    handleSuccessfulLogin,
+  ]);
 
   return (
     <UserContext.Provider value={value}>
       <ThemeProvider theme={ogrre_theme}>
-        {(!loading && authenticated) ? children :
-          !loading &&
-        <LoginPage handleSuccessfulAuthentication={handleSuccessfulLogin}/>
-        }
+        {children}
       </ThemeProvider>
     </UserContext.Provider>
   );
