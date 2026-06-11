@@ -42,7 +42,7 @@ const Record = () => {
   const navigate = useNavigate();
   const { hasPermission, userEmail } = useUserContext();
   const { state } = useLocation();
-  const { group_id, location } = state || {};
+  const { group_id, location, currentPage: statePageNumber, pageSize: statePageSize, sourceRecordGroupId } = state || {};
   const currentRecordIdRef = useRef<string | undefined>(params.id);
   const latestFetchRequestRef = useRef(0);
   const lockedRef = useRef(locked);
@@ -98,6 +98,7 @@ const Record = () => {
     setSubheaderActions(tempActions);
   }, [hasPermission]);
 
+  // Process successful record fetch: set record data, schema, and breadcrumb navigation
   const handleSuccessfulFetchRecord = React.useCallback((data: any, lock_record?: boolean) => {
     let newRecordData = data.recordData;
     if (lock_record) {
@@ -117,8 +118,16 @@ const Record = () => {
     };
     tempPreviousPages[newRecordData.project_name] = 
             () => navigate("/project/" + newRecordData.project_id);
-    tempPreviousPages[newRecordData.rg_name] = 
-            () => navigate("/record_group/" + newRecordData.rg_id);
+    tempPreviousPages[newRecordData.rg_name] = () => {
+            let url = "/record_group/" + newRecordData.rg_id;
+            if (sourceRecordGroupId === newRecordData.rg_id && (statePageNumber !== undefined || statePageSize !== undefined)) {
+              const params = new URLSearchParams();
+              if (statePageNumber !== undefined) params.set('page', (statePageNumber + 1).toString());
+              if (statePageSize !== undefined && statePageSize !== 100) params.set('pageSize', statePageSize.toString());
+              if (params.toString()) url += '?' + params.toString();
+            }
+            navigate(url, { state: { location, group_id } });
+            };
     setPreviousPages(tempPreviousPages);
   }, [navigate]);
 
@@ -236,6 +245,7 @@ const Record = () => {
     handleUpdateRecordAttributesList("updateFieldCoordinates", data, callbackFunction);
   }, [handleUpdateRecordAttributesList]);
 
+  // Update attribute value in record data, handling both primary and sub-attributes
   const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string) => {
     if (lockedRef.current) return true;
     const newValue = newAttribute.value;
@@ -304,6 +314,7 @@ const Record = () => {
     }
   };
 
+  // Update field value and mark as edited with timestamp; handles both primary and sub-attributes
   const handleChangeValue: handleChangeValueSignature = React.useCallback((event, fieldId) => {
     const primaryIndex = fieldId.primaryIndex;
     const isSubattribute = fieldId.isSubattribute;
@@ -389,12 +400,18 @@ const Record = () => {
   useKeyDown("ArrowLeft", undefined, undefined, handleClickPrevious, undefined, false);
   useKeyDown("ArrowRight", undefined, undefined, handleClickNext, handleClickMarkReviewed, true);
 
+  // Navigate to a record while preserving pagination state from source record group
   const navigateToRecord = (data: any) => {
     let record_data = data.recordData;
     if (record_data?._id) {
       let newUrl = "/record/" + record_data._id;
       if (record_data._id == recordData._id) window.location.reload();
-      else navigate(newUrl, { state: { group_id: group_id, location: location}, replace: true  });
+      else {
+        const navState: any = { group_id: group_id, location: location, sourceRecordGroupId };
+        if (statePageNumber !== undefined) navState.currentPage = statePageNumber;
+        if (statePageSize !== undefined) navState.pageSize = statePageSize;
+        navigate(newUrl, { state: navState, replace: true });
+      }
     } else {
       console.error("error redirecting");
     }

@@ -157,7 +157,10 @@ const RecordsTable = (props: RecordsTableProps) => {
   };
 
   const handleClickRecord = (record_id: string) => {
-    navigate("/record/" + record_id, { state: {group_id: params.id, location: location}});
+    const state: any = { group_id: params.id, location: location, sourceRecordGroupId: params.id };
+    if (currentPage !== 0) state.currentPage = currentPage;
+    if (pageSize !== 100) state.pageSize = pageSize;
+    navigate("/record/" + record_id, { state });
   };
 
   const handleApplyFilters = (appliedFilters: any) => {
