@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getRecordData, updateRecord, deleteRecord, cleanRecords } from "../../services/app.service";
-import { callAPI, useKeyDown } from "../../util";
+import { callAPI, useKeyDown, DEFAULT_RECORDS_TABLE_PAGE_SIZE } from "../../util";
 import Subheader from "../../components/Subheader/Subheader";
 import Bottombar from "../../components/BottomBar/BottomBar";
 import DocumentContainer from "../../components/DocumentContainer/DocumentContainer";
@@ -23,6 +23,8 @@ import {
 } from "../../types";
 import { useUserContext } from "../../usercontext";
 import { convertFiltersToMongoFormat } from "../../util";
+
+const PERSIST_PAGE_ON_BREADCRUMBS_CLICK = true;
 
 const Record = () => {
   const [recordData, setRecordData] = useState<RecordData>({} as RecordData);
@@ -47,7 +49,6 @@ const Record = () => {
   const latestFetchRequestRef = useRef(0);
   const lockedRef = useRef(locked);
   const userEmailRef = useRef(userEmail);
-
   const styles = {
     outerBox: {
       backgroundColor: "#F5F5F6",
@@ -113,23 +114,37 @@ const Record = () => {
     setRecordData(newRecordData);
     setRecordName(newRecordData.name);
     setRecordSchema(data.recordSchema);
+    
+
+    let record_group_url = "/record_group/" + newRecordData.rg_id;
+
+    // If true, check for page number and page size in location state
+    // and use that to 'remember' where we are in the records table
+    if (PERSIST_PAGE_ON_BREADCRUMBS_CLICK) { 
+        // Calculate correct page for current record based on rank and page size
+        let effectivePageNumber = statePageNumber;
+        if (statePageSize !== undefined && newRecordData.rank !== undefined) {
+          const correctPage = Math.floor((newRecordData.rank - 1) / statePageSize);
+          if (correctPage !== statePageNumber) {
+            effectivePageNumber = correctPage;
+          }
+        }
+        if (sourceRecordGroupId === newRecordData.rg_id && (effectivePageNumber !== undefined || statePageSize !== undefined)) {
+        const params = new URLSearchParams();
+        if (effectivePageNumber !== undefined) params.set('page', (effectivePageNumber + 1).toString());
+        if (statePageSize !== undefined && statePageSize !== DEFAULT_RECORDS_TABLE_PAGE_SIZE) params.set('pageSize', statePageSize.toString());
+        if (params.toString()) record_group_url += '?' + params.toString();
+      }
+    }
+    
+    
     let tempPreviousPages: PreviousPages = {
       "Projects": () => navigate("/projects"),
     };
-    tempPreviousPages[newRecordData.project_name] = 
-            () => navigate("/project/" + newRecordData.project_id);
-    tempPreviousPages[newRecordData.rg_name] = () => {
-            let url = "/record_group/" + newRecordData.rg_id;
-            if (sourceRecordGroupId === newRecordData.rg_id && (statePageNumber !== undefined || statePageSize !== undefined)) {
-              const params = new URLSearchParams();
-              if (statePageNumber !== undefined) params.set('page', (statePageNumber + 1).toString());
-              if (statePageSize !== undefined && statePageSize !== 100) params.set('pageSize', statePageSize.toString());
-              if (params.toString()) url += '?' + params.toString();
-            }
-            navigate(url, { state: { location, group_id } });
-            };
+    tempPreviousPages[newRecordData.project_name] = () => navigate("/project/" + newRecordData.project_id);
+    tempPreviousPages[newRecordData.rg_name] = () => navigate(record_group_url, { state: { location, group_id } });
     setPreviousPages(tempPreviousPages);
-  }, [navigate]);
+  }, [navigate, statePageSize, statePageNumber, sourceRecordGroupId, location, group_id]);
 
   const handleFailedFetchRecord = React.useCallback((data: any, response_status?: number) => {
     setLoading(false);

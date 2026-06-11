@@ -18,7 +18,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LastPageIcon from "@mui/icons-material/LastPage";
 import PublishedWithChangesOutlinedIcon from "@mui/icons-material/PublishedWithChangesOutlined";
-import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES } from "../../util";
+import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES, DEFAULT_RECORDS_TABLE_PAGE_SIZE } from "../../util";
 import { styles } from "../../styles";
 import RecordNotesDialog from "../RecordNotesDialog/RecordNotesDialog";
 import TableFilters from "../TableFilters/TableFilters";
@@ -40,6 +40,7 @@ const SORTABLE_COLUMNS = {
 } as const;
 
 type SortableColumnKey = keyof typeof SORTABLE_COLUMNS;
+const DEFAULT_PAGE_NUMBER = 0;
 
 const RecordsTable = (props: RecordsTableProps) => {
   let navigate = useNavigate();
@@ -61,11 +62,11 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(() => {
     const pageParam = searchParams.get('page');
-    return pageParam ? parseInt(pageParam, 10) - 1 : 0; // Convert from 1-based URL to 0-based internal
+    return pageParam ? parseInt(pageParam, 10) - 1 : DEFAULT_PAGE_NUMBER; // Convert from 1-based URL to 0-based internal
   });
   const [pageSize, setPageSize] = useState(() => {
     const pageSizeParam = searchParams.get('pageSize');
-    return pageSizeParam ? parseInt(pageSizeParam, 10) : 100;
+    return pageSizeParam ? parseInt(pageSizeParam, 10) : DEFAULT_RECORDS_TABLE_PAGE_SIZE;
   });
   const [showDownloadMessage, setShowDownloadMessage] = useState(false);
   const [openDeleteRecordsModal, setOpenDeleteRecordsModal] = useState(false);
@@ -158,8 +159,8 @@ const RecordsTable = (props: RecordsTableProps) => {
 
   const handleClickRecord = (record_id: string) => {
     const state: any = { group_id: params.id, location: location, sourceRecordGroupId: params.id };
-    if (currentPage !== 0) state.currentPage = currentPage;
-    if (pageSize !== 100) state.pageSize = pageSize;
+    state.currentPage = currentPage;
+    state.pageSize = pageSize;
     navigate("/record/" + record_id, { state });
   };
 
