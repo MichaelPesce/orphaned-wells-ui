@@ -61,7 +61,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(() => {
     const pageParam = searchParams.get('page');
-    return pageParam ? parseInt(pageParam, 10) : 0;
+    return pageParam ? parseInt(pageParam, 10) - 1 : 0; // Convert from 1-based URL to 0-based internal
   });
   const [pageSize, setPageSize] = useState(() => {
     const pageSizeParam = searchParams.get('pageSize');
@@ -96,7 +96,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     if (currentPage === 0) {
       newParams.delete('page');
     } else {
-      newParams.set('page', currentPage.toString());
+      newParams.set('page', (currentPage + 1).toString()); // Convert from 0-based internal to 1-based URL
     }
     
     // Only set pageSize param if not at default (100)
