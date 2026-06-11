@@ -1,5 +1,5 @@
 import React, { useEffect, Fragment, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter, TablePagination } from "@mui/material";
 import { Button, Box, Paper, IconButton, Grid, Typography, Menu, MenuItem } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -43,6 +43,7 @@ type SortableColumnKey = keyof typeof SORTABLE_COLUMNS;
 
 const RecordsTable = (props: RecordsTableProps) => {
   let navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     location,
     params,
@@ -58,8 +59,14 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [ openColumnSelect, setOpenColumnSelect ] = useState(false);
   const [records, setRecords] = useState<RecordData[]>([]);
   const [recordCount, setRecordCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(100);
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get('page');
+    return pageParam ? parseInt(pageParam, 10) : 0;
+  });
+  const [pageSize, setPageSize] = useState(() => {
+    const pageSizeParam = searchParams.get('pageSize');
+    return pageSizeParam ? parseInt(pageSizeParam, 10) : 100;
+  });
   const [showDownloadMessage, setShowDownloadMessage] = useState(false);
   const [openDeleteRecordsModal, setOpenDeleteRecordsModal] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -80,6 +87,27 @@ const RecordsTable = (props: RecordsTableProps) => {
       setShowDownloadMessage(false);
     }
   }, [isDownloading]);
+
+  // Sync pagination state to URL query parameters
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+    
+    // Only set page param if not at default (page 0)
+    if (currentPage === 0) {
+      newParams.delete('page');
+    } else {
+      newParams.set('page', currentPage.toString());
+    }
+    
+    // Only set pageSize param if not at default (100)
+    if (pageSize === 100) {
+      newParams.delete('pageSize');
+    } else {
+      newParams.set('pageSize', pageSize.toString());
+    }
+    
+    setSearchParams(newParams, { replace: true });
+  }, [currentPage, pageSize, searchParams, setSearchParams]);
 
   const setFilterBy = (newFilterBy: any) => {
     _setFilterBy(newFilterBy);
