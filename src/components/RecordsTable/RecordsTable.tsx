@@ -1,5 +1,5 @@
 import React, { useEffect, Fragment, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter, TablePagination } from "@mui/material";
 import { Button, Box, Paper, IconButton, Grid, Typography, Menu, MenuItem } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -18,7 +18,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LastPageIcon from "@mui/icons-material/LastPage";
 import PublishedWithChangesOutlinedIcon from "@mui/icons-material/PublishedWithChangesOutlined";
-import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES } from "../../util";
+import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES, DEFAULT_RECORDS_TABLE_PAGE_SIZE } from "../../util";
 import { styles } from "../../styles";
 import RecordNotesDialog from "../RecordNotesDialog/RecordNotesDialog";
 import TableFilters from "../TableFilters/TableFilters";
@@ -40,9 +40,11 @@ const SORTABLE_COLUMNS = {
 } as const;
 
 type SortableColumnKey = keyof typeof SORTABLE_COLUMNS;
+const DEFAULT_PAGE_NUMBER = 0;
 
 const RecordsTable = (props: RecordsTableProps) => {
   let navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     location,
     params,
@@ -58,8 +60,14 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [ openColumnSelect, setOpenColumnSelect ] = useState(false);
   const [records, setRecords] = useState<RecordData[]>([]);
   const [recordCount, setRecordCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(100);
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get('page');
+    return pageParam ? parseInt(pageParam, 10) - 1 : DEFAULT_PAGE_NUMBER; // Convert from 1-based URL to 0-based internal
+  });
+  const [pageSize, setPageSize] = useState(() => {
+    const pageSizeParam = searchParams.get('pageSize');
+    return pageSizeParam ? parseInt(pageSizeParam, 10) : DEFAULT_RECORDS_TABLE_PAGE_SIZE;
+  });
   const [showDownloadMessage, setShowDownloadMessage] = useState(false);
   const [openDeleteRecordsModal, setOpenDeleteRecordsModal] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -80,6 +88,27 @@ const RecordsTable = (props: RecordsTableProps) => {
       setShowDownloadMessage(false);
     }
   }, [isDownloading]);
+
+  // Sync pagination state to URL query parameters
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+    
+    // Only set page param if not at default (page 0)
+    if (currentPage === 0) {
+      newParams.delete('page');
+    } else {
+      newParams.set('page', (currentPage + 1).toString()); // Convert from 0-based internal to 1-based URL
+    }
+    
+    // Only set pageSize param if not at default (100)
+    if (pageSize === 100) {
+      newParams.delete('pageSize');
+    } else {
+      newParams.set('pageSize', pageSize.toString());
+    }
+    
+    setSearchParams(newParams, { replace: true });
+  }, [currentPage, pageSize, searchParams, setSearchParams]);
 
   const setFilterBy = (newFilterBy: any) => {
     _setFilterBy(newFilterBy);
@@ -129,7 +158,10 @@ const RecordsTable = (props: RecordsTableProps) => {
   };
 
   const handleClickRecord = (record_id: string) => {
-    navigate("/record/" + record_id, { state: {group_id: params.id, location: location}});
+    const state: any = { group_id: params.id, location: location, sourceRecordGroupId: params.id };
+    state.currentPage = currentPage;
+    state.pageSize = pageSize;
+    navigate("/record/" + record_id, { state });
   };
 
   const handleApplyFilters = (appliedFilters: any) => {
