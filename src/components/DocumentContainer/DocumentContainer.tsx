@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Grid, Box, IconButton, Alert, Button } from "@mui/material";
+import { Grid, Box, IconButton, Alert, Tooltip } from "@mui/material";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import Rotate90DegreesCcwIcon from '@mui/icons-material/Rotate90DegreesCcw';
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import HistoryIcon from '@mui/icons-material/History';
 import KeyboardIcon from "@mui/icons-material/Keyboard";
@@ -15,6 +16,7 @@ import TableLoading from "../TableLoading/TableLoading";
 import HotkeyInfo from "../HotkeyInfo/HotkeyInfo";
 import { getRecordHistory } from "../../services/app.service";
 import RecordHistoryDialog from "../RecordHistoryDialog/RecordHistoryDialog";
+import ImageRotationDialog from "components/ImageRotationDialog/ImageRotationDialog";
 
 const HIDE_BLANK_PAGES = true;
 
@@ -48,6 +50,7 @@ const DocumentContainer = ({
   const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
   const [recordHistory, setRecordHistory] = useState<RecordHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [openRotationDialog, setOpenRotationDialog] = useState(false);
 
   const imageDivStyle = {
     width: width,
@@ -366,6 +369,13 @@ const DocumentContainer = ({
     );
   };
 
+  const handleRotateImages = (selectedIndices: number[], degrees: number) => {
+  // Call your API to rotate the images
+  console.log(`Rotate images ${selectedIndices} by ${degrees} degrees`);
+};
+
+
+
   const showErrorState = !loading && !attributesList && recordStatus === "error";
   const resolvedErrorMessage = errorMessage || "Unknown error.";
 
@@ -434,6 +444,11 @@ const DocumentContainer = ({
                     <Grid item xs={gridWidths[0]}>
                       <Box sx={styles.gridContainer}>
                         <Box sx={styles.containerActions.right}>
+                          <Tooltip title="Rotate Image(s)" placement="left">
+                            <IconButton id="rotate-image-button" onClick={() => setOpenRotationDialog(true)}>
+                              <Rotate90DegreesCcwIcon/>
+                            </IconButton>
+                          </Tooltip>
                           <IconButton id='fullscreen-image-button' onClick={() => handleSetFullscreen("image")}>
                             { 
                               fullscreen === "image" ? <FullscreenExitIcon/> : <FullscreenIcon/> 
@@ -477,6 +492,12 @@ const DocumentContainer = ({
         onClose={() => setOpenHistoryDialog(false)}
         history={recordHistory}
         loading={historyLoading}
+      />
+      <ImageRotationDialog
+        open={openRotationDialog}
+        imageFiles={imageFiles || []}
+        onClose={() => setOpenRotationDialog(false)}
+        onSubmit={handleRotateImages}
       />
     </Box>
   );
