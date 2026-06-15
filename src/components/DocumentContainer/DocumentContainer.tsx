@@ -14,7 +14,7 @@ import { DocumentContainerStyles as styles } from "../../styles";
 import Switch from "@mui/material/Switch";
 import TableLoading from "../TableLoading/TableLoading";
 import HotkeyInfo from "../HotkeyInfo/HotkeyInfo";
-import { getRecordHistory } from "../../services/app.service";
+import { getRecordHistory, rotateRecordImages } from "../../services/app.service";
 import RecordHistoryDialog from "../RecordHistoryDialog/RecordHistoryDialog";
 import ImageRotationDialog from "components/ImageRotationDialog/ImageRotationDialog";
 
@@ -28,6 +28,7 @@ const DocumentContainer = ({
   recordStatus,
   errorMessage,
   image_whitespace,
+  record_group_id,
   ...attributeTableProps
 }: DocumentContainerProps) => {
 
@@ -51,6 +52,7 @@ const DocumentContainer = ({
   const [recordHistory, setRecordHistory] = useState<RecordHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [openRotationDialog, setOpenRotationDialog] = useState(false);
+  const [rotationLoading, setRotationLoading] = useState(false);
 
   const imageDivStyle = {
     width: width,
@@ -370,9 +372,29 @@ const DocumentContainer = ({
   };
 
   const handleRotateImages = (selectedIndices: number[], degrees: number) => {
-  // Call your API to rotate the images
-  console.log(`Rotate images ${selectedIndices} by ${degrees} degrees`);
-};
+    if (!params.id || !record_group_id) {
+      console.error("Missing record ID or record group ID");
+      return;
+    }
+
+    setRotationLoading(true);
+    callAPI(
+      rotateRecordImages,
+      [params.id, selectedIndices, degrees, record_group_id],
+      (response: any) => {
+        console.log("Images rotated successfully:", response);
+        setRotationLoading(false);
+        setOpenRotationDialog(false);
+        // Optionally refresh the page or update the image URLs
+        window.location.reload();
+      },
+      (error, status) => {
+        console.error("Error rotating images:", status, error);
+        setRotationLoading(false);
+        // Optionally show an error message to the user
+      }
+    );
+  };
 
 
 

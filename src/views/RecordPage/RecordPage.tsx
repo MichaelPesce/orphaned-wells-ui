@@ -535,6 +535,7 @@ const Record = () => {
           recordStatus={recordData.status}
           errorMessage={recordData.error_message}
           image_whitespace={recordData.image_whitespace}
+          record_group_id={recordData.record_group_id}
         />
       </Box>
       <Bottombar

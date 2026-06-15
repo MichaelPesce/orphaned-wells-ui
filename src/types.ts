@@ -388,6 +388,7 @@ export interface DocumentContainerProps {
     recordStatus?: string;
     errorMessage?: string | null;
     image_whitespace?: WhitespaceDetectionResult[];
+    record_group_id?: string;
 }
 
 export interface ColumnSelectDialogProps {
