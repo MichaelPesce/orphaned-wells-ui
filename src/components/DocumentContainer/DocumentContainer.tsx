@@ -477,17 +477,34 @@ const DocumentContainer = ({
                             }
                           </IconButton>
                         </Box>
-                        <Box id="image-box" sx={styles.imageBox}>
-                                
-                          {imageFiles &&
-                                imageFiles.map((imageFile, idx) => {
-                                  let display_image = true;
-                                  if (HIDE_BLANK_PAGES && image_whitespace?.[idx] && image_whitespace?.[idx].is_mostly_whitespace) {
-                                    display_image = false;
-                                  }
-                                  if (display_image) return (
+                        <Box
+                          id="image-box"
+                          sx={{
+                            ...styles.imageBox,
+                            position: "relative",
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              opacity: rotationLoading ? 0.45 : 1,
+                              transition: "opacity 180ms ease",
+                            }}
+                          >
+                            {imageFiles &&
+                              imageFiles.map((imageFile, idx) => {
+                                let display_image = true;
+                                if (
+                                  HIDE_BLANK_PAGES &&
+                                  image_whitespace?.[idx] &&
+                                  image_whitespace?.[idx].is_mostly_whitespace
+                                ) {
+                                  display_image = false;
+                                }
+
+                                if (display_image)
+                                  return (
                                     <div key={imageFile} style={imageDivStyle} id="image-div">
-                                      <ImageCropper 
+                                      <ImageCropper
                                         image={imageFile}
                                         imageIdx={idx}
                                         highlightedImageIdxIndex={imgIndex}
@@ -500,9 +517,30 @@ const DocumentContainer = ({
                                         handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
                                       />
                                     </div>
-                                  )
-                                })
-                          }
+                                  );
+
+                                return null;
+                              })}
+                          </Box>
+
+                          {rotationLoading && (
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                inset: 0,
+                                zIndex: 9999,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: "rgba(0, 0, 0, 0.18)",
+                                backdropFilter: "blur(1px)",
+                                pointerEvents: "none", // let the overlay not block anything if you prefer
+                                transition: "opacity 180ms ease",
+                              }}
+                            >
+                              <CircularProgress />
+                            </Box>
+                          )}
                         </Box>
                       </Box>
                     </Grid>
@@ -521,9 +559,6 @@ const DocumentContainer = ({
         onClose={() => setOpenRotationDialog(false)}
         onSubmit={handleRotateImages}
       />
-      {
-        rotationLoading && <CircularProgress/>
-      }
     </Box>
   );
 };
