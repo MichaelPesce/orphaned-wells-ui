@@ -17,6 +17,7 @@ import HotkeyInfo from "../HotkeyInfo/HotkeyInfo";
 import { getRecordHistory, rotateRecordImages } from "../../services/app.service";
 import RecordHistoryDialog from "../RecordHistoryDialog/RecordHistoryDialog";
 import ImageRotationDialog from "components/ImageRotationDialog/ImageRotationDialog";
+import CircularProgress from '@mui/material/CircularProgress';
 
 const HIDE_BLANK_PAGES = true;
 
@@ -29,6 +30,7 @@ const DocumentContainer = ({
   errorMessage,
   image_whitespace,
   record_group_id,
+  setImageFiles,
   ...attributeTableProps
 }: DocumentContainerProps) => {
 
@@ -43,7 +45,6 @@ const DocumentContainer = ({
   const [forceOpenSubtable, setForceOpenSubtable] = useState<number | null>(null);
   const [imageHeight, setImageHeight] = useState(0);
   const [ showRawValues, setShowRawValues ] = useState(false);
-  const [ autoCleanFields, setAutoCleanFields ] = useState(true);
   const [ hasErrors, setHasErrors ] = useState(false);
   const [ zoomOnToken, setZoomOnToken ] = useState(JSON.parse(localStorage.getItem("zoomOnToken") || "false"));
   const [updateFieldLocationID, setUpdateFieldLocationID] = useState<FieldID>();
@@ -382,11 +383,10 @@ const DocumentContainer = ({
       rotateRecordImages,
       [params.id, selectedIndices, degrees, record_group_id],
       (response: any) => {
-        console.log("Images rotated successfully:", response);
+        // console.log("Images rotated successfully:", response);
         setRotationLoading(false);
         setOpenRotationDialog(false);
-        // Optionally refresh the page or update the image URLs
-        window.location.reload();
+        setImageFiles(response.new_image_urls);
       },
       (error, status) => {
         console.error("Error rotating images:", status, error);
@@ -521,6 +521,9 @@ const DocumentContainer = ({
         onClose={() => setOpenRotationDialog(false)}
         onSubmit={handleRotateImages}
       />
+      {
+        rotationLoading && <CircularProgress/>
+      }
     </Box>
   );
 };

@@ -507,6 +507,16 @@ const Record = () => {
     window.location.reload();
   };
 
+  const setImageFiles = (new_image_urls: any[]) => {
+    setRecordData(tempRecordData => {
+        const newRecordData = {
+          ...tempRecordData,
+          img_urls: [...new_image_urls],
+        };
+        return newRecordData;
+      });
+  }
+
   return (
     <Box sx={styles.outerBox}>
       <Subheader
@@ -536,6 +546,7 @@ const Record = () => {
           errorMessage={recordData.error_message}
           image_whitespace={recordData.image_whitespace}
           record_group_id={recordData.record_group_id}
+          setImageFiles={setImageFiles}
         />
       </Box>
       <Bottombar
