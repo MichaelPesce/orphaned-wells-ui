@@ -84,6 +84,83 @@ export const uploadDocument = (data: FormData, project_id: string, user_email: a
   });
 };
 
+export interface UploadProgressInfo {
+  loaded: number;
+  total: number;
+  percent: number;
+  elapsedSeconds: number;
+  bytesPerSecond: number;
+  remainingSeconds: number | null;
+}
+
+export const uploadDocumentsBatchWithProgress = (
+  data: FormData,
+  recordGroupId: string,
+  userEmail: string,
+  reprocessed: boolean = false,
+  preventDuplicates: boolean = false,
+  runCleaningFunctions: boolean = true,
+  onProgress?: (progress: UploadProgressInfo) => void
+): Promise<any> => {
+  const query = new URLSearchParams({
+    reprocessed: String(reprocessed),
+    preventDuplicates: String(preventDuplicates),
+    run_cleaning_functions: String(runCleaningFunctions),
+  });
+  const url = `${BACKEND_URL}/upload_documents_batch/${recordGroupId}/${encodeURIComponent(userEmail)}?${query.toString()}`;
+  const startedAt = Date.now();
+
+  // Read the CSRF token from the cookie
+  const csrfToken = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('ogrre_csrf='))
+    ?.split('=')[1];
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.withCredentials = true;
+
+    // Set the CSRF header the same way our fetch interceptor does
+    if (csrfToken) {
+      xhr.setRequestHeader("X-CSRF-Token", csrfToken);
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable || !onProgress) return;
+      const elapsedSeconds = Math.max((Date.now() - startedAt) / 1000, 0.001);
+      const bytesPerSecond = event.loaded / elapsedSeconds;
+      const remainingBytes = Math.max(event.total - event.loaded, 0);
+      onProgress({
+        loaded: event.loaded,
+        total: event.total,
+        percent: (event.loaded / event.total) * 100,
+        elapsedSeconds,
+        bytesPerSecond,
+        remainingSeconds: bytesPerSecond > 0 ? remainingBytes / bytesPerSecond : null,
+      });
+    };
+
+    xhr.onload = () => {
+      let responseBody: any = {};
+      try {
+        responseBody = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+      } catch (e) {
+        responseBody = xhr.responseText;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(responseBody);
+      } else {
+        reject({ status: xhr.status, response: responseBody });
+      }
+    };
+
+    xhr.onerror = () => reject({ status: xhr.status, response: "Upload failed" });
+    xhr.send(data);
+  });
+};
+
 export const deployProcessor = (rg_id: string)  => {
   return fetch(BACKEND_URL + "/deploy_processor/"+rg_id, {
     method: "POST",

@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useUserContext } from "../../usercontext";
-import { Grid, Box, Button, Stack, FormControlLabel, Switch, Tooltip, TextField } from "@mui/material";
+import { Grid, Box, Button, Stack, FormControlLabel, Switch, Tooltip, TextField, LinearProgress } from "@mui/material";
 import { UploadDirectoryProps } from "../../types";
-import { uploadDocument, checkForDuplicateRecords } from "../../services/app.service";
+import { checkForDuplicateRecords, uploadDocumentsBatchWithProgress, UploadProgressInfo } from "../../services/app.service";
 import { callAPI } from "../../util";
-import CircularProgress from "@mui/material/CircularProgress";
 
 const UploadDirectory = (props: UploadDirectoryProps) => {
   const params = useParams<{ id: string }>();
@@ -15,6 +14,9 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
   const [ filesToUpload, setFilesToUpload ] = useState<File[]>([]);
   const [ finishedUploading, setFinishedUploading ] = useState(false);
   const [ progress, setProgress ] = useState(0);
+  const [ remainingSeconds, setRemainingSeconds ] = useState<number | null>(null);
+  const [ uploadedBytes, setUploadedBytes ] = useState(0);
+  const [ totalBytes, setTotalBytes ] = useState(0);
   const [ preventDuplicates, setPreventDuplicates ] = useState(true);
   const [ uploadedFiles, setUploadedFiles ] = useState<string[]>([]);
   const [ duplicateFiles, setDuplicateFiles ] = useState<string[]>();
@@ -22,23 +24,6 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
   const [ errorFiles, setErrorFiles ] = useState<string[]>([]);
   const [ disabled, setDisabled ] = useState(true);
   const MAX_UPLOAD_AMT = 1000;
-
-  useEffect(() => {
-    let uploadedAmt = uploadedFiles.length;
-    if (uploading && uploadedAmt === filesToUpload.length) {
-      setFinishedUploading(true);
-      setTimeout(()=> {
-        window.location.reload();
-      },3000);
-    }
-    try {
-      if (filesToUpload.length!== 0) {
-        setProgress( (uploadedAmt / filesToUpload.length) * 100);
-      }
-    } catch(e) {
-      setProgress(0);
-    }
-  },[uploadedFiles]);
 
   useEffect(() => {
     if (isNaN(amountToUpload) || amountToUpload <=0) {
@@ -56,13 +41,13 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
       else setDisabled(false);
       let tempFilesToUpload: File[];
       if (preventDuplicates) {
-        if (unduplicateFiles?.length || 0 > amountToUpload) {
+        if ((unduplicateFiles?.length || 0) > amountToUpload) {
           tempFilesToUpload = unduplicateFiles?.slice(0,amountToUpload) || [];
         } else {
           tempFilesToUpload = [...unduplicateFiles || []];
         }
       } else {
-        if (directoryFiles.length || 0 > amountToUpload) {
+        if ((directoryFiles.length || 0) > amountToUpload) {
           tempFilesToUpload = directoryFiles?.slice(0,amountToUpload);
         } else {
           tempFilesToUpload = [...directoryFiles || []];
@@ -111,32 +96,95 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
     setDisabled(false);
   };
 
-  const upload = () => {
-    setUploading(true);
-    filesToUpload.map((file) => {
-      let formData = new FormData();
-      formData.append("file", file, file.name);
-      callAPI(
-        uploadDocument,
-        [formData, params.id, userEmail, false, preventDuplicates, runCleaningFunctions],
-        () => handleSuccessfulDocumentUpload(file),
-        (e, status) => handleAPIErrorResponse(file, status)
-      );
-    });
-  };
-
-  const handleSuccessfulDocumentUpload = (file: File) => {
-    setUploadedFiles((uploadedFiles) => [...uploadedFiles, file.name]);
-  };
-
-  const handleAPIErrorResponse = (file: File, status_code?: number) => {
-    if (status_code === 208) {
-      console.log("duplicate: "+file.name);
-    } else {
-      console.error(`error uploading ${file.name} with status code ${status_code}`);
-      setErrorFiles((errorFiles) => [...errorFiles, file.name]);
+  const updateUploadedFilesFromProgress = (uploadProgress: UploadProgressInfo) => {
+    const selectedFilesSize = filesToUpload.reduce((total, file) => total + file.size, 0);
+    if (selectedFilesSize === 0) return;
+    if (uploadProgress.percent >= 100) {
+      setUploadedFiles(filesToUpload.map((file) => file.name));
+      return;
     }
-    setUploadedFiles((uploadedFiles) => [...uploadedFiles, file.name]);
+
+    const uploadedSelectedFileBytes = (uploadProgress.percent / 100) * selectedFilesSize;
+    let cumulativeBytes = 0;
+    const completedFiles: string[] = [];
+    for (let file of filesToUpload) {
+      cumulativeBytes += file.size;
+      if (cumulativeBytes <= uploadedSelectedFileBytes) completedFiles.push(file.name);
+    }
+    setUploadedFiles(completedFiles);
+  };
+
+  const formatTimeRemaining = (seconds: number | null) => {
+    if (seconds === null || !isFinite(seconds)) return "Calculating";
+    if (seconds < 1) return "Less than 1 sec";
+    const roundedSeconds = Math.round(seconds);
+    const minutes = Math.floor(roundedSeconds / 60);
+    const remainderSeconds = roundedSeconds % 60;
+    if (minutes === 0) return `${remainderSeconds} sec remaining`;
+    return `${minutes} min ${remainderSeconds.toString().padStart(2, "0")} sec remaining`;
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (!bytes) return "0 MB";
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  };
+
+  const upload = () => {
+    const recordGroupId = params.id;
+    if (!recordGroupId) return;
+    if (filesToUpload.length === 0) return;
+    setUploading(true);
+    setFinishedUploading(false);
+    setProgress(0);
+    setRemainingSeconds(null);
+    setUploadedBytes(0);
+    setTotalBytes(0);
+    setUploadedFiles([]);
+    setErrorFiles([]);
+
+    const formData = new FormData();
+    filesToUpload.forEach((file) => {
+      formData.append("files", file, file.name);
+    });
+
+    uploadDocumentsBatchWithProgress(
+      formData,
+      recordGroupId,
+      userEmail,
+      false,
+      preventDuplicates,
+      runCleaningFunctions,
+      (uploadProgress) => {
+        setProgress(uploadProgress.percent);
+        setRemainingSeconds(uploadProgress.remainingSeconds);
+        setUploadedBytes(uploadProgress.loaded);
+        setTotalBytes(uploadProgress.total);
+        updateUploadedFilesFromProgress(uploadProgress);
+      }
+    ).then((response) => handleSuccessfulBatchUpload(response))
+      .catch((error) => handleBatchUploadError(error));
+  };
+
+  const handleSuccessfulBatchUpload = (response: any) => {
+    const duplicateNames = response?.duplicates || [];
+    const skippedNames = (response?.skipped || []).map((file: any) => file.filename);
+    if (duplicateNames.length || skippedNames.length) {
+      console.log("files skipped during batch upload", { duplicateNames, skippedNames });
+    }
+    setProgress(100);
+    setRemainingSeconds(0);
+    setUploadedFiles(filesToUpload.map((file) => file.name));
+    setFinishedUploading(true);
+    setTimeout(()=> {
+      window.location.reload();
+    },3000);
+  };
+
+  const handleBatchUploadError = (error: any) => {
+    console.error("batch upload failed", error);
+    setUploading(false);
+    setFinishedUploading(false);
+    setErrorFiles(filesToUpload.map((file) => file.name));
   };
 
   const handlePreventDuplicates = (e: any) => {
@@ -215,7 +263,14 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
                         </Button>
           }
           {uploading && 
-                        <CircularProgress variant="determinate" value={progress} />
+                        <Box sx={{width: "100%"}}>
+                          <LinearProgress variant="determinate" value={Math.min(progress, 100)} />
+                          <Stack direction={"row"} justifyContent={"space-between"} sx={{marginTop: 1}}>
+                            <p style={{margin: 0}}>{progress.toFixed(0)}%</p>
+                            <p style={{margin: 0}}>{formatBytes(uploadedBytes)} / {formatBytes(totalBytes)}</p>
+                            <p style={{margin: 0}}>{formatTimeRemaining(remainingSeconds)}</p>
+                          </Stack>
+                        </Box>
           }
         </Box>
       </Grid>

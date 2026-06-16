@@ -50,7 +50,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
       borderRadius: 2,
       boxShadow: 24,
       p: 2,
-      maxHeight: "75vh",
+      maxHeight: "85vh",
       overflow: "scroll",
       overflowX: "hidden"
     },
