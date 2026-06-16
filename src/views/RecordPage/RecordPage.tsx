@@ -26,6 +26,17 @@ import { convertFiltersToMongoFormat } from "../../util";
 
 const PERSIST_PAGE_ON_BREADCRUMBS_CLICK = true;
 
+const getEffectivePageNumber = (statePageNumber: number, statePageSize: number, rank: number) => {
+  let effectivePageNumber = statePageNumber;
+  if (statePageSize !== undefined && rank !== undefined) {
+    const correctPage = Math.floor((rank - 1) / statePageSize);
+    if (correctPage !== statePageNumber) {
+      effectivePageNumber = correctPage;
+    }
+  }
+  return effectivePageNumber;
+}
+
 const Record = () => {
   const [recordData, setRecordData] = useState<RecordData>({} as RecordData);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -44,7 +55,7 @@ const Record = () => {
   const navigate = useNavigate();
   const { hasPermission, userEmail } = useUserContext();
   const { state } = useLocation();
-  const { group_id, location, currentPage: statePageNumber, pageSize: statePageSize, sourceRecordGroupId } = state || {};
+  const { group_id, location, currentPage: statePageNumber, pageSize: statePageSize, sourceRecordGroupId, previousRank, direction } = state || {};
   const currentRecordIdRef = useRef<string | undefined>(params.id);
   const latestFetchRequestRef = useRef(0);
   const lockedRef = useRef(locked);
@@ -122,13 +133,8 @@ const Record = () => {
     // and use that to 'remember' where we are in the records table
     if (PERSIST_PAGE_ON_BREADCRUMBS_CLICK) { 
         // Calculate correct page for current record based on rank and page size
-        let effectivePageNumber = statePageNumber;
-        if (statePageSize !== undefined && newRecordData.rank !== undefined) {
-          const correctPage = Math.floor((newRecordData.rank - 1) / statePageSize);
-          if (correctPage !== statePageNumber) {
-            effectivePageNumber = correctPage;
-          }
-        }
+        let effectivePageNumber = getEffectivePageNumber(statePageNumber, statePageSize, newRecordData.rank);
+
         if (sourceRecordGroupId === newRecordData.rg_id && (effectivePageNumber !== undefined || statePageSize !== undefined)) {
         const params = new URLSearchParams();
         if (effectivePageNumber !== undefined) params.set('page', (effectivePageNumber + 1).toString());
@@ -166,6 +172,10 @@ const Record = () => {
       group_id: group_id,
       filterBy: filterBy,
       sortBy: sorted,
+      pageNumber: statePageNumber,
+      pageSize: statePageSize,
+      previousRank,
+      direction
     };
     const requestId = latestFetchRequestRef.current + 1;
     latestFetchRequestRef.current = requestId;
@@ -398,13 +408,13 @@ const Record = () => {
   const handleClickNext = () => {
     const next_id = recordData.next_id;
     setRecordData({} as RecordData);
-    navigateToRecord({recordData: {_id: next_id}});
+    navigateToRecord({recordData: {_id: next_id}}, "next");
   };
 
   const handleClickPrevious = () => {
     const next_id = recordData.previous_id;
     setRecordData({} as RecordData);
-    navigateToRecord({recordData: {_id: next_id}});
+    navigateToRecord({recordData: {_id: next_id}}, "previous");
   };
 
   const handleClickMarkReviewed = () => {
@@ -416,13 +426,13 @@ const Record = () => {
   useKeyDown("ArrowRight", undefined, undefined, handleClickNext, handleClickMarkReviewed, true);
 
   // Navigate to a record while preserving pagination state from source record group
-  const navigateToRecord = (data: any) => {
+  const navigateToRecord = (data: any, direction?: string) => {
     let record_data = data.recordData;
     if (record_data?._id) {
       let newUrl = "/record/" + record_data._id;
       if (record_data._id == recordData._id) window.location.reload();
       else {
-        const navState: any = { group_id: group_id, location: location, sourceRecordGroupId };
+        const navState: any = { group_id: group_id, location: location, sourceRecordGroupId, previousRank: recordData.rank, direction: direction };
         if (statePageNumber !== undefined) navState.currentPage = statePageNumber;
         if (statePageSize !== undefined) navState.pageSize = statePageSize;
         navigate(newUrl, { state: navState, replace: true });
@@ -497,6 +507,16 @@ const Record = () => {
     window.location.reload();
   };
 
+  const setImageFiles = (new_image_urls: any[]) => {
+    setRecordData(tempRecordData => {
+        const newRecordData = {
+          ...tempRecordData,
+          img_urls: [...new_image_urls],
+        };
+        return newRecordData;
+      });
+  }
+
   return (
     <Box sx={styles.outerBox}>
       <Subheader
@@ -525,6 +545,8 @@ const Record = () => {
           recordStatus={recordData.status}
           errorMessage={recordData.error_message}
           image_whitespace={recordData.image_whitespace}
+          record_group_id={recordData.record_group_id}
+          setImageFiles={setImageFiles}
         />
       </Box>
       <Bottombar

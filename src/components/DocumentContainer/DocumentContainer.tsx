@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Grid, Box, IconButton, Alert, Button } from "@mui/material";
+import { Grid, Box, IconButton, Alert, Tooltip } from "@mui/material";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import Rotate90DegreesCcwIcon from '@mui/icons-material/Rotate90DegreesCcw';
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import HistoryIcon from '@mui/icons-material/History';
 import KeyboardIcon from "@mui/icons-material/Keyboard";
@@ -13,8 +14,10 @@ import { DocumentContainerStyles as styles } from "../../styles";
 import Switch from "@mui/material/Switch";
 import TableLoading from "../TableLoading/TableLoading";
 import HotkeyInfo from "../HotkeyInfo/HotkeyInfo";
-import { getRecordHistory } from "../../services/app.service";
+import { getRecordHistory, rotateRecordImages } from "../../services/app.service";
 import RecordHistoryDialog from "../RecordHistoryDialog/RecordHistoryDialog";
+import ImageRotationDialog from "components/ImageRotationDialog/ImageRotationDialog";
+import CircularProgress from '@mui/material/CircularProgress';
 
 const HIDE_BLANK_PAGES = true;
 
@@ -26,6 +29,8 @@ const DocumentContainer = ({
   recordStatus,
   errorMessage,
   image_whitespace,
+  record_group_id,
+  setImageFiles,
   ...attributeTableProps
 }: DocumentContainerProps) => {
 
@@ -40,7 +45,6 @@ const DocumentContainer = ({
   const [forceOpenSubtable, setForceOpenSubtable] = useState<number | null>(null);
   const [imageHeight, setImageHeight] = useState(0);
   const [ showRawValues, setShowRawValues ] = useState(false);
-  const [ autoCleanFields, setAutoCleanFields ] = useState(true);
   const [ hasErrors, setHasErrors ] = useState(false);
   const [ zoomOnToken, setZoomOnToken ] = useState(JSON.parse(localStorage.getItem("zoomOnToken") || "false"));
   const [updateFieldLocationID, setUpdateFieldLocationID] = useState<FieldID>();
@@ -48,6 +52,8 @@ const DocumentContainer = ({
   const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
   const [recordHistory, setRecordHistory] = useState<RecordHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [openRotationDialog, setOpenRotationDialog] = useState(false);
+  const [rotationLoading, setRotationLoading] = useState(false);
 
   const imageDivStyle = {
     width: width,
@@ -366,6 +372,32 @@ const DocumentContainer = ({
     );
   };
 
+  const handleRotateImages = (selectedIndices: number[], degrees: number) => {
+    if (!params.id || !record_group_id) {
+      console.error("Missing record ID or record group ID");
+      return;
+    }
+
+    setRotationLoading(true);
+    callAPI(
+      rotateRecordImages,
+      [params.id, selectedIndices, degrees, record_group_id],
+      (response: any) => {
+        // console.log("Images rotated successfully:", response);
+        setRotationLoading(false);
+        setOpenRotationDialog(false);
+        setImageFiles(response.new_image_urls);
+      },
+      (error, status) => {
+        console.error("Error rotating images:", status, error);
+        setRotationLoading(false);
+        // Optionally show an error message to the user
+      }
+    );
+  };
+
+
+
   const showErrorState = !loading && !attributesList && recordStatus === "error";
   const resolvedErrorMessage = errorMessage || "Unknown error.";
 
@@ -434,23 +466,45 @@ const DocumentContainer = ({
                     <Grid item xs={gridWidths[0]}>
                       <Box sx={styles.gridContainer}>
                         <Box sx={styles.containerActions.right}>
+                          <Tooltip title="Rotate Image(s)" placement="left">
+                            <IconButton id="rotate-image-button" onClick={() => setOpenRotationDialog(true)}>
+                              <Rotate90DegreesCcwIcon/>
+                            </IconButton>
+                          </Tooltip>
                           <IconButton id='fullscreen-image-button' onClick={() => handleSetFullscreen("image")}>
                             { 
                               fullscreen === "image" ? <FullscreenExitIcon/> : <FullscreenIcon/> 
                             }
                           </IconButton>
                         </Box>
-                        <Box id="image-box" sx={styles.imageBox}>
-                                
-                          {imageFiles &&
-                                imageFiles.map((imageFile, idx) => {
-                                  let display_image = true;
-                                  if (HIDE_BLANK_PAGES && image_whitespace?.[idx] && image_whitespace?.[idx].is_mostly_whitespace) {
-                                    display_image = false;
-                                  }
-                                  if (display_image) return (
+                        <Box
+                          id="image-box"
+                          sx={{
+                            ...styles.imageBox,
+                            position: "relative",
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              opacity: rotationLoading ? 0.45 : 1,
+                              transition: "opacity 180ms ease",
+                            }}
+                          >
+                            {imageFiles &&
+                              imageFiles.map((imageFile, idx) => {
+                                let display_image = true;
+                                if (
+                                  HIDE_BLANK_PAGES &&
+                                  image_whitespace?.[idx] &&
+                                  image_whitespace?.[idx].is_mostly_whitespace
+                                ) {
+                                  display_image = false;
+                                }
+
+                                if (display_image)
+                                  return (
                                     <div key={imageFile} style={imageDivStyle} id="image-div">
-                                      <ImageCropper 
+                                      <ImageCropper
                                         image={imageFile}
                                         imageIdx={idx}
                                         highlightedImageIdxIndex={imgIndex}
@@ -463,9 +517,30 @@ const DocumentContainer = ({
                                         handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
                                       />
                                     </div>
-                                  )
-                                })
-                          }
+                                  );
+
+                                return null;
+                              })}
+                          </Box>
+
+                          {rotationLoading && (
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                inset: 0,
+                                zIndex: 9999,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor: "rgba(0, 0, 0, 0.18)",
+                                backdropFilter: "blur(1px)",
+                                pointerEvents: "none", // let the overlay not block anything if you prefer
+                                transition: "opacity 180ms ease",
+                              }}
+                            >
+                              <CircularProgress />
+                            </Box>
+                          )}
                         </Box>
                       </Box>
                     </Grid>
@@ -477,6 +552,12 @@ const DocumentContainer = ({
         onClose={() => setOpenHistoryDialog(false)}
         history={recordHistory}
         loading={historyLoading}
+      />
+      <ImageRotationDialog
+        open={openRotationDialog}
+        imageFiles={imageFiles || []}
+        onClose={() => setOpenRotationDialog(false)}
+        onSubmit={handleRotateImages}
       />
     </Box>
   );

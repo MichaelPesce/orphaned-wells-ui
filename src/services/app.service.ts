@@ -403,3 +403,21 @@ export const deleteProcessorSchema = (processor_name: string) => {
     mode: CORS_MODE,
   });
 };
+
+export const rotateRecordImages = (
+  recordId: string,
+  selectedImageIndices: number[],
+  rotationDegrees: number,
+  recordGroupId: string
+) => {
+  return fetch(BACKEND_URL + `/rotate_images/${recordId}`, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: JSON.stringify({
+      selectedImageIndices,
+      rotationDegrees,
+      recordGroupId,
+    }),
+    headers: JSON_HEADERS,
+  });
+};
