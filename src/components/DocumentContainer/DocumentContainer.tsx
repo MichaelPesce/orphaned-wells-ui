@@ -453,6 +453,7 @@ const DocumentContainer = ({
                             displayKeySubattributeIndex={displayKeySubattributeIndex}
                             showRawValues={showRawValues}
                             setUpdateFieldLocationID={setUpdateFieldLocationID}
+                            parentIndexes={[]}
                             {...attributeTableProps}
                           />
                         ) : (

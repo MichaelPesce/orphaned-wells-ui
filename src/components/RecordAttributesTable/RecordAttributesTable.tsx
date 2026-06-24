@@ -48,6 +48,8 @@ const AttributesTable = (props: AttributesTableProps) => {
     topLevelKey = "",
     topLevelIdx = -1,
     forceOpenSubtable=false,
+    parentIndexes=[],
+    recordSchema,
     ...childProps
   } = props;
 
@@ -66,13 +68,14 @@ const AttributesTable = (props: AttributesTableProps) => {
   const ref = useOutsideClick(handleClickOutside);
   const params = useParams<{ id: string }>();
 
-  if (topLevelKey) {return (
+  if (topLevelKey) {
+    return (
     <TableRow>
       <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
         <Collapse in={open} timeout="auto" unmountOnExit>
           <Box sx={{ margin: 1 }}>
             <Typography variant="h6" gutterBottom component="div">
-              {topLevelKey} Properties
+              {recordSchema[topLevelKey]?.alias || topLevelKey} Properties
             </Typography>
             <Table size="small" aria-label="purchases" sx={styles.subattributesTable}>
               <TableHead>
@@ -97,6 +100,8 @@ const AttributesTable = (props: AttributesTableProps) => {
                     topLevelIdx={topLevelIdx}
                     record_id={params.id}
                     handleClickOutside={handleClickOutside}
+                    recordSchema={recordSchema}
+                    parentIndexes={parentIndexes}
                     {...childProps}
                   />
                 ))}
@@ -130,6 +135,8 @@ const AttributesTable = (props: AttributesTableProps) => {
                           idx={idx}
                           record_id={params.id}
                           handleClickOutside={handleClickOutside}
+                          recordSchema={recordSchema}
+                          parentIndexes={parentIndexes}
                           {...childProps}
                         />
           ))}
@@ -161,6 +168,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     handleClickOutside,
     topLevelIdx = -1,
     topLevelKey,
+    parentIndexes,
     ...childProps
   } = props;
 
@@ -180,8 +188,14 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     deleteField,
     setUpdateFieldLocationID,
   } = childProps;
+  const {
+    parentAttribute
+  } = v;
+
+  // console.log(parentIndexes);
+
   const isSubattribute = (topLevelIdx && topLevelIdx > -1) ? true : false;
-  const schemaKey = isSubattribute ? `${topLevelKey}::${k}` : k;
+  const schemaKey = isSubattribute ? `${parentAttribute || topLevelKey}::${k}` : k;
   const primaryIndex = isSubattribute ? topLevelIdx : idx;
   const subIndex = isSubattribute ? idx : null;
   const coordinates = v.user_provided_coordinates || v.normalized_vertices;
@@ -207,6 +221,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   const schemaDataType = recordSchema[schemaKey]?.google_data_type ?? recordSchema[schemaKey]?.data_type;
   const dbDataType = recordSchema[schemaKey]?.database_data_type;
   const isParent = schemaDataType?.toLowerCase() === "parent";
+  const hasSubattributes = v.subattributes?.length;
 
   useEffect(() => {
     const tempChildFields = [];
@@ -241,7 +256,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   }, [displayKeyIndex, topLevelIdx, displayKeySubattributeIndex]);
 
   const handleClickInside = (e: React.MouseEvent<HTMLTableRowElement>) => {
-    if (v.subattributes) setOpenSubtable(!openSubtable);
+    if (hasSubattributes) setOpenSubtable(!openSubtable);
     e.stopPropagation();
     handleClickField(fieldId, coordinates);
   };
@@ -492,7 +507,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             {v.alias || k}
           </span>
           {
-            v.subattributes &&
+            hasSubattributes ?
                     <IconButton
                       aria-label="expand row"
                       size="small"
@@ -500,7 +515,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     >
                       {openSubtable ? <KeyboardArrowUpIcon sx={styles.rowIcon}/> : <KeyboardArrowDownIcon sx={styles.rowIcon}/>}
                     </IconButton>
-          }
+          : null}
         </TableCell>
         {
           isParent ? 
@@ -654,18 +669,19 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         {getRowOptionsIcon()}
       </TableRow>
       {
-        v.subattributes &&
+        hasSubattributes ?
             <AttributesTable
-              attributesList={v.subattributes}
+              attributesList={v.subattributes || []}
               topLevelIdx={idx} 
-              topLevelKey={k}
+              topLevelKey={schemaKey}
               open={openSubtable}
               record_id={record_id}
               reviewStatus={reviewStatus}
               handleClickOutside={handleClickOutside}
+              parentIndexes={[...parentIndexes, idx]}
               {...childProps}
             />
-      }
+      : null}
     </>
   );
 });

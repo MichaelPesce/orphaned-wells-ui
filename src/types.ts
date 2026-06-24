@@ -110,6 +110,7 @@ export interface Attribute {
     topLevelAttribute?: string;
     user_provided_coordinates?: number[][];
     alias?: string | null;
+    parentAttribute?: string;
 }
 
 export interface WhitespaceDetectionResult {
@@ -277,6 +278,7 @@ export interface RecordAttributesTableProps {
     deleteField: deleteFieldSignature;
     reviewStatus: string;
     setUpdateFieldLocationID: (v?: FieldID) => void;
+    parentIndexes: number[];
 }
 
 export interface RecordsTableProps {
