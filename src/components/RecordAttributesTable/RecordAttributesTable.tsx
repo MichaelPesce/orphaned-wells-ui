@@ -235,7 +235,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   const isParent = schemaDataType?.toLowerCase() === "parent";
   const hasSubattributes = v.subattributes?.length;
 
-  const thisAlias = recordSchema[schemaKey]?.alias || schemaKey;
+  const thisAlias = recordSchema[schemaKey]?.alias || k;
 
   useEffect(() => {
     const tempChildFields: string[] = [];
@@ -506,7 +506,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             )
           }
           {v.user_added && 
-                        <MenuItem onClick={handleClickDeleteField}>Delete this '{k}'</MenuItem>
+                        <MenuItem onClick={handleClickDeleteField}>Delete this '{thisAlias}'</MenuItem>
           }
         </Menu>
       </TableCell> 
@@ -518,7 +518,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       <TableRow id={tableId} sx={fieldIsSelected ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
         <TableCell sx={styles.fieldKey}>
           <span>
-            {v.alias || k}
+            {thisAlias}
           </span>
           {
             hasSubattributes ?
