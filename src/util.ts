@@ -797,9 +797,13 @@ export const deriveAttribute = (indexes: number[], attributesList: Attribute[]) 
   indexes.forEach((idx) => {
     current_attr = current_attributes_list[idx];
     current_attributes_list = current_attr?.subattributes || [];
-  })
+  });
   return current_attr;
-}
+};
+
+export const getAttributeRowId = (indexes: number[]) => {
+  return `attribute-row-${indexes.join("-")}`;
+};
 
 export const callAPI = async (
   apiFunc: (...args: any[]) => Promise<Response>, 
