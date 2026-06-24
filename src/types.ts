@@ -111,6 +111,7 @@ export interface Attribute {
     user_provided_coordinates?: number[][];
     alias?: string | null;
     parentAttribute?: string;
+    page?: number;
 }
 
 export interface WhitespaceDetectionResult {
@@ -241,6 +242,7 @@ export interface FieldID {
     subIndex?: number | null;
     isSubattribute?: boolean;
     parentKey?: string;
+    indexes: number[];
 }
 
 export interface SchemaRecord {

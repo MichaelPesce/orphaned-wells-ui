@@ -61,7 +61,8 @@ const AttributesTable = (props: AttributesTableProps) => {
   const handleClickOutside = () => {
     const emptyField: FieldID = {
       key: "",
-      primaryIndex: -1
+      primaryIndex: -1,
+      indexes: [-1],
     };
     handleClickField(emptyField, null);
   };
@@ -206,6 +207,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     isSubattribute: isSubattribute,
     subIndex: subIndex,
     parentKey: topLevelKey,
+    indexes: [...parentIndexes, idx],
   };
     
   const [ editMode, setEditMode ] = useState(false);
@@ -222,6 +224,8 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   const dbDataType = recordSchema[schemaKey]?.database_data_type;
   const isParent = schemaDataType?.toLowerCase() === "parent";
   const hasSubattributes = v.subattributes?.length;
+
+  const thisAlias = recordSchema[schemaKey]?.alias || schemaKey;
 
   useEffect(() => {
     const tempChildFields = [];
@@ -272,6 +276,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       primaryIndex: primaryIndex,
       subIndex: subIndex,
       isSubattribute: isSubattribute,
+      indexes: [...parentIndexes, idx],
     };
     const data: {
             fieldId: FieldID,
@@ -431,6 +436,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       primaryIndex: idx,
       isSubattribute: true,
       subIndex: subIdx,
+      indexes: [...parentIndexes, subIdx],
     };
     insertField(childId, k);
   };
@@ -445,7 +451,8 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       key: k,
       primaryIndex,
       subIndex,
-      isSubattribute
+      isSubattribute,
+      indexes: [...parentIndexes, idx],
     };
     setUpdateFieldLocationID(fieldID);
     setMenuAnchor(null);
@@ -472,7 +479,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
           onClick={(e) => e.stopPropagation()}
         >
           {allowMultiple && 
-                        <MenuItem onClick={handleClickInsertField}>Add another '{k}'</MenuItem>
+                        <MenuItem onClick={handleClickInsertField}>Add another '{thisAlias}'</MenuItem>
           }
           {
             childFields.map((childField) => (
@@ -480,7 +487,10 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                 key={childField} 
                 onClick={() => handleClickAddChildField(childField)}
               >
-                                Add child field '{childField.replace(`${k}::`, "")}'
+                                Add child field '{
+                                  recordSchema[childField]?.alias ||
+                                  childField.replace(`${schemaKey}::`, "")
+                                }'
               </MenuItem>
             ))
           }

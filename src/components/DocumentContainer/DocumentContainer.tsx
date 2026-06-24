@@ -9,7 +9,7 @@ import KeyboardIcon from "@mui/icons-material/Keyboard";
 import { ImageCropper } from "../ImageCropper/ImageCropper";
 import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI } from "../../util";
 import AttributesTable from "../RecordAttributesTable/RecordAttributesTable";
-import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID, RecordHistoryItem } from "../../types";
+import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID, RecordHistoryItem, Attribute } from "../../types";
 import { DocumentContainerStyles as styles } from "../../styles";
 import Switch from "@mui/material/Switch";
 import TableLoading from "../TableLoading/TableLoading";
@@ -38,6 +38,8 @@ const DocumentContainer = ({
   const [displayPoints, setDisplayPoints] = useState<number[][] | null>(null);
   const [displayKeyIndex, setDisplayKeyIndex] = useState(-1);
   const [displayKeySubattributeIndex, setDisplayKeySubattributeIndex] = useState<number | null>(null);
+  const [displayIndexes, setDisplayIndexes] = useState<number[]>([]);
+  const [displayAttribute, setDisplayAttribute] = useState<Attribute>();
   const [fullscreen, setFullscreen] = useState<string | null>(null);
   const [gridWidths, setGridWidths] = useState<number[]>([5.9, 0.2, 5.9]);
   const [width, setWidth] = useState("100%");
@@ -98,20 +100,10 @@ const DocumentContainer = ({
   },[attributesList]);
 
   useEffect(() => {
-    let newImgIdx;
-    if (displayKeyIndex !== -1 && displayKeySubattributeIndex !== null) {
-      newImgIdx = attributesList[displayKeyIndex].subattributes[displayKeySubattributeIndex].page;
-    } 
-    else if (displayKeyIndex !== -1) {
-      newImgIdx = attributesList[displayKeyIndex].page;
-    }
-    else {
-      newImgIdx = 0;
-    }
-    if (newImgIdx === null || newImgIdx === undefined) newImgIdx = 0;
+    let newImgIdx = displayAttribute?.page || 0;
     setImgIndex(newImgIdx);
         
-  }, [displayKeyIndex, displayKeySubattributeIndex]);
+  }, [displayAttribute]);
 
   useEffect(() => {
     if (imageFiles && imageFiles.length > 0) {
@@ -130,6 +122,7 @@ const DocumentContainer = ({
     setHotkeysAnchor(undefined);
     setDisplayPoints(null);
     setDisplayKeyIndex(-1);
+    setDisplayIndexes([]);
   }, [params.id]);
 
   const getVisualPageNumber = (pageNumber: number) => {
@@ -224,6 +217,7 @@ const DocumentContainer = ({
       isSubattribute: isSubattribute,
       subIndex: nextSubindex,
       parentKey,
+      indexes: nextSubindex ? [nextIndex, nextSubindex] : [nextIndex], // TODO: we need to use entire list of indexes here
     };
     return [tempFieldID, nextCoordinates];
   };
@@ -287,15 +281,26 @@ const DocumentContainer = ({
   useKeyDown("ArrowDown", tabCallback);
 
   const handleClickField = React.useCallback((fieldID: FieldID, coordinates: number[][] | null, forceDisplay: boolean = false, pageNumber?: number) => {
-    const { key, primaryIndex, subIndex = 0, isSubattribute } = fieldID;
-    if (!forceDisplay && (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex))) {
+    const { key, primaryIndex, subIndex = 0, isSubattribute, indexes } = fieldID;
+    const fieldIsAlreadySelected = indexes.length === displayIndexes.length && indexes.every((val, index) => val === displayIndexes[index]);
+    // if (!forceDisplay && (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex))) {
+    if (!forceDisplay && (!key || fieldIsAlreadySelected)) {
       setDisplayPoints(null);
-      setDisplayKeyIndex(-1);
-      setDisplayKeySubattributeIndex(null);
+      // setDisplayKeyIndex(-1);
+      // setDisplayKeySubattributeIndex(null);
+      setDisplayIndexes([]);
     }
     else {
-      setDisplayKeyIndex(primaryIndex);
-      setDisplayKeySubattributeIndex(subIndex);
+      setDisplayIndexes([...indexes]);
+      // setDisplayKeyIndex(primaryIndex);
+      // setDisplayKeySubattributeIndex(subIndex);
+      let current_attr: any | undefined = undefined;
+      let current_attributes_list: any[] = attributesList;
+      indexes.forEach((idx) => {
+        current_attr = current_attributes_list[idx];
+        current_attributes_list = current_attr?.subattributes || [];
+      })
+      setDisplayAttribute(current_attr);
       if (coordinates !== null && coordinates !== undefined) {
         const percentage_vertices: number[][] = [];
         for (let each of coordinates) {
@@ -303,9 +308,7 @@ const DocumentContainer = ({
         }
         let page = 0;
         try {
-          let attr = attributesList[primaryIndex];
-          if (isSubattribute) attr = attr.subattributes[subIndex as number];
-          if (attr.page !== undefined) page = attr.page;
+          if (current_attr?.page !== undefined) page = current_attr?.page;
         } catch (e) {
           console.log("error getting page");
           console.log(e);
@@ -319,7 +322,7 @@ const DocumentContainer = ({
         setDisplayPoints(null);
       }
     }
-  }, [imageFiles, displayKeyIndex, displayKeySubattributeIndex]);
+  }, [imageFiles, displayIndexes, ]); //displayKeyIndex, displayKeySubattributeIndex]);
     
 
   const handleSetFullscreen = (item: string) => {
