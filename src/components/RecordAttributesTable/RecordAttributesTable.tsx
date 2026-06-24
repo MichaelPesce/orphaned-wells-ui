@@ -176,8 +176,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   const { 
     handleClickField,
     handleChangeValue,
-    displayKeyIndex,
-    displayKeySubattributeIndex,
+    displayIndexes,
     locked,
     showRawValues,
     recordSchema,
@@ -201,23 +200,25 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   const subIndex = isSubattribute ? idx : null;
   const coordinates = v.user_provided_coordinates || v.normalized_vertices;
   const tableId = isSubattribute ? `${k}::${primaryIndex}::${idx}` : `${k}::${idx}`;
+  const thisFieldIndexes = [...parentIndexes, idx];
   const fieldId: FieldID = {
     key: k,
     primaryIndex: primaryIndex,
     isSubattribute: isSubattribute,
     subIndex: subIndex,
     parentKey: topLevelKey,
-    indexes: [...parentIndexes, idx],
+    indexes: thisFieldIndexes,
   };
     
   const [ editMode, setEditMode ] = useState(false);
   const [ openSubtable, setOpenSubtable ] = useState(true);
-  const [ isSelected, setIsSelected ] = useState(false);
   const [ lastSavedValue, setLastSavedValue ] = useState(v.value);
   const [ menuAnchor, setMenuAnchor ] = useState<null | HTMLElement>(null);
   const [ showActions, setShowActions ] = useState(false);
   const [ childFields, setChildFields ] = useState<string[]>([]);
   const { hasPermission } = useUserContext();
+
+  const fieldIsSelected = thisFieldIndexes.length === displayIndexes.length && thisFieldIndexes.every((val, index) => val === displayIndexes[index]);
 
   const allowMultiple = recordSchema[schemaKey]?.occurrence?.toLowerCase().includes("multiple");
   const schemaDataType = recordSchema[schemaKey]?.google_data_type ?? recordSchema[schemaKey]?.data_type;
@@ -241,23 +242,26 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   }, [v]);
 
   useEffect(() => {
-    if (isSubattribute){
-      if (displayKeyIndex === topLevelIdx && idx === displayKeySubattributeIndex) {
-        setIsSelected(true);
-      } else {
-        setIsSelected(false);
-        if (editMode) finishEditing();
-      }
-    } else {
-      if (idx === displayKeyIndex && (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined))
-        setIsSelected(true);
-      else  {
-        setIsSelected(false);
-        if (editMode) finishEditing();
-      }
-    }
+    // if (isSubattribute){
+    //   if (displayKeyIndex === topLevelIdx && idx === displayKeySubattributeIndex) {
+    //     setIsSelected(true);
+    //   } else {
+    //     setIsSelected(false);
+    //     if (editMode) finishEditing();
+    //   }
+    // } else {
+    //   if (idx === displayKeyIndex && (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined))
+    //     setIsSelected(true);
+    //   else  {
+    //     setIsSelected(false);
+    //    if (editMode) finishEditing();
+    //   }
+    // }
 
-  }, [displayKeyIndex, topLevelIdx, displayKeySubattributeIndex]);
+    // TODO: what were we doing here ^
+    // if (fieldIsSelected && editMode) finishEditing();
+
+  }, [displayIndexes, topLevelIdx]); // , displayKeyIndex, displayKeySubattributeIndex]);
 
   const handleClickInside = (e: React.MouseEvent<HTMLTableRowElement>) => {
     if (hasSubattributes) setOpenSubtable(!openSubtable);
@@ -325,14 +329,16 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   };
 
   useKeyDown("Enter", () => {
-    if (isSelected) {
+    // if (isSelected) {
+    if (fieldIsSelected) {
       if (editMode) finishEditing();
       else makeEditable();
     }
   }, undefined, undefined, undefined, true);
 
   useKeyDown("Escape", () => {
-    if (isSelected) {
+    // if (isSelected) {
+    if (fieldIsSelected) {
       if (editMode) {
         // reset to last saved value
         if (v.value !== lastSavedValue) {
@@ -361,7 +367,6 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       makeEditable();
       handleClickField(fieldId, coordinates);
     } else if (forceEditMode[0] !== -1) {
-      setIsSelected(false);
       setEditMode(false);
     }
   }, [forceEditMode]);
@@ -511,7 +516,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
   return (
     <>
-      <TableRow id={tableId} sx={(isSelected) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
+      <TableRow id={tableId} sx={fieldIsSelected ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
         <TableCell sx={styles.fieldKey}>
           <span>
             {v.alias || k}
@@ -555,7 +560,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     :
                     <p style={v.cleaning_error ? styles.errorParagraph : styles.noErrorParagraph}>
                       {formatAttributeValue(v.value)}&nbsp;
-                      {isSelected && !locked &&
+                      {fieldIsSelected && !locked &&
                                     <IconButton id='edit-field-icon' sx={styles.rowIconButton} onClick={handleClickEditIcon}>
                                       <EditIcon sx={styles.rowIcon}/>
                                     </IconButton>
@@ -577,7 +582,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                   )
                 }
                 {
-                  (isSelected && !showRawValues) &&(
+                  (fieldIsSelected && !showRawValues) &&(
                     <span>
                       {
                         showAutocleanDisclaimer() &&

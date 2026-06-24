@@ -10,6 +10,7 @@ import {
   HistoryAttribute,
   QuerySummary,
   QuerySummaryLine,
+  Attribute,
 } from "./types";
 
 export const DEFAULT_FILTER_OPTIONS: {
@@ -789,6 +790,16 @@ export const scrollToAttribute = (boxId: string, heightId: string, top: number, 
     console.error("failed to scroll");
   }
 };
+
+export const deriveAttribute = (indexes: number[], attributesList: Attribute[]) => {
+  let current_attr: any | undefined = undefined;
+  let current_attributes_list: Attribute[] = attributesList;
+  indexes.forEach((idx) => {
+    current_attr = current_attributes_list[idx];
+    current_attributes_list = current_attr?.subattributes || [];
+  })
+  return current_attr;
+}
 
 export const callAPI = async (
   apiFunc: (...args: any[]) => Promise<Response>, 

@@ -7,7 +7,7 @@ import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import HistoryIcon from '@mui/icons-material/History';
 import KeyboardIcon from "@mui/icons-material/Keyboard";
 import { ImageCropper } from "../ImageCropper/ImageCropper";
-import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI } from "../../util";
+import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI, deriveAttribute } from "../../util";
 import AttributesTable from "../RecordAttributesTable/RecordAttributesTable";
 import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID, RecordHistoryItem, Attribute } from "../../types";
 import { DocumentContainerStyles as styles } from "../../styles";
@@ -137,6 +137,7 @@ const DocumentContainer = ({
   }
 
   const getNextField = (direction: string = "down", currentIndex: number = displayKeyIndex, currentSubindex: number | null = displayKeySubattributeIndex) => {
+    // TODO: use displayIndexes for this, then remove displayKeyIndex and displayKeySubattributeIndex
     let nextIndex: number;
     let nextSubindex: number | null;
     let isSubattribute: boolean;
@@ -283,23 +284,13 @@ const DocumentContainer = ({
   const handleClickField = React.useCallback((fieldID: FieldID, coordinates: number[][] | null, forceDisplay: boolean = false, pageNumber?: number) => {
     const { key, primaryIndex, subIndex = 0, isSubattribute, indexes } = fieldID;
     const fieldIsAlreadySelected = indexes.length === displayIndexes.length && indexes.every((val, index) => val === displayIndexes[index]);
-    // if (!forceDisplay && (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex))) {
     if (!forceDisplay && (!key || fieldIsAlreadySelected)) {
       setDisplayPoints(null);
-      // setDisplayKeyIndex(-1);
-      // setDisplayKeySubattributeIndex(null);
       setDisplayIndexes([]);
     }
     else {
       setDisplayIndexes([...indexes]);
-      // setDisplayKeyIndex(primaryIndex);
-      // setDisplayKeySubattributeIndex(subIndex);
-      let current_attr: any | undefined = undefined;
-      let current_attributes_list: any[] = attributesList;
-      indexes.forEach((idx) => {
-        current_attr = current_attributes_list[idx];
-        current_attributes_list = current_attr?.subattributes || [];
-      })
+      let current_attr = deriveAttribute(indexes, attributesList);
       setDisplayAttribute(current_attr);
       if (coordinates !== null && coordinates !== undefined) {
         const percentage_vertices: number[][] = [];
@@ -322,7 +313,7 @@ const DocumentContainer = ({
         setDisplayPoints(null);
       }
     }
-  }, [imageFiles, displayIndexes, ]); //displayKeyIndex, displayKeySubattributeIndex]);
+  }, [imageFiles, displayIndexes]);
     
 
   const handleSetFullscreen = (item: string) => {
@@ -452,8 +443,7 @@ const DocumentContainer = ({
                             handleClickField={handleClickField}
                             fullscreen={fullscreen}
                             forceOpenSubtable={forceOpenSubtable}
-                            displayKeyIndex={displayKeyIndex}
-                            displayKeySubattributeIndex={displayKeySubattributeIndex}
+                            displayIndexes={displayIndexes}
                             showRawValues={showRawValues}
                             setUpdateFieldLocationID={setUpdateFieldLocationID}
                             parentIndexes={[]}

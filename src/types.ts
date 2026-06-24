@@ -268,8 +268,7 @@ export interface RecordAttributesTableProps {
     handleClickField: handleClickFieldSignature;
     handleChangeValue: handleChangeValueSignature;
     fullscreen: string | null;
-    displayKeyIndex: number;
-    displayKeySubattributeIndex: number | null;
+    displayIndexes: number[];
     locked?: boolean;
     showRawValues?: boolean;
     recordSchema: RecordSchema;
