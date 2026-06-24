@@ -40,6 +40,13 @@ function showOCRRawValue(v: Attribute) {
   return false;
 }
 
+function getAttributeResponseKey(indexes: number[]) {
+  return indexes.reduce((path, idx, indexPosition) => {
+    if (indexPosition === 0) return `${path}.${idx}`;
+    return `${path}.subattributes.${idx}`;
+  }, "attributesList");
+}
+
 
 const AttributesTable = (props: AttributesTableProps) => {
   const { 
@@ -270,11 +277,6 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   };
 
   const handleSuccess = (resp: any) => {
-    let newV;
-    if (isSubattribute)
-      newV = resp?.[`attributesList.${topLevelIdx}.subattributes.${idx}`];
-    else
-      newV = resp?.["attributesList."+idx];
     const fieldId: FieldID = {
       key: k,
       primaryIndex: primaryIndex,
@@ -282,6 +284,13 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       isSubattribute: isSubattribute,
       indexes: [...parentIndexes, idx],
     };
+    const attributeResponseKey = getAttributeResponseKey(fieldId.indexes);
+    const newV = resp?.[attributeResponseKey];
+    if (newV === undefined) {
+      console.error(`attribute update response missing ${attributeResponseKey}`);
+      return;
+    }
+
     const data: {
             fieldId: FieldID,
             v: any;
@@ -308,15 +317,17 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     if (locked) return;
     const body: {
             data: { key: string; idx: number; v: any, review_status?: string
-            isSubattribute?: boolean, subIndex?: number | null};
+            isSubattribute?: boolean, subIndex?: number | null,
+            indexes: number[]};
             type: string;
             fieldToClean: any;
-          } = { data: { key: k, idx: primaryIndex, v: v, review_status: reviewStatus, isSubattribute: isSubattribute, subIndex: subIndex}, type: "attribute", fieldToClean: null };
+          } = { data: { key: k, idx: primaryIndex, v: v, review_status: reviewStatus, isSubattribute: isSubattribute, subIndex: subIndex, indexes: thisFieldIndexes}, type: "attribute", fieldToClean: null };
     if (cleanFields) {
       const fieldToClean = {
         topLevelIndex: primaryIndex,
         isSubattribute: isSubattribute,
         subIndex: subIndex,
+        indexes: thisFieldIndexes,
       };
       body["fieldToClean"] = fieldToClean;
     }
