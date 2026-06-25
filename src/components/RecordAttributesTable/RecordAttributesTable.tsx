@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Menu,
 import { Box, TextField, Collapse, Typography, IconButton, Badge, Tooltip, Stack } from "@mui/material";
 
 import { updateRecord } from "../../services/app.service";
-import { formatConfidence, useKeyDown, useOutsideClick, formatAttributeValue, formatDateTime, callAPI, getAttributeRowId } from "../../util";
+import { formatConfidence, useKeyDown, useOutsideClick, formatAttributeValue, formatDateTime, callAPI, getAttributeRowId, deriveAttribute } from "../../util";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import InfoIcon from "@mui/icons-material/Info";
@@ -23,7 +23,7 @@ interface AttributesTableProps extends RecordAttributesTableProps {
     forceOpenSubtable?: number[] | null;
     open?: boolean;
     topLevelIdx?: number;
-    topLevelKey?: string;
+    parentKey?: string;
     record_id?: string;
     handleClickOutside?: () => void;
 }
@@ -92,7 +92,7 @@ const AttributesTable = (props: AttributesTableProps) => {
   const { 
     attributesList,
     open,
-    topLevelKey = "",
+    parentKey = "",
     topLevelIdx = -1,
     forceOpenSubtable=null,
     parentIndexes=EMPTY_PARENT_INDEXES,
@@ -118,14 +118,14 @@ const AttributesTable = (props: AttributesTableProps) => {
   const ref = useOutsideClick(effectiveHandleClickOutside);
   const params = useParams<{ id: string }>();
 
-  if (topLevelKey) {
+  if (parentKey) {
     return (
     <TableRow>
       <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
         <Collapse in={open} timeout="auto" unmountOnExit>
           <Box sx={{ margin: 1 }}>
             <Typography variant="h6" gutterBottom component="div">
-              {recordSchema[topLevelKey]?.alias || topLevelKey} Properties
+              {recordSchema[parentKey]?.alias || parentKey} Properties
             </Typography>
             <Table size="small" aria-label="purchases" sx={styles.subattributesTable}>
               <TableHead>
@@ -146,7 +146,6 @@ const AttributesTable = (props: AttributesTableProps) => {
                     k={v.key}
                     v={v}
                     idx={idx}
-                    topLevelKey={topLevelKey}
                     topLevelIdx={topLevelIdx}
                     forceOpenSubtable={forceOpenSubtable}
                     record_id={params.id}
@@ -202,7 +201,6 @@ interface AttributeRowProps extends RecordAttributesTableProps {
     k: string;
     v: Attribute;
     idx: number;
-    topLevelKey?: string;
     topLevelIdx?: number;
     forceOpenSubtable?: number[] | null;
     record_id?: string;
@@ -219,7 +217,6 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     reviewStatus,
     handleClickOutside,
     topLevelIdx = -1,
-    topLevelKey,
     parentIndexes,
     ...childProps
   } = props;
@@ -243,11 +240,9 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     parentAttribute
   } = v;
 
-  // console.log(parentIndexes);
-
   const thisFieldIndexes = useMemo(() => [...parentIndexes, idx], [parentIndexes, idx]);
   const isSubattribute = thisFieldIndexes.length > 1;
-  const schemaKey = isSubattribute ? `${topLevelKey || parentAttribute}::${k}` : k;
+  const schemaKey = isSubattribute ? `${parentAttribute}::${k}` : k;
   const primaryIndex = thisFieldIndexes[0] ?? idx;
   const subIndex = isSubattribute ? thisFieldIndexes[thisFieldIndexes.length - 1] : null;
   const coordinates = v.user_provided_coordinates || v.normalized_vertices;
@@ -257,7 +252,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     primaryIndex: primaryIndex,
     isSubattribute: isSubattribute,
     subIndex: subIndex,
-    parentKey: topLevelKey,
+    parentKey: parentAttribute,
     indexes: thisFieldIndexes,
   };
     
@@ -457,7 +452,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     setShowActions(false);
     setMenuAnchor(null);
     handleClickOutside();
-    insertField(fieldId, topLevelKey);
+    insertField(fieldId, parentAttribute);
   };
 
   const handleClickDeleteField = () => {
@@ -480,7 +475,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       primaryIndex: primaryIndex,
       isSubattribute: true,
       subIndex: subIdx,
-      parentKey: topLevelKey,
+      parentKey: parentAttribute,
       indexes: [...thisFieldIndexes, subIdx],
     };
     insertField(childId, schemaKey);
@@ -729,7 +724,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             <AttributesTable
               attributesList={v.subattributes || []}
               topLevelIdx={primaryIndex} 
-              topLevelKey={schemaKey}
+              parentKey={schemaKey}
               open={openSubtable}
               record_id={record_id}
               reviewStatus={reviewStatus}
@@ -746,7 +741,6 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     prevProps.k === nextProps.k &&
     prevProps.v === nextProps.v &&
     prevProps.idx === nextProps.idx &&
-    prevProps.topLevelKey === nextProps.topLevelKey &&
     prevProps.topLevelIdx === nextProps.topLevelIdx &&
     prevProps.record_id === nextProps.record_id &&
     prevProps.handleClickOutside === nextProps.handleClickOutside &&
