@@ -51,6 +51,7 @@ const DocumentContainer = ({
   image_whitespace,
   record_group_id,
   setImageFiles,
+  attributesTableUpdating = false,
   ...attributeTableProps
 }: DocumentContainerProps) => {
 
@@ -397,17 +398,44 @@ const DocumentContainer = ({
                             </Box>
                           </Box>
                         ) : attributesList !== undefined ? (
-                          <AttributesTable 
-                            attributesList={attributesList}
-                            handleClickField={handleClickField}
-                            fullscreen={fullscreen}
-                            forceOpenSubtable={forceOpenSubtable}
-                            displayIndexes={displayIndexes}
-                            showRawValues={showRawValues}
-                            setUpdateFieldLocationID={setUpdateFieldLocationID}
-                            parentIndexes={ROOT_PARENT_INDEXES}
-                            {...attributeTableProps}
-                          />
+                          <Box sx={{ position: "relative" }}>
+                            <Box
+                              sx={{
+                                opacity: attributesTableUpdating ? 0.45 : 1,
+                                pointerEvents: attributesTableUpdating ? "none" : "auto",
+                                transition: "opacity 180ms ease",
+                              }}
+                            >
+                              <AttributesTable 
+                                attributesList={attributesList}
+                                handleClickField={handleClickField}
+                                fullscreen={fullscreen}
+                                forceOpenSubtable={forceOpenSubtable}
+                                displayIndexes={displayIndexes}
+                                showRawValues={showRawValues}
+                                setUpdateFieldLocationID={setUpdateFieldLocationID}
+                                parentIndexes={ROOT_PARENT_INDEXES}
+                                {...attributeTableProps}
+                              />
+                            </Box>
+                            {attributesTableUpdating && (
+                              <Box
+                                sx={{
+                                  position: "absolute",
+                                  inset: 0,
+                                  zIndex: 2,
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "flex-start",
+                                  paddingTop: "64px",
+                                  backgroundColor: "rgba(255, 255, 255, 0.12)",
+                                  pointerEvents: "auto",
+                                }}
+                              >
+                                <CircularProgress size={24} thickness={4}/>
+                              </Box>
+                            )}
+                          </Box>
                         ) : (
                           loading && <TableLoading/>
                         )}

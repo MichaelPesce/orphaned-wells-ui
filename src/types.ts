@@ -393,6 +393,7 @@ export interface DocumentContainerProps {
     image_whitespace?: WhitespaceDetectionResult[];
     record_group_id?: string;
     setImageFiles: (imageFiles: any[]) => void;
+    attributesTableUpdating?: boolean;
 }
 
 export interface ColumnSelectDialogProps {

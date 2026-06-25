@@ -95,6 +95,7 @@ const Record = () => {
   const [ recordSchema, setRecordSchema ] = useState<RecordSchema>();
   const [ forceEditMode, setForceEditMode ] = useState<number[]>([-1, -1]);
   const [ loading, setLoading ] = useState(true);
+  const [ attributesTableUpdating, setAttributesTableUpdating ] = useState(false);
   const [locked, setLocked] = useState(false);
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -270,15 +271,24 @@ const Record = () => {
     if (lockedRef.current) return;
     const recordId = currentRecordIdRef.current;
     if (!recordId) return;
+    const showAttributesTableLoader = type === "insertField" || type === "deleteField";
+    if (showAttributesTableLoader) setAttributesTableUpdating(true);
     let body = { data, type: type };
     callAPI(
       updateRecord,
       [recordId, body],
       (data) => {
-        handleSuccessfulAttributesListUpdate(data);
-        callbackFunction?.();
+        try {
+          handleSuccessfulAttributesListUpdate(data);
+          callbackFunction?.();
+        } finally {
+          if (showAttributesTableLoader) setAttributesTableUpdating(false);
+        }
       },
-      handleFailedUpdate
+      (data, response_status) => {
+        if (showAttributesTableLoader) setAttributesTableUpdating(false);
+        handleFailedUpdate(data, response_status);
+      }
     );
   }, [handleSuccessfulAttributesListUpdate, handleFailedUpdate]);
 
@@ -540,6 +550,7 @@ const Record = () => {
           image_whitespace={recordData.image_whitespace}
           record_group_id={recordData.record_group_id}
           setImageFiles={setImageFiles}
+          attributesTableUpdating={attributesTableUpdating}
         />
       </Box>
       <Bottombar
