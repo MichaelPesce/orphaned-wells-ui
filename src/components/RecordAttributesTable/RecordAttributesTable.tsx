@@ -708,7 +708,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                   :
                   <p 
                     style={
-                      (v.value === "" || v.confidence < LOW_CONFIDENCE) ? 
+                      (!hasSubattributes && (v.value === "" || v.confidence < LOW_CONFIDENCE)) ? 
                         styles.flaggedConfidence :
                         styles.unflaggedConfidence
                     }
