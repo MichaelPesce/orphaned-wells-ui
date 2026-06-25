@@ -10,6 +10,7 @@ import {
   HistoryAttribute,
   QuerySummary,
   QuerySummaryLine,
+  Attribute,
 } from "./types";
 
 export const DEFAULT_FILTER_OPTIONS: {
@@ -788,6 +789,20 @@ export const scrollToAttribute = (boxId: string, heightId: string, top: number, 
     // this likely only occurs when table is in fullscreen mode and image is note displayed
     console.error("failed to scroll");
   }
+};
+
+export const deriveAttribute = (indexes: number[], attributesList: Attribute[]) => {
+  let current_attr: any | undefined = undefined;
+  let current_attributes_list: Attribute[] = attributesList;
+  indexes.forEach((idx) => {
+    current_attr = current_attributes_list[idx];
+    current_attributes_list = current_attr?.subattributes || [];
+  });
+  return current_attr;
+};
+
+export const getAttributeRowId = (indexes: number[]) => {
+  return `attribute-row-${indexes.join("-")}`;
 };
 
 export const callAPI = async (

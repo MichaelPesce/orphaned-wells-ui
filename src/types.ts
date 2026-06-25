@@ -110,6 +110,8 @@ export interface Attribute {
     topLevelAttribute?: string;
     user_provided_coordinates?: number[][];
     alias?: string | null;
+    parentAttribute?: string;
+    page?: number;
 }
 
 export interface WhitespaceDetectionResult {
@@ -240,6 +242,7 @@ export interface FieldID {
     subIndex?: number | null;
     isSubattribute?: boolean;
     parentKey?: string;
+    indexes: number[];
 }
 
 export interface SchemaRecord {
@@ -265,8 +268,7 @@ export interface RecordAttributesTableProps {
     handleClickField: handleClickFieldSignature;
     handleChangeValue: handleChangeValueSignature;
     fullscreen: string | null;
-    displayKeyIndex: number;
-    displayKeySubattributeIndex: number | null;
+    displayIndexes: number[];
     locked?: boolean;
     showRawValues?: boolean;
     recordSchema: RecordSchema;
@@ -277,6 +279,7 @@ export interface RecordAttributesTableProps {
     deleteField: deleteFieldSignature;
     reviewStatus: string;
     setUpdateFieldLocationID: (v?: FieldID) => void;
+    parentIndexes: number[];
 }
 
 export interface RecordsTableProps {
@@ -390,6 +393,7 @@ export interface DocumentContainerProps {
     image_whitespace?: WhitespaceDetectionResult[];
     record_group_id?: string;
     setImageFiles: (imageFiles: any[]) => void;
+    attributesTableUpdating?: boolean;
 }
 
 export interface ColumnSelectDialogProps {

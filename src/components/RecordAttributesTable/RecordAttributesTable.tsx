@@ -1,10 +1,10 @@
-import React, { useState, useEffect, MouseEvent } from "react";
+import React, { useState, useEffect, MouseEvent, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Menu, MenuItem } from "@mui/material";
 import { Box, TextField, Collapse, Typography, IconButton, Badge, Tooltip, Stack } from "@mui/material";
 
 import { updateRecord } from "../../services/app.service";
-import { formatConfidence, useKeyDown, useOutsideClick, formatAttributeValue, formatDateTime, callAPI } from "../../util";
+import { formatConfidence, useKeyDown, useOutsideClick, formatAttributeValue, formatDateTime, callAPI, getAttributeRowId, deriveAttribute } from "../../util";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import InfoIcon from "@mui/icons-material/Info";
@@ -16,13 +16,14 @@ import { useUserContext } from "../../usercontext";
 
 
 const LOW_CONFIDENCE: number = 0.01;
+const EMPTY_PARENT_INDEXES: number[] = [];
 
 interface AttributesTableProps extends RecordAttributesTableProps {
     attributesList: Attribute[];
-    forceOpenSubtable?: number | null;
+    forceOpenSubtable?: number[] | null;
     open?: boolean;
     topLevelIdx?: number;
-    topLevelKey?: string;
+    parentKey?: string;
     record_id?: string;
     handleClickOutside?: () => void;
 }
@@ -40,14 +41,63 @@ function showOCRRawValue(v: Attribute) {
   return false;
 }
 
+function getAttributeResponseKey(indexes: number[]) {
+  return indexes.reduce((path, idx, indexPosition) => {
+    if (indexPosition === 0) return `${path}.${idx}`;
+    return `${path}.subattributes.${idx}`;
+  }, "attributesList");
+}
+
+const indexesMatch = (left: number[], right: number[]) => {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+};
+
+const rowIndexesMatchDisplayPath = (props: AttributeRowProps) => {
+  const { parentIndexes, idx, displayIndexes } = props;
+  const rowDepth = parentIndexes.length + 1;
+  if (displayIndexes.length < rowDepth) return false;
+  for (let indexPosition = 0; indexPosition < parentIndexes.length; indexPosition += 1) {
+    if (displayIndexes[indexPosition] !== parentIndexes[indexPosition]) return false;
+  }
+  return displayIndexes[parentIndexes.length] === idx;
+};
+
+const rowIndexesMatchForceOpenPath = (props: AttributeRowProps) => {
+  const { parentIndexes, idx, forceOpenSubtable } = props;
+  const rowDepth = parentIndexes.length + 1;
+  if (!forceOpenSubtable || forceOpenSubtable.length < rowDepth) return false;
+  for (let indexPosition = 0; indexPosition < parentIndexes.length; indexPosition += 1) {
+    if (forceOpenSubtable[indexPosition] !== parentIndexes[indexPosition]) return false;
+  }
+  return forceOpenSubtable[parentIndexes.length] === idx;
+};
+
+const rowDisplayStateMatches = (prevProps: AttributeRowProps, nextProps: AttributeRowProps) => {
+  const prevRelevant = rowIndexesMatchDisplayPath(prevProps);
+  const nextRelevant = rowIndexesMatchDisplayPath(nextProps);
+  if (prevRelevant !== nextRelevant) return false;
+  return !nextRelevant || indexesMatch(prevProps.displayIndexes, nextProps.displayIndexes);
+};
+
+const rowForceOpenStateMatches = (prevProps: AttributeRowProps, nextProps: AttributeRowProps) => {
+  const prevRelevant = rowIndexesMatchForceOpenPath(prevProps);
+  const nextRelevant = rowIndexesMatchForceOpenPath(nextProps);
+  if (prevRelevant !== nextRelevant) return false;
+  if (!nextRelevant) return true;
+  return indexesMatch(prevProps.forceOpenSubtable || [], nextProps.forceOpenSubtable || []);
+};
+
 
 const AttributesTable = (props: AttributesTableProps) => {
   const { 
     attributesList,
     open,
-    topLevelKey = "",
+    parentKey = "",
     topLevelIdx = -1,
-    forceOpenSubtable=false,
+    forceOpenSubtable=null,
+    parentIndexes=EMPTY_PARENT_INDEXES,
+    recordSchema,
+    handleClickOutside: providedHandleClickOutside,
     ...childProps
   } = props;
 
@@ -56,23 +106,26 @@ const AttributesTable = (props: AttributesTableProps) => {
     showRawValues
   } = childProps;
 
-  const handleClickOutside = () => {
+  const handleClickOutside = React.useCallback(() => {
     const emptyField: FieldID = {
       key: "",
-      primaryIndex: -1
+      primaryIndex: -1,
+      indexes: [-1],
     };
     handleClickField(emptyField, null);
-  };
-  const ref = useOutsideClick(handleClickOutside);
+  }, [handleClickField]);
+  const effectiveHandleClickOutside = providedHandleClickOutside || handleClickOutside;
+  const ref = useOutsideClick(effectiveHandleClickOutside);
   const params = useParams<{ id: string }>();
 
-  if (topLevelKey) {return (
+  if (parentKey) {
+    return (
     <TableRow>
       <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
         <Collapse in={open} timeout="auto" unmountOnExit>
           <Box sx={{ margin: 1 }}>
             <Typography variant="h6" gutterBottom component="div">
-              {topLevelKey} Properties
+              {recordSchema[parentKey]?.alias || parentKey} Properties
             </Typography>
             <Table size="small" aria-label="purchases" sx={styles.subattributesTable}>
               <TableHead>
@@ -93,10 +146,12 @@ const AttributesTable = (props: AttributesTableProps) => {
                     k={v.key}
                     v={v}
                     idx={idx}
-                    topLevelKey={topLevelKey}
                     topLevelIdx={topLevelIdx}
+                    forceOpenSubtable={forceOpenSubtable}
                     record_id={params.id}
-                    handleClickOutside={handleClickOutside}
+                    handleClickOutside={effectiveHandleClickOutside}
+                    recordSchema={recordSchema}
+                    parentIndexes={parentIndexes}
                     {...childProps}
                   />
                 ))}
@@ -129,7 +184,10 @@ const AttributesTable = (props: AttributesTableProps) => {
                           v={v}
                           idx={idx}
                           record_id={params.id}
-                          handleClickOutside={handleClickOutside}
+                          forceOpenSubtable={forceOpenSubtable}
+                          handleClickOutside={effectiveHandleClickOutside}
+                          recordSchema={recordSchema}
+                          parentIndexes={parentIndexes}
                           {...childProps}
                         />
           ))}
@@ -143,9 +201,8 @@ interface AttributeRowProps extends RecordAttributesTableProps {
     k: string;
     v: Attribute;
     idx: number;
-    topLevelKey?: string;
     topLevelIdx?: number;
-    forceOpenSubtable?: number | null;
+    forceOpenSubtable?: number[] | null;
     record_id?: string;
     handleClickOutside: () => void;
 }
@@ -160,15 +217,14 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     reviewStatus,
     handleClickOutside,
     topLevelIdx = -1,
-    topLevelKey,
+    parentIndexes,
     ...childProps
   } = props;
 
   const { 
     handleClickField,
     handleChangeValue,
-    displayKeyIndex,
-    displayKeySubattributeIndex,
+    displayIndexes,
     locked,
     showRawValues,
     recordSchema,
@@ -180,84 +236,81 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     deleteField,
     setUpdateFieldLocationID,
   } = childProps;
-  const isSubattribute = (topLevelIdx && topLevelIdx > -1) ? true : false;
-  const schemaKey = isSubattribute ? `${topLevelKey}::${k}` : k;
-  const primaryIndex = isSubattribute ? topLevelIdx : idx;
-  const subIndex = isSubattribute ? idx : null;
+  const {
+    parentAttribute
+  } = v;
+
+  const thisFieldIndexes = useMemo(() => [...parentIndexes, idx], [parentIndexes, idx]);
+  const isSubattribute = thisFieldIndexes.length > 1;
+  const schemaKey = isSubattribute ? `${parentAttribute}::${k}` : k;
+  const primaryIndex = thisFieldIndexes[0] ?? idx;
+  const subIndex = isSubattribute ? thisFieldIndexes[thisFieldIndexes.length - 1] : null;
   const coordinates = v.user_provided_coordinates || v.normalized_vertices;
-  const tableId = isSubattribute ? `${k}::${primaryIndex}::${idx}` : `${k}::${idx}`;
+  const tableId = getAttributeRowId(thisFieldIndexes);
   const fieldId: FieldID = {
     key: k,
     primaryIndex: primaryIndex,
     isSubattribute: isSubattribute,
     subIndex: subIndex,
-    parentKey: topLevelKey,
+    parentKey: parentAttribute,
+    indexes: thisFieldIndexes,
   };
     
   const [ editMode, setEditMode ] = useState(false);
   const [ openSubtable, setOpenSubtable ] = useState(true);
-  const [ isSelected, setIsSelected ] = useState(false);
   const [ lastSavedValue, setLastSavedValue ] = useState(v.value);
   const [ menuAnchor, setMenuAnchor ] = useState<null | HTMLElement>(null);
   const [ showActions, setShowActions ] = useState(false);
   const [ childFields, setChildFields ] = useState<string[]>([]);
   const { hasPermission } = useUserContext();
 
+  const fieldIsSelected = thisFieldIndexes.length === displayIndexes.length && thisFieldIndexes.every((val, index) => val === displayIndexes[index]);
+
   const allowMultiple = recordSchema[schemaKey]?.occurrence?.toLowerCase().includes("multiple");
   const schemaDataType = recordSchema[schemaKey]?.google_data_type ?? recordSchema[schemaKey]?.data_type;
   const dbDataType = recordSchema[schemaKey]?.database_data_type;
   const isParent = schemaDataType?.toLowerCase() === "parent";
+  const hasSubattributes = v.subattributes?.length;
+
+  const thisAlias = recordSchema[schemaKey]?.alias || k;
 
   useEffect(() => {
-    const tempChildFields = [];
+    const tempChildFields: string[] = [];
     if (isParent) {
-      let recordKeys = Object.keys(recordSchema);
+      const childFieldPrefix = `${schemaKey}::`;
+      const recordKeys = Object.keys(recordSchema);
       for (let each of recordKeys) {
-        if (each.includes(`${k}::`)) {
+        if (!each.startsWith(childFieldPrefix)) continue;
+        const childFieldKey = each.slice(childFieldPrefix.length);
+        if (!childFieldKey.includes("::")) {
           tempChildFields.push(each);
         }
       }
-      setChildFields(tempChildFields);
     }
-  }, [v]);
-
-  useEffect(() => {
-    if (isSubattribute){
-      if (displayKeyIndex === topLevelIdx && idx === displayKeySubattributeIndex) {
-        setIsSelected(true);
-      } else {
-        setIsSelected(false);
-        if (editMode) finishEditing();
-      }
-    } else {
-      if (idx === displayKeyIndex && (displayKeySubattributeIndex === null || displayKeySubattributeIndex === undefined))
-        setIsSelected(true);
-      else  {
-        setIsSelected(false);
-        if (editMode) finishEditing();
-      }
-    }
-
-  }, [displayKeyIndex, topLevelIdx, displayKeySubattributeIndex]);
+    setChildFields(tempChildFields);
+  }, [isParent, recordSchema, schemaKey]);
 
   const handleClickInside = (e: React.MouseEvent<HTMLTableRowElement>) => {
-    if (v.subattributes) setOpenSubtable(!openSubtable);
+    if (hasSubattributes) setOpenSubtable(!openSubtable);
     e.stopPropagation();
     handleClickField(fieldId, coordinates);
   };
 
   const handleSuccess = (resp: any) => {
-    let newV;
-    if (isSubattribute)
-      newV = resp?.[`attributesList.${topLevelIdx}.subattributes.${idx}`];
-    else
-      newV = resp?.["attributesList."+idx];
     const fieldId: FieldID = {
       key: k,
       primaryIndex: primaryIndex,
       subIndex: subIndex,
       isSubattribute: isSubattribute,
+      indexes: thisFieldIndexes,
     };
+    const attributeResponseKey = getAttributeResponseKey(fieldId.indexes);
+    const newV = resp?.[attributeResponseKey];
+    if (newV === undefined) {
+      console.error(`attribute update response missing ${attributeResponseKey}`);
+      return;
+    }
+
     const data: {
             fieldId: FieldID,
             v: any;
@@ -284,15 +337,17 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     if (locked) return;
     const body: {
             data: { key: string; idx: number; v: any, review_status?: string
-            isSubattribute?: boolean, subIndex?: number | null};
+            isSubattribute?: boolean, subIndex?: number | null,
+            indexes: number[]};
             type: string;
             fieldToClean: any;
-          } = { data: { key: k, idx: primaryIndex, v: v, review_status: reviewStatus, isSubattribute: isSubattribute, subIndex: subIndex}, type: "attribute", fieldToClean: null };
+          } = { data: { key: k, idx: primaryIndex, v: v, review_status: reviewStatus, isSubattribute: isSubattribute, subIndex: subIndex, indexes: thisFieldIndexes}, type: "attribute", fieldToClean: null };
     if (cleanFields) {
       const fieldToClean = {
         topLevelIndex: primaryIndex,
         isSubattribute: isSubattribute,
         subIndex: subIndex,
+        indexes: thisFieldIndexes,
       };
       body["fieldToClean"] = fieldToClean;
     }
@@ -305,14 +360,16 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   };
 
   useKeyDown("Enter", () => {
-    if (isSelected) {
+    // if (isSelected) {
+    if (fieldIsSelected) {
       if (editMode) finishEditing();
       else makeEditable();
     }
   }, undefined, undefined, undefined, true);
 
   useKeyDown("Escape", () => {
-    if (isSelected) {
+    // if (isSelected) {
+    if (fieldIsSelected) {
       if (editMode) {
         // reset to last saved value
         if (v.value !== lastSavedValue) {
@@ -330,8 +387,11 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   }, undefined, undefined, undefined);
 
   useEffect(() => {
-    if (forceOpenSubtable === idx) setOpenSubtable(true);
-  }, [forceOpenSubtable]);
+    const shouldForceOpen = !!forceOpenSubtable?.length &&
+      thisFieldIndexes.length <= forceOpenSubtable.length &&
+      thisFieldIndexes.every((indexValue, indexPosition) => forceOpenSubtable[indexPosition] === indexValue);
+    if (shouldForceOpen) setOpenSubtable(true);
+  }, [forceOpenSubtable, thisFieldIndexes]);
 
   useEffect(() => {
     if (forceEditMode[0] === idx && forceEditMode[1] === -1 && !isSubattribute) {
@@ -341,7 +401,6 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       makeEditable();
       handleClickField(fieldId, coordinates);
     } else if (forceEditMode[0] !== -1) {
-      setIsSelected(false);
       setEditMode(false);
     }
   }, [forceEditMode]);
@@ -393,7 +452,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     setShowActions(false);
     setMenuAnchor(null);
     handleClickOutside();
-    insertField(fieldId, topLevelKey);
+    insertField(fieldId, parentAttribute);
   };
 
   const handleClickDeleteField = () => {
@@ -405,7 +464,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
   const handleClickAddChildField = (childField: string) => {
     // console.log(`add child field: ${childField}`)
-    const childKey = childField.replace(`${k}::`, "");
+    const childKey = childField.replace(`${schemaKey}::`, "");
     let subIdx = v.subattributes?.length || 0;
     subIdx -= 1;
     setMenuAnchor(null);
@@ -413,11 +472,13 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     handleClickOutside();
     const childId: FieldID = {
       key: childKey,
-      primaryIndex: idx,
+      primaryIndex: primaryIndex,
       isSubattribute: true,
       subIndex: subIdx,
+      parentKey: parentAttribute,
+      indexes: [...thisFieldIndexes, subIdx],
     };
-    insertField(childId, k);
+    insertField(childId, schemaKey);
   };
 
   const handleUpdateValue = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -430,7 +491,8 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       key: k,
       primaryIndex,
       subIndex,
-      isSubattribute
+      isSubattribute,
+      indexes: thisFieldIndexes,
     };
     setUpdateFieldLocationID(fieldID);
     setMenuAnchor(null);
@@ -455,9 +517,10 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
           open={showActions}
           onClose={() => setShowActions(false)}
           onClick={(e) => e.stopPropagation()}
+          sx={{maxHeight: "50vh"}}
         >
           {allowMultiple && 
-                        <MenuItem onClick={handleClickInsertField}>Add another '{k}'</MenuItem>
+                        <MenuItem onClick={handleClickInsertField}>Add another '{thisAlias}'</MenuItem>
           }
           {
             childFields.map((childField) => (
@@ -465,7 +528,10 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                 key={childField} 
                 onClick={() => handleClickAddChildField(childField)}
               >
-                                Add child field '{childField.replace(`${k}::`, "")}'
+                                Add child field '{
+                                  recordSchema[childField]?.alias ||
+                                  childField.replace(`${schemaKey}::`, "")
+                                }'
               </MenuItem>
             ))
           }
@@ -477,7 +543,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             )
           }
           {v.user_added && 
-                        <MenuItem onClick={handleClickDeleteField}>Delete this '{k}'</MenuItem>
+                        <MenuItem onClick={handleClickDeleteField}>Delete this '{thisAlias}'</MenuItem>
           }
         </Menu>
       </TableCell> 
@@ -486,13 +552,13 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
   return (
     <>
-      <TableRow id={tableId} sx={(isSelected) ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
+      <TableRow id={tableId} sx={fieldIsSelected ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
         <TableCell sx={styles.fieldKey}>
           <span>
-            {v.alias || k}
+            {thisAlias}
           </span>
           {
-            v.subattributes &&
+            hasSubattributes ?
                     <IconButton
                       aria-label="expand row"
                       size="small"
@@ -500,7 +566,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     >
                       {openSubtable ? <KeyboardArrowUpIcon sx={styles.rowIcon}/> : <KeyboardArrowDownIcon sx={styles.rowIcon}/>}
                     </IconButton>
-          }
+          : null}
         </TableCell>
         {
           isParent ? 
@@ -530,7 +596,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     :
                     <p style={v.cleaning_error ? styles.errorParagraph : styles.noErrorParagraph}>
                       {formatAttributeValue(v.value)}&nbsp;
-                      {isSelected && !locked &&
+                      {fieldIsSelected && !locked &&
                                     <IconButton id='edit-field-icon' sx={styles.rowIconButton} onClick={handleClickEditIcon}>
                                       <EditIcon sx={styles.rowIcon}/>
                                     </IconButton>
@@ -552,7 +618,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                   )
                 }
                 {
-                  (isSelected && !showRawValues) &&(
+                  (fieldIsSelected && !showRawValues) &&(
                     <span>
                       {
                         showAutocleanDisclaimer() &&
@@ -642,7 +708,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                   :
                   <p 
                     style={
-                      (v.value === "" || v.confidence < LOW_CONFIDENCE) ? 
+                      (!hasSubattributes && (v.value === "" || v.confidence < LOW_CONFIDENCE)) ? 
                         styles.flaggedConfidence :
                         styles.unflaggedConfidence
                     }
@@ -654,19 +720,46 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         {getRowOptionsIcon()}
       </TableRow>
       {
-        v.subattributes &&
+        hasSubattributes ?
             <AttributesTable
-              attributesList={v.subattributes}
-              topLevelIdx={idx} 
-              topLevelKey={k}
+              attributesList={v.subattributes || []}
+              topLevelIdx={primaryIndex} 
+              parentKey={schemaKey}
               open={openSubtable}
               record_id={record_id}
               reviewStatus={reviewStatus}
               handleClickOutside={handleClickOutside}
+              parentIndexes={thisFieldIndexes}
+              forceOpenSubtable={forceOpenSubtable}
               {...childProps}
             />
-      }
+      : null}
     </>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.k === nextProps.k &&
+    prevProps.v === nextProps.v &&
+    prevProps.idx === nextProps.idx &&
+    prevProps.topLevelIdx === nextProps.topLevelIdx &&
+    prevProps.record_id === nextProps.record_id &&
+    prevProps.handleClickOutside === nextProps.handleClickOutside &&
+    prevProps.handleClickField === nextProps.handleClickField &&
+    prevProps.handleChangeValue === nextProps.handleChangeValue &&
+    prevProps.fullscreen === nextProps.fullscreen &&
+    prevProps.locked === nextProps.locked &&
+    prevProps.showRawValues === nextProps.showRawValues &&
+    prevProps.recordSchema === nextProps.recordSchema &&
+    prevProps.forceEditMode === nextProps.forceEditMode &&
+    prevProps.insertField === nextProps.insertField &&
+    prevProps.handleSuccessfulAttributeUpdate === nextProps.handleSuccessfulAttributeUpdate &&
+    prevProps.showError === nextProps.showError &&
+    prevProps.deleteField === nextProps.deleteField &&
+    prevProps.reviewStatus === nextProps.reviewStatus &&
+    prevProps.setUpdateFieldLocationID === nextProps.setUpdateFieldLocationID &&
+    indexesMatch(prevProps.parentIndexes, nextProps.parentIndexes) &&
+    rowDisplayStateMatches(prevProps, nextProps) &&
+    rowForceOpenStateMatches(prevProps, nextProps)
   );
 });
 

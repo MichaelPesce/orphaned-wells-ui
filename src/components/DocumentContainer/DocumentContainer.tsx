@@ -7,9 +7,9 @@ import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import HistoryIcon from '@mui/icons-material/History';
 import KeyboardIcon from "@mui/icons-material/Keyboard";
 import { ImageCropper } from "../ImageCropper/ImageCropper";
-import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI } from "../../util";
+import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI, deriveAttribute, getAttributeRowId } from "../../util";
 import AttributesTable from "../RecordAttributesTable/RecordAttributesTable";
-import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID, RecordHistoryItem } from "../../types";
+import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID, RecordHistoryItem, Attribute } from "../../types";
 import { DocumentContainerStyles as styles } from "../../styles";
 import Switch from "@mui/material/Switch";
 import TableLoading from "../TableLoading/TableLoading";
@@ -20,6 +20,26 @@ import ImageRotationDialog from "components/ImageRotationDialog/ImageRotationDia
 import CircularProgress from '@mui/material/CircularProgress';
 
 const HIDE_BLANK_PAGES = true;
+const ROOT_PARENT_INDEXES: number[] = [];
+
+interface FieldTraversalEntry {
+  attribute: Attribute;
+  indexes: number[];
+}
+
+const attributeIndexesMatch = (left: number[], right: number[]) => {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+};
+
+const getFieldTraversalList = (attributes: Attribute[], parentIndexes: number[] = []): FieldTraversalEntry[] => {
+  return attributes.flatMap((attribute, idx) => {
+    const indexes = [...parentIndexes, idx];
+    return [
+      { attribute, indexes },
+      ...getFieldTraversalList(attribute.subattributes || [], indexes),
+    ];
+  });
+};
 
 const DocumentContainer = ({
   imageFiles,
@@ -31,18 +51,19 @@ const DocumentContainer = ({
   image_whitespace,
   record_group_id,
   setImageFiles,
+  attributesTableUpdating = false,
   ...attributeTableProps
 }: DocumentContainerProps) => {
 
   const [imgIndex, setImgIndex] = useState(0);
   const [displayPoints, setDisplayPoints] = useState<number[][] | null>(null);
-  const [displayKeyIndex, setDisplayKeyIndex] = useState(-1);
-  const [displayKeySubattributeIndex, setDisplayKeySubattributeIndex] = useState<number | null>(null);
+  const [displayIndexes, setDisplayIndexes] = useState<number[]>([]);
+  const [displayAttribute, setDisplayAttribute] = useState<Attribute>();
   const [fullscreen, setFullscreen] = useState<string | null>(null);
   const [gridWidths, setGridWidths] = useState<number[]>([5.9, 0.2, 5.9]);
   const [width, setWidth] = useState("100%");
   const [height, setHeight] = useState("auto");
-  const [forceOpenSubtable, setForceOpenSubtable] = useState<number | null>(null);
+  const [forceOpenSubtable, setForceOpenSubtable] = useState<number[] | null>(null);
   const [imageHeight, setImageHeight] = useState(0);
   const [ showRawValues, setShowRawValues ] = useState(false);
   const [ hasErrors, setHasErrors ] = useState(false);
@@ -54,6 +75,8 @@ const DocumentContainer = ({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [openRotationDialog, setOpenRotationDialog] = useState(false);
   const [rotationLoading, setRotationLoading] = useState(false);
+  const attributesListRef = React.useRef<Attribute[]>([]);
+  const displayIndexesRef = React.useRef<number[]>([]);
 
   const imageDivStyle = {
     width: width,
@@ -98,20 +121,18 @@ const DocumentContainer = ({
   },[attributesList]);
 
   useEffect(() => {
-    let newImgIdx;
-    if (displayKeyIndex !== -1 && displayKeySubattributeIndex !== null) {
-      newImgIdx = attributesList[displayKeyIndex].subattributes[displayKeySubattributeIndex].page;
-    } 
-    else if (displayKeyIndex !== -1) {
-      newImgIdx = attributesList[displayKeyIndex].page;
-    }
-    else {
-      newImgIdx = 0;
-    }
-    if (newImgIdx === null || newImgIdx === undefined) newImgIdx = 0;
+    attributesListRef.current = attributesList || [];
+  }, [attributesList]);
+
+  useEffect(() => {
+    displayIndexesRef.current = displayIndexes;
+  }, [displayIndexes]);
+
+  useEffect(() => {
+    let newImgIdx = displayAttribute?.page || 0;
     setImgIndex(newImgIdx);
         
-  }, [displayKeyIndex, displayKeySubattributeIndex]);
+  }, [displayAttribute]);
 
   useEffect(() => {
     if (imageFiles && imageFiles.length > 0) {
@@ -129,131 +150,76 @@ const DocumentContainer = ({
   useEffect(() => {
     setHotkeysAnchor(undefined);
     setDisplayPoints(null);
-    setDisplayKeyIndex(-1);
+    setDisplayIndexes([]);
   }, [params.id]);
 
-  const getVisualPageNumber = (pageNumber: number) => {
+  const getVisualPageNumber = React.useCallback((pageNumber: number) => {
     if (!HIDE_BLANK_PAGES || !image_whitespace) return pageNumber;
     let visualPageNumber = 0;
     image_whitespace?.forEach((img, idx) => {
       if (idx < pageNumber && !img.is_mostly_whitespace) 
         visualPageNumber +=1;
-    })
+    });
     // console.log(`${pageNumber} -> ${visualPageNumber}`)
     return visualPageNumber;
-  }
+  }, [image_whitespace]);
 
-  const getNextField = (direction: string = "down", currentIndex: number = displayKeyIndex, currentSubindex: number | null = displayKeySubattributeIndex) => {
-    let nextIndex: number;
-    let nextSubindex: number | null;
-    let isSubattribute: boolean;
-    let nextKey: string;
-    let nextCoordinates: any;
-    let parentKey: string;
+  const getNextField = (direction: string = "down", currentIndexes: number[] = displayIndexes): [FieldID, number[][] | null] => {
+    const traversalList = getFieldTraversalList(attributesList || []);
+    const emptyFieldID: FieldID = {
+      key: "",
+      primaryIndex: -1,
+      isSubattribute: false,
+      subIndex: null,
+      indexes: [],
+    };
 
-    if (direction === "down"){
-      if (currentIndex === -1) {
-        nextIndex = 0;
-        nextSubindex = null;
-      } 
-      else if (attributesList[currentIndex].subattributes) {
-        if (currentSubindex === null || currentSubindex === undefined) {
-          nextSubindex = 0;
-          nextIndex = currentIndex;
-        } else if (currentSubindex === attributesList[currentIndex].subattributes.length - 1) {
-          nextSubindex = null;
-          nextIndex = currentIndex === attributesList.length - 1 ? 0 : currentIndex + 1;
-        } else { 
-          nextSubindex = currentSubindex + 1;
-          nextIndex = currentIndex;
-        }
-      }
-      else if (currentIndex === attributesList.length - 1)  {
-        nextIndex = 0;
-        nextSubindex = null;
-      }
-      else {
-        nextIndex = currentIndex + 1;
-        nextSubindex = null;
-      }
-    } else { // if (direction === "up") 
-      if (currentIndex === -1) {
-        nextIndex = attributesList.length - 1;
-        nextSubindex = null;
-      } 
-      else if (attributesList[currentIndex].subattributes) {
-        if (currentSubindex === null || currentSubindex === undefined) {
-          nextSubindex = attributesList[currentIndex].subattributes.length - 1;
-          nextIndex = currentIndex;
-        } else if (currentSubindex === 0) {
-          nextSubindex = null;
-          nextIndex = currentIndex === 0 ? attributesList.length - 1 : currentIndex - 1;
-        } else { 
-          nextSubindex = currentSubindex - 1;
-          nextIndex = currentIndex;
-        }
-      }
-      else if (currentIndex === 0)  {
-        nextIndex = attributesList.length - 1;
-        nextSubindex = null;
-      }
-      else {
-        nextIndex = currentIndex - 1;
-        nextSubindex = null;
-      }
-    }
+    if (traversalList.length === 0) return [emptyFieldID, null];
 
-
-    if (nextSubindex !== null && nextSubindex !== undefined) {
-      isSubattribute = true;
-      nextKey = attributesList[nextIndex].subattributes[nextSubindex].key;
-      nextCoordinates = 
-                attributesList[nextIndex].subattributes[nextSubindex].user_provided_coordinates ||
-                attributesList[nextIndex].subattributes[nextSubindex].normalized_vertices;
+    const currentPosition = traversalList.findIndex(({ indexes }) => attributeIndexesMatch(indexes, currentIndexes));
+    let nextPosition: number;
+    if (currentPosition === -1) {
+      nextPosition = direction === "up" ? traversalList.length - 1 : 0;
+    } else if (direction === "up") {
+      nextPosition = currentPosition === 0 ? traversalList.length - 1 : currentPosition - 1;
     } else {
-      isSubattribute = false;
-      nextKey = attributesList[nextIndex].key;
-      nextCoordinates = 
-                attributesList[nextIndex].user_provided_coordinates ||
-                attributesList[nextIndex].normalized_vertices;
+      nextPosition = currentPosition === traversalList.length - 1 ? 0 : currentPosition + 1;
     }
-    parentKey = attributesList[nextIndex].key;
+
+    const nextField = traversalList[nextPosition];
+    const nextCoordinates =
+      nextField.attribute.user_provided_coordinates ||
+      nextField.attribute.normalized_vertices ||
+      null;
     const tempFieldID: FieldID = {
-      key: nextKey,
-      primaryIndex: nextIndex,
-      isSubattribute: isSubattribute,
-      subIndex: nextSubindex,
-      parentKey,
+      key: nextField.attribute.key,
+      primaryIndex: nextField.indexes[0],
+      isSubattribute: nextField.indexes.length > 1,
+      subIndex: nextField.indexes.length > 1 ? nextField.indexes[nextField.indexes.length - 1] : null,
+      parentKey: attributesList[nextField.indexes[0]]?.key,
+      indexes: nextField.indexes,
     };
     return [tempFieldID, nextCoordinates];
   };
 
   const proceedToNextField = (nextField: FieldID) => {
-    const { key, isSubattribute, primaryIndex, subIndex } = nextField;
-    let elementId: string;
+    const { isSubattribute, indexes } = nextField;
+    if (!indexes.length) return;
 
     if (isSubattribute) {
-      setForceOpenSubtable(primaryIndex);
-      elementId = `${key}::${primaryIndex}::${subIndex}`;
-    } 
-    else elementId = `${key}::${primaryIndex}`;
+      setForceOpenSubtable(indexes.slice(0, -1));
+    }
+    const elementId = getAttributeRowId(indexes);
     let element = document.getElementById(elementId);
     let waitTime = 0;
     let containerElement = document.getElementById("table-container");
     if (element) {
-      if (isSubattribute) {
-        setTimeout(function() {
-          if (element)
-            element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-        }, waitTime);
-      }
-      else 
-        scrollIntoView(element, containerElement);
+      element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
     } else {
       waitTime = 250;
       setTimeout(function() {
         element = document.getElementById(elementId);
-        if (element) element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+        if (element) element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
       }, waitTime);
     }
   };
@@ -261,25 +227,13 @@ const DocumentContainer = ({
   const tabCallback = () => {
     const [nextField, vertices] = getNextField("down");
     handleClickField(nextField, vertices);
-    let nextScrollToField = {...nextField};
-    let i = 0; // add this as a safe catch incase we messed up this while logic
-    while (nextScrollToField.isSubattribute && i<100) {
-      [nextScrollToField] = getNextField("down", nextScrollToField.primaryIndex, nextScrollToField.subIndex);
-      i+=1;
-    } 
-    proceedToNextField(nextScrollToField);
+    proceedToNextField(nextField);
   };
 
   const shiftTabCallback = () => {
     const [nextField, vertices] = getNextField("up");
     handleClickField(nextField, vertices);
-    let nextScrollToField = {...nextField};
-    let i = 0; // add this as a safe catch incase we messed up this while logic
-    while (nextScrollToField.isSubattribute && i<100) {
-      [nextScrollToField] = getNextField("down", nextScrollToField.primaryIndex, nextScrollToField.subIndex);
-      i+=1;
-    }
-    proceedToNextField(nextScrollToField);
+    proceedToNextField(nextField);
   };
 
   useKeyDown("Tab", tabCallback, shiftTabCallback);
@@ -287,15 +241,17 @@ const DocumentContainer = ({
   useKeyDown("ArrowDown", tabCallback);
 
   const handleClickField = React.useCallback((fieldID: FieldID, coordinates: number[][] | null, forceDisplay: boolean = false, pageNumber?: number) => {
-    const { key, primaryIndex, subIndex = 0, isSubattribute } = fieldID;
-    if (!forceDisplay && (!key || (!isSubattribute && primaryIndex === displayKeyIndex) || (isSubattribute && primaryIndex === displayKeyIndex && subIndex === displayKeySubattributeIndex))) {
+    const { key, indexes } = fieldID;
+    const currentDisplayIndexes = displayIndexesRef.current;
+    const fieldIsAlreadySelected = indexes.length === currentDisplayIndexes.length && indexes.every((val, index) => val === currentDisplayIndexes[index]);
+    if (!forceDisplay && (!key || fieldIsAlreadySelected)) {
       setDisplayPoints(null);
-      setDisplayKeyIndex(-1);
-      setDisplayKeySubattributeIndex(null);
+      setDisplayIndexes([]);
     }
     else {
-      setDisplayKeyIndex(primaryIndex);
-      setDisplayKeySubattributeIndex(subIndex);
+      setDisplayIndexes([...indexes]);
+      let current_attr = deriveAttribute(indexes, attributesListRef.current);
+      setDisplayAttribute(current_attr);
       if (coordinates !== null && coordinates !== undefined) {
         const percentage_vertices: number[][] = [];
         for (let each of coordinates) {
@@ -303,9 +259,7 @@ const DocumentContainer = ({
         }
         let page = 0;
         try {
-          let attr = attributesList[primaryIndex];
-          if (isSubattribute) attr = attr.subattributes[subIndex as number];
-          if (attr.page !== undefined) page = attr.page;
+          if (current_attr?.page !== undefined) page = current_attr?.page;
         } catch (e) {
           console.log("error getting page");
           console.log(e);
@@ -319,7 +273,7 @@ const DocumentContainer = ({
         setDisplayPoints(null);
       }
     }
-  }, [imageFiles, displayKeyIndex, displayKeySubattributeIndex]);
+  }, [imageFiles, getVisualPageNumber]);
     
 
   const handleSetFullscreen = (item: string) => {
@@ -343,7 +297,7 @@ const DocumentContainer = ({
   const handleUpdateFieldCoordinates: updateFieldCoordinatesSignature = (fieldId, new_coordinates, pageNumber) => {
     const callbackFunc = () => {
       handleClickField(fieldId, new_coordinates, true, pageNumber);
-    }
+    };
     updateFieldCoordinates(fieldId, new_coordinates, pageNumber, callbackFunc);
   };
 
@@ -444,17 +398,44 @@ const DocumentContainer = ({
                             </Box>
                           </Box>
                         ) : attributesList !== undefined ? (
-                          <AttributesTable 
-                            attributesList={attributesList}
-                            handleClickField={handleClickField}
-                            fullscreen={fullscreen}
-                            forceOpenSubtable={forceOpenSubtable}
-                            displayKeyIndex={displayKeyIndex}
-                            displayKeySubattributeIndex={displayKeySubattributeIndex}
-                            showRawValues={showRawValues}
-                            setUpdateFieldLocationID={setUpdateFieldLocationID}
-                            {...attributeTableProps}
-                          />
+                          <Box sx={{ position: "relative" }}>
+                            <Box
+                              sx={{
+                                opacity: attributesTableUpdating ? 0.45 : 1,
+                                pointerEvents: attributesTableUpdating ? "none" : "auto",
+                                transition: "opacity 180ms ease",
+                              }}
+                            >
+                              <AttributesTable 
+                                attributesList={attributesList}
+                                handleClickField={handleClickField}
+                                fullscreen={fullscreen}
+                                forceOpenSubtable={forceOpenSubtable}
+                                displayIndexes={displayIndexes}
+                                showRawValues={showRawValues}
+                                setUpdateFieldLocationID={setUpdateFieldLocationID}
+                                parentIndexes={ROOT_PARENT_INDEXES}
+                                {...attributeTableProps}
+                              />
+                            </Box>
+                            {attributesTableUpdating && (
+                              <Box
+                                sx={{
+                                  position: "absolute",
+                                  inset: 0,
+                                  zIndex: 2,
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  alignItems: "flex-start",
+                                  paddingTop: "64px",
+                                  backgroundColor: "rgba(255, 255, 255, 0.12)",
+                                  pointerEvents: "auto",
+                                }}
+                              >
+                                <CircularProgress size={24} thickness={4}/>
+                              </Box>
+                            )}
+                          </Box>
                         ) : (
                           loading && <TableLoading/>
                         )}
