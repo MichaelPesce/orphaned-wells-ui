@@ -213,19 +213,12 @@ const DocumentContainer = ({
     let waitTime = 0;
     let containerElement = document.getElementById("table-container");
     if (element) {
-      if (isSubattribute) {
-        setTimeout(function() {
-          if (element)
-            element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
-        }, waitTime);
-      }
-      else 
-        scrollIntoView(element, containerElement);
+      element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
     } else {
       waitTime = 250;
       setTimeout(function() {
         element = document.getElementById(elementId);
-        if (element) element.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+        if (element) element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
       }, waitTime);
     }
   };
