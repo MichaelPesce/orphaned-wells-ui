@@ -16,6 +16,7 @@ import { useUserContext } from "../../usercontext";
 
 
 const LOW_CONFIDENCE: number = 0.01;
+const EMPTY_PARENT_INDEXES: number[] = [];
 
 interface AttributesTableProps extends RecordAttributesTableProps {
     attributesList: Attribute[];
@@ -47,6 +48,45 @@ function getAttributeResponseKey(indexes: number[]) {
   }, "attributesList");
 }
 
+const indexesMatch = (left: number[], right: number[]) => {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+};
+
+const rowIndexesMatchDisplayPath = (props: AttributeRowProps) => {
+  const { parentIndexes, idx, displayIndexes } = props;
+  const rowDepth = parentIndexes.length + 1;
+  if (displayIndexes.length < rowDepth) return false;
+  for (let indexPosition = 0; indexPosition < parentIndexes.length; indexPosition += 1) {
+    if (displayIndexes[indexPosition] !== parentIndexes[indexPosition]) return false;
+  }
+  return displayIndexes[parentIndexes.length] === idx;
+};
+
+const rowIndexesMatchForceOpenPath = (props: AttributeRowProps) => {
+  const { parentIndexes, idx, forceOpenSubtable } = props;
+  const rowDepth = parentIndexes.length + 1;
+  if (!forceOpenSubtable || forceOpenSubtable.length < rowDepth) return false;
+  for (let indexPosition = 0; indexPosition < parentIndexes.length; indexPosition += 1) {
+    if (forceOpenSubtable[indexPosition] !== parentIndexes[indexPosition]) return false;
+  }
+  return forceOpenSubtable[parentIndexes.length] === idx;
+};
+
+const rowDisplayStateMatches = (prevProps: AttributeRowProps, nextProps: AttributeRowProps) => {
+  const prevRelevant = rowIndexesMatchDisplayPath(prevProps);
+  const nextRelevant = rowIndexesMatchDisplayPath(nextProps);
+  if (prevRelevant !== nextRelevant) return false;
+  return !nextRelevant || indexesMatch(prevProps.displayIndexes, nextProps.displayIndexes);
+};
+
+const rowForceOpenStateMatches = (prevProps: AttributeRowProps, nextProps: AttributeRowProps) => {
+  const prevRelevant = rowIndexesMatchForceOpenPath(prevProps);
+  const nextRelevant = rowIndexesMatchForceOpenPath(nextProps);
+  if (prevRelevant !== nextRelevant) return false;
+  if (!nextRelevant) return true;
+  return indexesMatch(prevProps.forceOpenSubtable || [], nextProps.forceOpenSubtable || []);
+};
+
 
 const AttributesTable = (props: AttributesTableProps) => {
   const { 
@@ -55,8 +95,9 @@ const AttributesTable = (props: AttributesTableProps) => {
     topLevelKey = "",
     topLevelIdx = -1,
     forceOpenSubtable=null,
-    parentIndexes=[],
+    parentIndexes=EMPTY_PARENT_INDEXES,
     recordSchema,
+    handleClickOutside: providedHandleClickOutside,
     ...childProps
   } = props;
 
@@ -65,15 +106,16 @@ const AttributesTable = (props: AttributesTableProps) => {
     showRawValues
   } = childProps;
 
-  const handleClickOutside = () => {
+  const handleClickOutside = React.useCallback(() => {
     const emptyField: FieldID = {
       key: "",
       primaryIndex: -1,
       indexes: [-1],
     };
     handleClickField(emptyField, null);
-  };
-  const ref = useOutsideClick(handleClickOutside);
+  }, [handleClickField]);
+  const effectiveHandleClickOutside = providedHandleClickOutside || handleClickOutside;
+  const ref = useOutsideClick(effectiveHandleClickOutside);
   const params = useParams<{ id: string }>();
 
   if (topLevelKey) {
@@ -108,7 +150,7 @@ const AttributesTable = (props: AttributesTableProps) => {
                     topLevelIdx={topLevelIdx}
                     forceOpenSubtable={forceOpenSubtable}
                     record_id={params.id}
-                    handleClickOutside={handleClickOutside}
+                    handleClickOutside={effectiveHandleClickOutside}
                     recordSchema={recordSchema}
                     parentIndexes={parentIndexes}
                     {...childProps}
@@ -144,7 +186,7 @@ const AttributesTable = (props: AttributesTableProps) => {
                           idx={idx}
                           record_id={params.id}
                           forceOpenSubtable={forceOpenSubtable}
-                          handleClickOutside={handleClickOutside}
+                          handleClickOutside={effectiveHandleClickOutside}
                           recordSchema={recordSchema}
                           parentIndexes={parentIndexes}
                           {...childProps}
@@ -265,7 +307,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       primaryIndex: primaryIndex,
       subIndex: subIndex,
       isSubattribute: isSubattribute,
-      indexes: [...parentIndexes, idx],
+      indexes: thisFieldIndexes,
     };
     const attributeResponseKey = getAttributeResponseKey(fieldId.indexes);
     const newV = resp?.[attributeResponseKey];
@@ -455,7 +497,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
       primaryIndex,
       subIndex,
       isSubattribute,
-      indexes: [...parentIndexes, idx],
+      indexes: thisFieldIndexes,
     };
     setUpdateFieldLocationID(fieldID);
     setMenuAnchor(null);
@@ -692,12 +734,38 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
               record_id={record_id}
               reviewStatus={reviewStatus}
               handleClickOutside={handleClickOutside}
-              parentIndexes={[...parentIndexes, idx]}
+              parentIndexes={thisFieldIndexes}
               forceOpenSubtable={forceOpenSubtable}
               {...childProps}
             />
       : null}
     </>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.k === nextProps.k &&
+    prevProps.v === nextProps.v &&
+    prevProps.idx === nextProps.idx &&
+    prevProps.topLevelKey === nextProps.topLevelKey &&
+    prevProps.topLevelIdx === nextProps.topLevelIdx &&
+    prevProps.record_id === nextProps.record_id &&
+    prevProps.handleClickOutside === nextProps.handleClickOutside &&
+    prevProps.handleClickField === nextProps.handleClickField &&
+    prevProps.handleChangeValue === nextProps.handleChangeValue &&
+    prevProps.fullscreen === nextProps.fullscreen &&
+    prevProps.locked === nextProps.locked &&
+    prevProps.showRawValues === nextProps.showRawValues &&
+    prevProps.recordSchema === nextProps.recordSchema &&
+    prevProps.forceEditMode === nextProps.forceEditMode &&
+    prevProps.insertField === nextProps.insertField &&
+    prevProps.handleSuccessfulAttributeUpdate === nextProps.handleSuccessfulAttributeUpdate &&
+    prevProps.showError === nextProps.showError &&
+    prevProps.deleteField === nextProps.deleteField &&
+    prevProps.reviewStatus === nextProps.reviewStatus &&
+    prevProps.setUpdateFieldLocationID === nextProps.setUpdateFieldLocationID &&
+    indexesMatch(prevProps.parentIndexes, nextProps.parentIndexes) &&
+    rowDisplayStateMatches(prevProps, nextProps) &&
+    rowForceOpenStateMatches(prevProps, nextProps)
   );
 });
 

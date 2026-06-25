@@ -20,6 +20,7 @@ import ImageRotationDialog from "components/ImageRotationDialog/ImageRotationDia
 import CircularProgress from '@mui/material/CircularProgress';
 
 const HIDE_BLANK_PAGES = true;
+const ROOT_PARENT_INDEXES: number[] = [];
 
 interface FieldTraversalEntry {
   attribute: Attribute;
@@ -73,6 +74,8 @@ const DocumentContainer = ({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [openRotationDialog, setOpenRotationDialog] = useState(false);
   const [rotationLoading, setRotationLoading] = useState(false);
+  const attributesListRef = React.useRef<Attribute[]>([]);
+  const displayIndexesRef = React.useRef<number[]>([]);
 
   const imageDivStyle = {
     width: width,
@@ -117,6 +120,14 @@ const DocumentContainer = ({
   },[attributesList]);
 
   useEffect(() => {
+    attributesListRef.current = attributesList || [];
+  }, [attributesList]);
+
+  useEffect(() => {
+    displayIndexesRef.current = displayIndexes;
+  }, [displayIndexes]);
+
+  useEffect(() => {
     let newImgIdx = displayAttribute?.page || 0;
     setImgIndex(newImgIdx);
         
@@ -141,7 +152,7 @@ const DocumentContainer = ({
     setDisplayIndexes([]);
   }, [params.id]);
 
-  const getVisualPageNumber = (pageNumber: number) => {
+  const getVisualPageNumber = React.useCallback((pageNumber: number) => {
     if (!HIDE_BLANK_PAGES || !image_whitespace) return pageNumber;
     let visualPageNumber = 0;
     image_whitespace?.forEach((img, idx) => {
@@ -150,7 +161,7 @@ const DocumentContainer = ({
     });
     // console.log(`${pageNumber} -> ${visualPageNumber}`)
     return visualPageNumber;
-  };
+  }, [image_whitespace]);
 
   const getNextField = (direction: string = "down", currentIndexes: number[] = displayIndexes): [FieldID, number[][] | null] => {
     const traversalList = getFieldTraversalList(attributesList || []);
@@ -237,14 +248,15 @@ const DocumentContainer = ({
 
   const handleClickField = React.useCallback((fieldID: FieldID, coordinates: number[][] | null, forceDisplay: boolean = false, pageNumber?: number) => {
     const { key, indexes } = fieldID;
-    const fieldIsAlreadySelected = indexes.length === displayIndexes.length && indexes.every((val, index) => val === displayIndexes[index]);
+    const currentDisplayIndexes = displayIndexesRef.current;
+    const fieldIsAlreadySelected = indexes.length === currentDisplayIndexes.length && indexes.every((val, index) => val === currentDisplayIndexes[index]);
     if (!forceDisplay && (!key || fieldIsAlreadySelected)) {
       setDisplayPoints(null);
       setDisplayIndexes([]);
     }
     else {
       setDisplayIndexes([...indexes]);
-      let current_attr = deriveAttribute(indexes, attributesList);
+      let current_attr = deriveAttribute(indexes, attributesListRef.current);
       setDisplayAttribute(current_attr);
       if (coordinates !== null && coordinates !== undefined) {
         const percentage_vertices: number[][] = [];
@@ -267,7 +279,7 @@ const DocumentContainer = ({
         setDisplayPoints(null);
       }
     }
-  }, [imageFiles, displayIndexes]);
+  }, [imageFiles, getVisualPageNumber]);
     
 
   const handleSetFullscreen = (item: string) => {
@@ -400,7 +412,7 @@ const DocumentContainer = ({
                             displayIndexes={displayIndexes}
                             showRawValues={showRawValues}
                             setUpdateFieldLocationID={setUpdateFieldLocationID}
-                            parentIndexes={[]}
+                            parentIndexes={ROOT_PARENT_INDEXES}
                             {...attributeTableProps}
                           />
                         ) : (
