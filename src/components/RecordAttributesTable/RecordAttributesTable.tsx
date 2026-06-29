@@ -118,6 +118,11 @@ const AttributesTable = (props: AttributesTableProps) => {
   const ref = useOutsideClick(effectiveHandleClickOutside);
   const params = useParams<{ id: string }>();
 
+  let parentName;
+  if (parentKey) {
+    parentName = parentKey.includes("::") ? parentKey?.split("::")[1] : parentKey;
+  } else parentName = null;
+
   if (parentKey) {
     return (
     <TableRow>
@@ -125,7 +130,7 @@ const AttributesTable = (props: AttributesTableProps) => {
         <Collapse in={open} timeout="auto" unmountOnExit>
           <Box sx={{ margin: 1 }}>
             <Typography variant="h6" gutterBottom component="div">
-              {recordSchema[parentKey]?.alias || parentKey} Properties
+              {recordSchema[parentKey]?.alias || parentName} Properties
             </Typography>
             <Table size="small" aria-label="purchases" sx={styles.subattributesTable}>
               <TableHead>
