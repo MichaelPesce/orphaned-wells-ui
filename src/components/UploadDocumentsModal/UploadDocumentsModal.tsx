@@ -1,6 +1,6 @@
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Grid, Box, Modal, IconButton, Button, Switch, FormControlLabel, Badge, CircularProgress, Stack, Tooltip } from "@mui/material";
+import { Grid, Box, Modal, IconButton, Button, Switch, FormControlLabel, Badge, CircularProgress, Stack, Tooltip, Typography } from "@mui/material";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -64,7 +64,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
     },
     button: {
       borderRadius: "8px", 
-      width: 200,
+      // width: 200,
     },
     sampleFile: {
       textDecoration: "none",
@@ -317,7 +317,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
               onClick={() => inputRef.current?.click()}
               disabled={processorState > 1}
             >
-                            Choose Directory
+                          Local Directory
             </Button>
             <Button
               variant="outlined"
