@@ -84,6 +84,24 @@ export const uploadDocument = (data: FormData, project_id: string, user_email: a
   });
 };
 
+export const batchProcessDocuments = (project_id: string, data: any) => {
+  return fetch(BACKEND_URL + "/batch_process_documents/" + project_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: JSON.stringify(data),
+    headers: JSON_HEADERS,
+  });
+};
+
+export const checkGcsBucketPath = (project_id: string, data: any) => {
+  return fetch(BACKEND_URL + "/batch_process_documents/" + project_id + "/check_gcs_path", {
+    method: "POST",
+    mode: CORS_MODE,
+    body: JSON.stringify(data),
+    headers: JSON_HEADERS,
+  });
+};
+
 export const deployProcessor = (rg_id: string)  => {
   return fetch(BACKEND_URL + "/deploy_processor/"+rg_id, {
     method: "POST",

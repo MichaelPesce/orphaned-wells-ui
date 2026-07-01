@@ -1,13 +1,16 @@
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Grid, Box, Modal, IconButton, Button, Switch, FormControlLabel, Badge, CircularProgress, Stack, Tooltip } from "@mui/material";
+import { Grid, Box, Modal, IconButton, Button, Switch, FormControlLabel, Badge, CircularProgress, Stack, Tooltip, Typography } from "@mui/material";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CreateNewFolderIcon from "@mui/icons-material/CreateNewFolder";
+import CloudQueueIcon from "@mui/icons-material/CloudQueue";
 import { FileUploader } from "react-drag-drop-files";
 import { UploadDocumentsModalProps } from "../../types";
 import UploadDirectory from "./UploadDirectory";
+import UploadGcsDirectory from "./UploadGcsDirectory";
 import { checkProcessorStatus, deployProcessor, undeployProcessor } from "../../services/app.service";
 import { callAPI } from "../../util";
 
@@ -22,6 +25,8 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
   const [ runCleaningFunctions, setRunCleaningFunctions ] = useState(true);
   const [ processorState, setProcessorState ] = useState(10);
   const [ uploadingDirectory, setUploadingDirectory ] = useState(false);
+  const [ showGcsUpload, setShowGcsUpload ] = useState(false);
+  const [ uploadingGcsDirectory, setUploadingGcsDirectory ] = useState(false);
   const maxFileSize = 10;
   const fileTypes: string[] = ["tiff", "tif", "pdf", "png", "jpg", "jpeg", "zip"];
   const validFileTypes = ["image/png", "application/pdf", "image/tiff", "image/jpeg"];
@@ -59,7 +64,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
     },
     button: {
       borderRadius: "8px", 
-      width: 200,
+      // width: 200,
     },
     sampleFile: {
       textDecoration: "none",
@@ -130,6 +135,13 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
   const handleBack = () => {
     setUploadDirectory(undefined);
     setUploadDirectoryFiles([]);
+    setShowGcsUpload(false);
+    setFile(null);
+  };
+
+  const handleChooseGcsDirectory = () => {
+    setShowGcsUpload(true);
+    setShowWarning(false);
     setFile(null);
   };
 
@@ -236,6 +248,92 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
     );
   };
 
+  const uploadContent = () => {
+    if (uploadDirectory) {
+      return (
+        <UploadDirectory
+          setShowModal={setShowModal}
+          directoryName={uploadDirectory}
+          directoryFiles={uploadDirectoryFiles}
+          runCleaningFunctions={runCleaningFunctions}
+          setRunCleaningFunctions={setRunCleaningFunctions}
+          uploading={uploadingDirectory}
+          setUploading={setUploadingDirectory}
+        />
+      );
+    }
+
+    if (showGcsUpload) {
+      return (
+        <UploadGcsDirectory
+          runCleaningFunctions={runCleaningFunctions}
+          setRunCleaningFunctions={setRunCleaningFunctions}
+          uploading={uploadingGcsDirectory}
+          setUploading={setUploadingGcsDirectory}
+        />
+      );
+    }
+
+    return (
+      <>
+        <Tooltip title={processorState > 1 && "Processor must be deployed to upload files"}>
+          <Grid item xs={12}>
+            {DragDrop()}
+          </Grid>
+        </Tooltip>
+        <Grid item xs={12}>
+          <input
+            ref={inputRef}
+            type="file"
+            onChange={handleChooseDirectory}
+            style={{ display: "none" }}
+            multiple
+            {...{ webkitdirectory: "", mozdirectory: "", directory: "" }}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <Box sx={{display: "flex", justifyContent: "space-around", marginBottom: 1}}>
+            <FormControlLabel
+              control={<Switch/>}
+              label="Run cleaning functions"
+              onChange={(e: any) => setRunCleaningFunctions(e.target.checked)}
+              checked={runCleaningFunctions}
+            />
+          </Box>
+          <Box sx={{display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 2}}>
+            <Button
+              variant="contained"
+              style={styles.button}
+              startIcon={<UploadFileIcon/>}
+              onClick={handleClickUpload}
+              disabled={file === null}
+            >
+                            Upload File
+            </Button>
+            <Button
+              variant="outlined"
+              style={styles.button}
+              startIcon={<CreateNewFolderIcon/>}
+              onClick={() => inputRef.current?.click()}
+              disabled={processorState > 1}
+            >
+                          Local Directory
+            </Button>
+            <Button
+              variant="outlined"
+              style={styles.button}
+              startIcon={<CloudQueueIcon/>}
+              onClick={handleChooseGcsDirectory}
+              disabled={processorState > 1}
+            >
+                            GCS Directory
+            </Button>
+          </Box>
+        </Grid>
+      </>
+    );
+  };
+
   return (
     <Modal
       open={true}
@@ -246,7 +344,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
       <Grid container sx={styles.modalStyle} spacing={1}>
         {/** TODO: convert the below 3 items to a stack? */}
         <Grid item xs={3}>
-          {uploadDirectory && 
+          {(uploadDirectory || showGcsUpload) &&
                         <Box sx={{display: "flex", justifyContent: "flex-start", marginLeft: "10px"}}>
                           <IconButton onClick={handleBack}><ArrowBackIcon/></IconButton>
                         </Box>
@@ -304,7 +402,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
               <Button 
                 variant='outlined' 
                 endIcon={<RocketLaunchIcon/>} 
-                disabled={processorState > 3 || processorState === 2 || uploadingDirectory}
+                disabled={processorState > 3 || processorState === 2 || uploadingDirectory || uploadingGcsDirectory}
                 onClick={handleDeployProcessor}    
               >
                 {processorState === 1 ? "Undeploy" : "Deploy"} Processor
@@ -314,57 +412,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
                     
                         
         </Grid>
-        {uploadDirectory ? 
-          <UploadDirectory
-            setShowModal={setShowModal}
-            directoryName={uploadDirectory}
-            directoryFiles={uploadDirectoryFiles}
-            runCleaningFunctions={runCleaningFunctions}
-            setRunCleaningFunctions={setRunCleaningFunctions}
-            uploading={uploadingDirectory}
-            setUploading={setUploadingDirectory}
-          />  :
-          <>
-            <Tooltip title={processorState > 1 && "Processor must be deployed to upload files"}>
-              <Grid item xs={12}>
-                                
-                {DragDrop()}
-              </Grid>
-            </Tooltip>
-            <Grid item xs={12}>
-              <input
-                ref={inputRef}
-                type="file"
-                onChange={handleChooseDirectory}
-                style={{ display: "none" }}
-                multiple
-                {...{ webkitdirectory: "", mozdirectory: "", directory: "" }}
-              />
-              <Box style={{display: "flex", justifyContent: "center"}}>
-              </Box>
-                            
-            </Grid>
-            <Grid item xs={12}>
-              <Box sx={{display: "flex", justifyContent: "space-around", marginBottom: 1}}>
-                <FormControlLabel 
-                  control={<Switch/>} 
-                  label="Run cleaning functions" 
-                  onChange={(e: any) => setRunCleaningFunctions(e.target.checked)}
-                  checked={runCleaningFunctions}
-                />
-              </Box>
-              <Box sx={{display: "flex", justifyContent: "space-around"}}>
-                <Button variant="contained" style={styles.button} onClick={handleClickUpload} disabled={file === null}>
-                                    Upload File
-                </Button>
-                <p style={{display: "flex", margin:0, alignItems: "center"}}>or</p>
-                <Button variant="outlined" style={styles.button} onClick={() => inputRef.current?.click()} disabled={processorState > 1}>
-                                    Choose Directory
-                </Button>
-              </Box>
-            </Grid>
-          </>
-        }
+        {uploadContent()}
                 
       </Grid>
             
@@ -373,4 +421,3 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
 };
 
 export default UploadDocumentsModal;
-
