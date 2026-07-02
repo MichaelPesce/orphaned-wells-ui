@@ -280,6 +280,12 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   const thisAlias = recordSchema[schemaKey]?.alias || k;
 
   useEffect(() => {
+    if (!fieldIsSelected && editMode) {
+      finishEditing();
+    }
+  }, [fieldIsSelected]);
+
+  useEffect(() => {
     const tempChildFields: string[] = [];
     if (isParent) {
       const childFieldPrefix = `${schemaKey}::`;
