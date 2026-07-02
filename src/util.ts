@@ -892,8 +892,8 @@ export function convertToMongoProcessor(input: RepoProcessor | MongoProcessor): 
   return input;
 }
 
-export const formatPageName = (page: string) => {
-  const formattedName = page?.length > 50 ? `${page?.substring(0,47)}...` : page;
+export const formatPageName = (page: string, maxChar: number = 50) => {
+  const formattedName = page?.length > maxChar ? `${page?.substring(0,maxChar-3)}...` : page;
   return formattedName;
 };
 

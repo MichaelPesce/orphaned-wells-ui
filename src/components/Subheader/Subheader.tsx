@@ -70,7 +70,7 @@ const Subheader = (props: SubheaderProps) => {
           <div style={styles.pageName}>
             <Tooltip title={currentPage?.length > 50 ? currentPage : ""}>
               <Typography noWrap>
-                {formatPageName(currentPage)}&nbsp;
+                {formatPageName(currentPage, 100)}&nbsp;
               </Typography>
             </Tooltip>
             {actions && Object.keys(actions)?.length > 0 &&
