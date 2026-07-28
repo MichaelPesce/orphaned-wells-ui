@@ -11,9 +11,7 @@ jobs:
     uses: ./.github/workflows/deploy-dispatch.yml
     with:
       app_yaml: deployment/app-engine/app-osage.yaml
-      state: osage
       collaborator: osage
-      app_environment: osage
     secrets:
       backend_url: ${{ secrets.OSAGE_BACKEND_URL }}
       google_clientid: ${{ secrets.GOOGLE_CLIENTID }}

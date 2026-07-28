@@ -1,26 +1,26 @@
 ---
 title: Backend on GKE
-description: Deploy and operate OGRRE backend environments on GKE.
+description: Deploy and operate OGRRE collaborator backends on GKE.
 sidebar_position: 3
 ---
 
 # Backend on GKE
 
-The current backend deployment path runs each environment as a Kubernetes workload in the shared GKE cluster.
+The current backend deployment path runs each collaborator as a Kubernetes workload in the shared GKE cluster.
 
-Terraform owns the cloud infrastructure. GitHub Actions renders `orphaned-wells-ui-server/deployment/kubernetes/backend.yaml` with environment-specific values and applies it to GKE.
+Terraform owns the cloud infrastructure. GitHub Actions renders `orphaned-wells-ui-server/deployment/kubernetes/backend.yaml` with collaborator-specific values and applies it to GKE.
 
 ## Architecture
 
 Terraform creates:
 
 - Shared GKE Autopilot cluster.
-- One global static IP per backend environment.
-- Optional test DNS records at `<env>-k8s-server.uow-carbon.org`.
-- Primary backend DNS records when the environment is listed in `primary_dns_to_gke_backends`.
+- One global static IP per collaborator backend.
+- Optional test DNS records at `<collaborator>-k8s-server.uow-carbon.org`.
+- Primary backend DNS records when the collaborator is listed in `primary_dns_to_gke_backends`.
 - `kubernetes_deploy_targets`, the JSON map consumed by GitHub Actions.
 
-Kubernetes creates one namespace per environment, using the `uow-<env>` naming pattern. Each namespace contains:
+Kubernetes creates one namespace per collaborator, using the `uow-<collaborator>` naming pattern. Each namespace contains:
 
 - `Deployment/backend`
 - `Service/backend`
@@ -80,7 +80,7 @@ The GKE deployment workflows require:
 - `CREDS_JSON`
 - `SERVICE_KEY_JSON`
 - `K8S_DEPLOY_TARGETS`
-- One runtime env secret per backend environment, such as `STAGING_ENV`, `CA_ENV`, `ISGS_ENV`, `NEWTS_ENV`, or `OSAGE_ENV`
+- One runtime env secret per collaborator, such as `STAGING_ENV`, `CA_ENV`, `ISGS_ENV`, `NEWTS_ENV`, or `OSAGE_ENV`
 
 The environment-file secret should contain the same key/value pairs used by the VM `.env` file. The workflow overrides these Kubernetes-owned values:
 
@@ -90,7 +90,7 @@ The environment-file secret should contain the same key/value pairs used by the 
 - `LOCAL_STORAGE_ROOT`
 - `LOCAL_STORAGE_URL_BASE`
 
-Keep `COLLABORATOR` in the environment secret when the backend needs collaborator-specific processor metadata.
+Keep `COLLABORATOR` in the runtime secret when the backend needs collaborator-specific processor metadata.
 
 ## Deploy with GitHub Actions
 
@@ -102,7 +102,7 @@ gh workflow run deploy-k8s-staging.yml \
   --ref main
 ```
 
-Environment-specific workflows deploy an existing image tag, defaulting to `latest`:
+Collaborator workflows deploy an existing image tag, defaulting to `latest`:
 
 ```bash
 gh workflow run deploy-k8s-isgs.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref isgs
@@ -117,7 +117,7 @@ Automatic deployments are controlled by repository variables:
 ENABLE_GKE_DEPLOYMENTS=true
 ```
 
-Or one environment at a time:
+Or one collaborator at a time:
 
 ```text
 ENABLE_GKE_STAGING_DEPLOY=true

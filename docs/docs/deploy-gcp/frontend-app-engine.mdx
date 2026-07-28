@@ -1,6 +1,6 @@
 ---
 title: Frontend on App Engine
-description: Deploy OGRRE frontend environments to Google App Engine.
+description: Deploy OGRRE collaborator frontends to Google App Engine.
 sidebar_position: 4
 ---
 
@@ -8,22 +8,22 @@ sidebar_position: 4
 
 Frontend deployment lives in `orphaned-wells-ui/deployment/app-engine`.
 
-Each frontend environment has its own App Engine service, branch-triggered GitHub Actions workflow, backend URL secret, dispatch route, DNS records, custom domain, and OAuth configuration.
+Each collaborator frontend has its own App Engine service, branch-triggered GitHub Actions workflow, backend URL secret, dispatch route, DNS records, custom domain, and OAuth configuration.
 
-Use `<state>` as the short environment name, such as `ca`, `isgs`, `newts`, `osage`, or `rrc`.
+Use `<collaborator>` as the short deployment key, such as `ca`, `isgs`, `newts`, `osage`, or `rrc`. Use `<COLLABORATOR>` for uppercase GitHub secret names.
 
 ## Add or update an App Engine service
 
 Add an App Engine service config:
 
 ```text
-deployment/app-engine/app-<state>.yaml
+deployment/app-engine/app-<collaborator>.yaml
 ```
 
-Copy an existing `app-*.yaml` file and update the `service` value. Existing services use the `<state>-uow` naming pattern:
+Copy an existing `app-*.yaml` file and update the `service` value. Existing services use the `<collaborator>-uow` naming pattern:
 
 ```yaml
-service: <state>-uow
+service: <collaborator>-uow
 runtime: python310
 ```
 
@@ -32,18 +32,16 @@ runtime: python310
 Add a frontend workflow:
 
 ```text
-.github/workflows/deploy-<state>.yml
+.github/workflows/deploy-<collaborator>.yml
 ```
 
-Copy an existing state deployment workflow and update:
+Copy an existing collaborator deployment workflow and update:
 
 - Workflow name.
 - Trigger branch.
 - Job name.
 - `app_yaml`.
-- `state`.
-- `collaborator`, if needed.
-- `app_environment`.
+- `collaborator`.
 - Backend URL secret name.
 
 The workflow calls `.github/workflows/deploy-dispatch.yml`, which builds the React app and deploys the configured App Engine service.
@@ -53,13 +51,13 @@ The workflow calls `.github/workflows/deploy-dispatch.yml`, which builds the Rea
 Add a frontend repository secret:
 
 ```text
-<STATE>_BACKEND_URL
+<COLLABORATOR>_BACKEND_URL
 ```
 
 The value should be the public backend URL and must not include a trailing slash:
 
 ```text
-https://<state>-server.uow-carbon.org
+https://<collaborator>-server.uow-carbon.org
 ```
 
 ## Deploy the frontend
@@ -70,17 +68,16 @@ The deployment workflow writes the build-time React environment values:
 
 - `REACT_APP_BACKEND_URL`
 - `REACT_APP_GOOGLE_CLIENTID`
-- `REACT_APP_STATE`
-- `REACT_APP_COLLABORATOR`, when configured
-- `REACT_APP_ENVIRONMENT`
+- `REACT_APP_COLLABORATOR`
+- `REACT_APP_ENVIRONMENT`, derived from `collaborator`
 
 ## Add the App Engine dispatch route
 
 Add the hostname to `deployment/app-engine/dispatch.yaml`:
 
 ```yaml
-- url: "<state>.uow-carbon.org/*"
-  service: <state>-uow
+- url: "<collaborator>.uow-carbon.org/*"
+  service: <collaborator>-uow
 ```
 
 Deploy the dispatch file from the App Engine deployment directory:
@@ -95,7 +92,7 @@ gcloud app deploy dispatch.yaml
 In Google Cloud DNS, add records for:
 
 ```text
-<state>.uow-carbon.org
+<collaborator>.uow-carbon.org
 ```
 
 Use the same frontend IPv4 and IPv6 addresses as the other frontend instances:
@@ -103,14 +100,14 @@ Use the same frontend IPv4 and IPv6 addresses as the other frontend instances:
 - `A` record for IPv4.
 - `AAAA` record for IPv6.
 
-Then add `<state>.uow-carbon.org` in App Engine custom domains.
+Then add `<collaborator>.uow-carbon.org` in App Engine custom domains.
 
 ## Update OAuth
 
 In Google OAuth credentials, add both frontend URLs wherever frontend origins are required:
 
 - The App Engine generated service URL.
-- `https://<state>.uow-carbon.org`.
+- `https://<collaborator>.uow-carbon.org`.
 
 Use the exact URL format required by the OAuth client. Avoid trailing slashes unless the existing entries use them.
 
@@ -118,7 +115,7 @@ Use the exact URL format required by the OAuth client. Avoid trailing slashes un
 
 After deployment:
 
-- Visit `https://<state>.uow-carbon.org`.
+- Visit `https://<collaborator>.uow-carbon.org`.
 - Confirm the frontend calls the expected backend URL.
 - Confirm sign-in works for the custom domain.
 - Confirm the App Engine dispatch route sends the host to the expected service.

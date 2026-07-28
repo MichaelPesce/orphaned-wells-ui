@@ -13,8 +13,8 @@ It currently manages both the GKE deployment infrastructure and the legacy backe
 ## What Terraform manages
 
 - Shared GKE Autopilot cluster.
-- One global static IP per backend environment for Kubernetes Ingress.
-- Optional `<env>-k8s-server.uow-carbon.org` test DNS records.
+- One global static IP per backend collaborator for Kubernetes Ingress.
+- Optional `<collaborator>-k8s-server.uow-carbon.org` test DNS records.
 - Optional primary backend DNS records, such as `staging-server.uow-carbon.org`, pointing to the GKE static IP.
 - `kubernetes_deploy_targets`, the output consumed by backend GitHub Actions.
 - Legacy Compute Engine VM resources for every entry in `local.collaborators`.
@@ -102,13 +102,13 @@ Do not delete or lose `terraform.tfstate` files unless you intend to recreate or
 
 ## Import existing VM resources
 
-If a backend VM already exists in GCP and should be managed by Terraform, import it before applying:
+If a collaborator backend VM already exists in GCP and should be managed by Terraform, import it before applying:
 
 ```bash
-bash scripts/import_backend_vms.sh <env>
+bash scripts/import_backend_vms.sh <collaborator>
 ```
 
-The import script imports the Compute Engine instance, the regional static IP, and the primary backend DNS record for that environment.
+The import script imports the Compute Engine instance, the regional static IP, and the primary backend DNS record for that collaborator.
 
 ## Targeted plans
 

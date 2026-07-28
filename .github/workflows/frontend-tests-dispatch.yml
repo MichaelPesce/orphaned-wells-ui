@@ -13,11 +13,6 @@ on:
         required: false
         type: string
         default: main
-      app_state:
-        description: Value for REACT_APP_STATE.
-        required: false
-        type: string
-        default: illinois
       install_python_package:
         description: Install an additional Python package into the backend container before E2E tests. Use this when calling the workflow from OGRRE_data_cleaning.
         required: false
@@ -100,11 +95,9 @@ jobs:
           touch .env
           set_env .env REACT_APP_BACKEND_URL http://localhost:8001
           set_env .env BYPASS_AUTH true
-          set_env .env REACT_APP_STATE ${{ inputs.app_state || 'illinois' }}
           set_env .env REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
 
           set_env deployment/.env REACT_APP_BACKEND_URL http://localhost:8001
-          set_env deployment/.env REACT_APP_STATE ${{ inputs.app_state || 'illinois' }}
           set_env deployment/.env REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
           set_env deployment/.env REQUIRE_AUTH false
           set_env deployment/.env ALLOWED_ORIGINS http://localhost:3000

@@ -11,9 +11,7 @@ jobs:
     uses: ./.github/workflows/deploy-dispatch.yml
     with:
       app_yaml: deployment/app-engine/app.yaml
-      state: illinois
       collaborator: isgs
-      app_environment: isgs
     secrets:
       backend_url: ${{ secrets.DEV_BACKEND_URL }}
       google_clientid: ${{ secrets.GOOGLE_CLIENTID }}

@@ -11,8 +11,8 @@ OGRRE production deployments use three pieces of Google Cloud infrastructure:
 | Layer | Source | Purpose |
 | --- | --- | --- |
 | Terraform | `orphaned-wells-ui-server/deployment/terraform` | Creates and manages backend cloud infrastructure, including GKE, static IPs, DNS records, and the legacy VM resources that are still in Terraform state. |
-| Kubernetes on GKE | `orphaned-wells-ui-server/deployment/kubernetes` | Runs one backend workload per environment in the shared GKE cluster. |
-| App Engine | `orphaned-wells-ui/deployment/app-engine` | Serves one frontend App Engine service per public frontend environment. |
+| Kubernetes on GKE | `orphaned-wells-ui-server/deployment/kubernetes` | Runs one backend workload per collaborator in the shared GKE cluster. |
+| App Engine | `orphaned-wells-ui/deployment/app-engine` | Serves one frontend App Engine service per public collaborator deployment. |
 
 The current backend deployment path is GKE. The older Compute Engine VM path is preserved for existing VM operations and rollback context, but it is not the normal path for new backend deployments.
 
@@ -28,7 +28,7 @@ The current backend deployment path is GKE. The older Compute Engine VM path is 
 
 ## Common tasks
 
-- Add a new collaborator environment: [Add Collaborator Environment](/docs/deploy-gcp/add-collaborator)
+- Add a new collaborator deployment: [Add Collaborator Deployment](/docs/deploy-gcp/add-collaborator)
 - Manage infrastructure: [Terraform Infrastructure](/docs/deploy-gcp/terraform)
 - Deploy backend services: [Backend on GKE](/docs/deploy-gcp/backend-gke)
 - Deploy frontend services: [Frontend on App Engine](/docs/deploy-gcp/frontend-app-engine)

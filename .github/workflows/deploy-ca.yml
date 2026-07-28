@@ -11,8 +11,7 @@ jobs:
     uses: ./.github/workflows/deploy-dispatch.yml
     with:
       app_yaml: deployment/app-engine/app-ca.yaml
-      state: california
-      app_environment: ca
+      collaborator: ca
     secrets:
       backend_url: ${{ secrets.CA_BACKEND_URL }}
       google_clientid: ${{ secrets.GOOGLE_CLIENTID }}

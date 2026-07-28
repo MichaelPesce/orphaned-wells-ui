@@ -1,13 +1,13 @@
 ---
 title: Legacy Backend VM Deployment
-description: Legacy Compute Engine VM deployment path for OGRRE backend environments.
+description: Legacy Compute Engine VM deployment path for OGRRE collaborator backends.
 sidebar_position: 7
 ---
 
 # Legacy Backend VM Deployment
 
 :::warning Legacy path
-The current backend deployment path is GKE. Use this page only for existing Compute Engine VM operations, rollback context, or environments that have not been migrated.
+The current backend deployment path is GKE. Use this page only for existing Compute Engine VM operations, rollback context, or collaborator backends that have not been migrated.
 :::
 
 The legacy path runs each backend on a dedicated Compute Engine VM with Docker Compose, nginx, Certbot, a static external IP, and a primary DNS record.
@@ -25,7 +25,7 @@ For the current backend path, use [Backend on GKE](./backend-gke).
 ## Backend VM setup
 
 1. Create a Compute Engine instance.
-2. Name it `<env>-uow-server`.
+2. Name it `<collaborator>-uow-server`.
 3. Allow full access to Google Cloud APIs.
 4. Reserve a static external IP address.
 5. Copy the required SSH keys from an existing server.
@@ -47,7 +47,7 @@ Install Docker using the standard Docker installation instructions for the VM op
 In Google Cloud DNS, add an `A` record:
 
 ```text
-<env>-server.uow-carbon.org
+<collaborator>-server.uow-carbon.org
 ```
 
 Point it to the VM static external IP.
@@ -56,12 +56,12 @@ If Terraform manages this VM, import the existing VM resources before applying T
 
 ```bash
 cd orphaned-wells-ui-server/deployment/terraform
-bash scripts/import_backend_vms.sh <env>
+bash scripts/import_backend_vms.sh <collaborator>
 ```
 
 ## nginx and Docker Compose
 
-On the VM, add or copy the Docker Compose and nginx configuration files for the environment.
+On the VM, add or copy the Docker Compose and nginx configuration files for the collaborator.
 
 Start with an HTTP-only nginx config so Certbot can validate the domain:
 
@@ -75,7 +75,7 @@ After HTTP is reachable, request the TLS certificate:
 ```bash
 sudo docker compose run --rm certbot certonly --webroot -w /var/www/certbot \
   --email mpesce@lbl.gov --agree-tos --no-eff-email \
-  -d <env>-server.uow-carbon.org --force-renewal
+  -d <collaborator>-server.uow-carbon.org --force-renewal
 ```
 
 Then add the HTTPS nginx configuration and restart:

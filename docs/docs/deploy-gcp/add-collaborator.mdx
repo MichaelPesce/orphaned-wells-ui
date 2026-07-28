@@ -1,14 +1,16 @@
 ---
-title: Add Collaborator Environment
+title: Add Collaborator Deployment
 description: Checklist for adding a new OGRRE collaborator deployment on GCP.
 sidebar_position: 6
 ---
 
-# Add Collaborator Environment
+# Add Collaborator Deployment
 
-Use this checklist when adding a new public OGRRE environment.
+Use this checklist when adding a new public OGRRE collaborator deployment.
 
-Use `<env>` for the short backend environment name, such as `rrc`, and `<state>` for the frontend state key when it differs.
+Use `<collaborator>` for the short deployment key, such as `rrc`, `ca`, `isgs`, `newts`, or `osage`. Use `<COLLABORATOR>` for the uppercase GitHub secret prefix.
+
+Some existing backend workflow fields are still named `DEPLOY_ENV`. In this checklist, their value should be the collaborator key unless the existing workflow has a documented exception.
 
 ## 1. Choose names
 
@@ -16,13 +18,13 @@ Confirm the names before changing code:
 
 | Item | Pattern |
 | --- | --- |
-| Backend environment | `<env>` |
-| Backend namespace | `uow-<env>` |
-| Backend primary host | `<env>-server.uow-carbon.org` |
-| Backend test host | `<env>-k8s-server.uow-carbon.org` |
-| GKE static IP name | `<env>-uow-gke-ip` |
-| Frontend host | `<state>.uow-carbon.org` |
-| App Engine service | `<state>-uow` |
+| Collaborator key | `<collaborator>` |
+| Backend namespace | `uow-<collaborator>` |
+| Backend primary host | `<collaborator>-server.uow-carbon.org` |
+| Backend test host | `<collaborator>-k8s-server.uow-carbon.org` |
+| GKE static IP name | `<collaborator>-uow-gke-ip` |
+| Frontend host | `<collaborator>.uow-carbon.org` |
+| App Engine service | `<collaborator>-uow` |
 
 Keep branch names, workflow names, secrets, App Engine service names, and DNS names aligned.
 
@@ -34,14 +36,14 @@ In `terraform.tfvars`, add its canonical backend hostname:
 
 ```hcl
 gke_backend_hostnames = {
-  <env> = "<env>-server.uow-carbon.org"
+  <collaborator> = "<collaborator>-server.uow-carbon.org"
 }
 ```
 
 If the primary backend DNS record should point to GKE, include it in:
 
 ```hcl
-primary_dns_to_gke_backends = ["<env>"]
+primary_dns_to_gke_backends = ["<collaborator>"]
 ```
 
 Run Terraform:
@@ -53,7 +55,7 @@ terraform apply -var-file=terraform.tfvars
 ```
 
 :::caution
-The current Terraform code creates legacy VM resources for every entry in `local.collaborators`, even when `enable_gke=true`. Review the plan for any `module.backend_vms["<env>"]` resources before applying.
+The current Terraform code creates legacy VM resources for every entry in `local.collaborators`, even when `enable_gke=true`. Review the plan for any `module.backend_vms["<collaborator>"]` resources before applying.
 :::
 
 ## 3. Update backend deployment targets
@@ -66,10 +68,10 @@ terraform output -json kubernetes_deploy_targets | jq -c .
 
 Store the output as the backend repository secret `K8S_DEPLOY_TARGETS`.
 
-Confirm the new environment exists in the JSON:
+Confirm the new collaborator exists in the JSON:
 
 ```bash
-terraform output -json kubernetes_deploy_targets | jq --arg env "<env>" '.[$env]'
+terraform output -json kubernetes_deploy_targets | jq --arg collaborator "<collaborator>" '.[$collaborator]'
 ```
 
 ## 4. Add backend runtime secrets
@@ -77,22 +79,22 @@ terraform output -json kubernetes_deploy_targets | jq --arg env "<env>" '.[$env]
 Add a backend repository secret named:
 
 ```text
-<ENV>_ENV
+<COLLABORATOR>_ENV
 ```
 
-The secret should contain the backend runtime `.env` content for this environment. Keep `COLLABORATOR` in the secret if the backend uses collaborator-specific processors.
+The secret should contain the backend runtime `.env` content for this collaborator. Set both `ENVIRONMENT` and `COLLABORATOR` to the collaborator key unless there is a specific reason for that deployment to differ.
 
-Update `.github/workflows/deploy-k8s-dispatch.yml` so it accepts the new environment:
+Update `.github/workflows/deploy-k8s-dispatch.yml` so it accepts the new collaborator:
 
-- Add `<env>` to `workflow_dispatch.inputs.DEPLOY_ENV.options`.
-- Add `<ENV>_ENV` to `workflow_call.secrets`.
-- Add `<ENV>_ENV_CONTENT` to the `Prepare runtime env file` env block.
-- Add a `case` branch mapping `<env>` to `<ENV>_ENV_CONTENT`.
+- Add `<collaborator>` to `workflow_dispatch.inputs.DEPLOY_ENV.options`.
+- Add `<COLLABORATOR>_ENV` to `workflow_call.secrets`.
+- Add `<COLLABORATOR>_ENV_CONTENT` to the `Prepare runtime env file` env block.
+- Add a `case` branch mapping `<collaborator>` to `<COLLABORATOR>_ENV_CONTENT`.
 
 Optionally add a dedicated workflow such as:
 
 ```text
-.github/workflows/deploy-k8s-<env>.yml
+.github/workflows/deploy-k8s-<collaborator>.yml
 ```
 
 ## 5. Initialize MongoDB
@@ -111,7 +113,7 @@ python InitializeMongoDB.py \
   --database_name "<DB_NAME>"
 ```
 
-Use the same `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_CONNECTION` values that will be stored in the backend `<ENV>_ENV` secret. The database hostname should match the host portion expected by the script, without the `mongodb+srv://` prefix.
+Use the same `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_CONNECTION` values that will be stored in the backend `<COLLABORATOR>_ENV` secret. The database hostname should match the host portion expected by the script, without the `mongodb+srv://` prefix.
 
 After initialization, confirm the database contains the required `roles`, `teams`, and `users` collections.
 
@@ -124,37 +126,39 @@ gcloud container clusters get-credentials uow-backend-gke \
   --region us-central1 \
   --project <PROJECT_ID>
 
-kubectl -n uow-<env> get deployment backend
-kubectl -n uow-<env> get pods -l app.kubernetes.io/name=orphaned-wells-ui-server -o wide
-kubectl -n uow-<env> get managedcertificate backend-cert
-curl -f https://<env>-server.uow-carbon.org/health
+kubectl -n uow-<collaborator> get deployment backend
+kubectl -n uow-<collaborator> get pods -l app.kubernetes.io/name=orphaned-wells-ui-server -o wide
+kubectl -n uow-<collaborator> get managedcertificate backend-cert
+curl -f https://<collaborator>-server.uow-carbon.org/health
 ```
 
 ## 7. Add the frontend
 
 In `orphaned-wells-ui`:
 
-1. Add `deployment/app-engine/app-<state>.yaml`.
-2. Add `.github/workflows/deploy-<state>.yml`.
-3. Add the frontend repository secret `<STATE>_BACKEND_URL` with no trailing slash.
-4. Add `<state>.uow-carbon.org/*` to `deployment/app-engine/dispatch.yaml`.
+1. Add `deployment/app-engine/app-<collaborator>.yaml`.
+2. Add `.github/workflows/deploy-<collaborator>.yml`.
+3. Add the frontend repository secret `<COLLABORATOR>_BACKEND_URL` with no trailing slash.
+4. Add `<collaborator>.uow-carbon.org/*` to `deployment/app-engine/dispatch.yaml`.
 5. Deploy the frontend workflow.
 6. Deploy `dispatch.yaml`.
+
+When editing the frontend workflow, set the existing `collaborator` field to the collaborator key unless an existing deployment has a documented exception.
 
 See [Frontend on App Engine](./frontend-app-engine) for details.
 
 ## 8. Configure frontend DNS and OAuth
 
-Add frontend DNS records for `<state>.uow-carbon.org` using the same App Engine frontend IPv4 and IPv6 addresses as the other environments.
+Add frontend DNS records for `<collaborator>.uow-carbon.org` using the same App Engine frontend IPv4 and IPv6 addresses as the other frontend deployments.
 
 Add both frontend URLs to Google OAuth credentials:
 
 - The App Engine generated service URL.
-- `https://<state>.uow-carbon.org`.
+- `https://<collaborator>.uow-carbon.org`.
 
 ## 9. Confirm application setup
 
-Confirm the environment has:
+Confirm the collaborator deployment has:
 
 - MongoDB database, collections, indexes, roles, and initial users.
 - Processor metadata and schemas for the collaborator.
@@ -168,4 +172,4 @@ Confirm the environment has:
 - Updating DNS is not enough for GKE. The Ingress host and ManagedCertificate domain must match the hostname from `K8S_DEPLOY_TARGETS`.
 - After Terraform changes, update `K8S_DEPLOY_TARGETS` before redeploying the backend.
 - Frontend backend URL secrets should not have trailing slashes.
-- New backend environments must be added to `deploy-k8s-dispatch.yml`; a dedicated workflow alone is not enough.
+- New collaborators must be added to `deploy-k8s-dispatch.yml`; a dedicated workflow alone is not enough.
