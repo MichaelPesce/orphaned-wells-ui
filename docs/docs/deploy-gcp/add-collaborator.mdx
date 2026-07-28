@@ -1,0 +1,179 @@
+---
+title: Add Collaborator Deployment
+description: Checklist for adding a new OGRRE collaborator deployment on GCP.
+sidebar_position: 6
+---
+
+# Add Collaborator Deployment
+
+Use this checklist when adding a new public OGRRE collaborator deployment.
+
+Use `<collaborator>` for the short deployment key, such as `rrc`, `ca`, `isgs`, `newts`, or `osage`. Use `<COLLABORATOR>` for the uppercase GitHub secret prefix.
+
+Some existing backend workflow fields are still named `DEPLOY_ENV`. In this checklist, their value should be the collaborator key unless the existing workflow has a documented exception.
+
+## 1. Choose names
+
+Confirm the names before changing code:
+
+| Item | Pattern |
+| --- | --- |
+| Collaborator key | `<collaborator>` |
+| Backend namespace | `uow-<collaborator>` |
+| Backend primary host | `<collaborator>-server.uow-carbon.org` |
+| Backend test host | `<collaborator>-k8s-server.uow-carbon.org` |
+| GKE static IP name | `<collaborator>-uow-gke-ip` |
+| Frontend host | `<collaborator>.uow-carbon.org` |
+| App Engine service | `<collaborator>-uow` |
+
+Keep branch names, workflow names, secrets, App Engine service names, and DNS names aligned.
+
+## 2. Update Terraform
+
+In `orphaned-wells-ui-server/deployment/terraform/main.tf`, add the collaborator to `local.collaborators`.
+
+In `terraform.tfvars`, add its canonical backend hostname:
+
+```hcl
+gke_backend_hostnames = {
+  <collaborator> = "<collaborator>-server.uow-carbon.org"
+}
+```
+
+If the primary backend DNS record should point to GKE, include it in:
+
+```hcl
+primary_dns_to_gke_backends = ["<collaborator>"]
+```
+
+Run Terraform:
+
+```bash
+cd orphaned-wells-ui-server/deployment/terraform
+terraform init
+terraform workspace select ogrre
+terraform plan -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+:::caution
+The current Terraform code creates legacy VM resources for every entry in `local.collaborators`, even when `enable_gke=true`. Review the plan for any `module.backend_vms["<collaborator>"]` resources before applying.
+:::
+
+## 3. Update backend deployment targets
+
+Export the target map:
+
+```bash
+terraform workspace select ogrre
+terraform output -json kubernetes_deploy_targets | jq -c .
+```
+
+Store the output as the backend repository secret `K8S_DEPLOY_TARGETS`.
+
+Confirm the new collaborator exists in the JSON:
+
+```bash
+terraform workspace select ogrre
+terraform output -json kubernetes_deploy_targets | jq --arg collaborator "<collaborator>" '.[$collaborator]'
+```
+
+## 4. Add backend runtime secrets
+
+Add a backend repository secret named:
+
+```text
+<COLLABORATOR>_ENV
+```
+
+The secret should contain the backend runtime `.env` content for this collaborator. Set both `ENVIRONMENT` and `COLLABORATOR` to the collaborator key unless there is a specific reason for that deployment to differ.
+
+Update `.github/workflows/deploy-k8s-dispatch.yml` so it accepts the new collaborator:
+
+- Add `<collaborator>` to `workflow_dispatch.inputs.DEPLOY_ENV.options`.
+- Add `<COLLABORATOR>_ENV` to `workflow_call.secrets`.
+- Add `<COLLABORATOR>_ENV_CONTENT` to the `Prepare runtime env file` env block.
+- Add a `case` branch mapping `<collaborator>` to `<COLLABORATOR>_ENV_CONTENT`.
+
+Optionally add a dedicated workflow such as:
+
+```text
+.github/workflows/deploy-k8s-<collaborator>.yml
+```
+
+## 5. Initialize MongoDB
+
+Before the new backend is used, initialize the collaborator database with the required OGRRE roles, first team, and first user.
+
+Use the `InitializeMongoDB.py` script referenced in [Create and connect MongoDB database](/docs/install/database_setup#initialize-database-for-ogrre). Run it once for the new database:
+
+```bash
+python InitializeMongoDB.py \
+  --team_name "<team name>" \
+  --email "<initial-admin-email>" \
+  --database_username "<DB_USERNAME>" \
+  --database_password "<DB_PASSWORD>" \
+  --database_hostname "<DB_CONNECTION>" \
+  --database_name "<DB_NAME>"
+```
+
+Use the same `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_CONNECTION` values that will be stored in the backend `<COLLABORATOR>_ENV` secret. The database hostname should match the host portion expected by the script, without the `mongodb+srv://` prefix.
+
+After initialization, confirm the database contains the required `roles`, `teams`, and `users` collections.
+
+## 6. Deploy and verify the backend
+
+Run the dedicated workflow or dispatch workflow. Then verify:
+
+```bash
+gcloud container clusters get-credentials uow-backend-gke \
+  --region us-central1 \
+  --project <PROJECT_ID>
+
+kubectl -n uow-<collaborator> get deployment backend
+kubectl -n uow-<collaborator> get pods -l app.kubernetes.io/name=orphaned-wells-ui-server -o wide
+kubectl -n uow-<collaborator> get managedcertificate backend-cert
+curl -f https://<collaborator>-server.uow-carbon.org/health
+```
+
+## 7. Add the frontend
+
+In `orphaned-wells-ui`:
+
+1. Add `deployment/app-engine/app-<collaborator>.yaml`.
+2. Add `.github/workflows/deploy-<collaborator>.yml`.
+3. Add the frontend repository secret `<COLLABORATOR>_BACKEND_URL` with no trailing slash.
+4. Add `<collaborator>.uow-carbon.org/*` to `deployment/app-engine/dispatch.yaml`.
+5. Deploy the frontend workflow.
+6. Deploy `dispatch.yaml`.
+
+When editing the frontend workflow, set the existing `collaborator` field to the collaborator key unless an existing deployment has a documented exception.
+
+See [Frontend on App Engine](./frontend-app-engine) for details.
+
+## 8. Configure frontend DNS and OAuth
+
+Add frontend DNS records for `<collaborator>.uow-carbon.org` using the same App Engine frontend IPv4 and IPv6 addresses as the other frontend deployments.
+
+Add both frontend URLs to Google OAuth credentials:
+
+- The App Engine generated service URL.
+- `https://<collaborator>.uow-carbon.org`.
+
+## 9. Confirm application setup
+
+Confirm the collaborator deployment has:
+
+- MongoDB database, collections, indexes, roles, and initial users.
+- Processor metadata and schemas for the collaborator.
+- Google Cloud Storage bucket access if using `STORAGE_BACKEND=google`.
+- Google Document AI settings if using `DOCUMENT_AI_BACKEND=google`.
+- Frontend OAuth sign-in and backend authorization working together.
+
+## Common pitfalls
+
+- `enable_gke=true` does not disable legacy VM resources.
+- Updating DNS is not enough for GKE. The Ingress host and ManagedCertificate domain must match the hostname from `K8S_DEPLOY_TARGETS`.
+- After Terraform changes, update `K8S_DEPLOY_TARGETS` before redeploying the backend.
+- Frontend backend URL secrets should not have trailing slashes.
+- New collaborators must be added to `deploy-k8s-dispatch.yml`; a dedicated workflow alone is not enough.

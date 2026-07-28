@@ -1,0 +1,36 @@
+---
+title: Deploy to GCP
+description: Production deployment guide for OGRRE on Google Cloud Platform.
+sidebar_position: 1
+---
+
+# Deploy to GCP
+
+OGRRE production deployments use three pieces of Google Cloud infrastructure:
+
+| Layer | Source | Purpose |
+| --- | --- | --- |
+| Terraform | `orphaned-wells-ui-server/deployment/terraform` | Creates and manages backend cloud infrastructure, including GKE, static IPs, DNS records, and the legacy VM resources that are still in Terraform state. |
+| Kubernetes on GKE | `orphaned-wells-ui-server/deployment/kubernetes` | Runs one backend workload per collaborator in the shared GKE cluster. |
+| App Engine | `orphaned-wells-ui/deployment/app-engine` | Serves one frontend App Engine service per public collaborator deployment. |
+
+The current backend deployment path is GKE. The older Compute Engine VM path is preserved for existing VM operations and rollback context, but it is not the normal path for new backend deployments.
+
+## Standard deployment order
+
+1. Confirm the [Google Cloud](/docs/install/gcp_setup), [MongoDB](/docs/install/database_setup), and [GitHub secrets](/docs/deploy-gcp/github-secrets) prerequisites.
+2. Use [Terraform infrastructure](/docs/deploy-gcp/terraform) from the shared `ogrre` remote-state workspace to create or update the GKE cluster, backend static IPs, DNS records, and deployment target outputs.
+3. Export `kubernetes_deploy_targets` from Terraform and store it as the backend repository secret `K8S_DEPLOY_TARGETS`.
+4. Deploy or update the [backend on GKE](/docs/deploy-gcp/backend-gke).
+5. Deploy or update the [frontend on App Engine](/docs/deploy-gcp/frontend-app-engine).
+6. Configure DNS, App Engine custom domains, and OAuth entries for the frontend host.
+7. Verify the backend health endpoint, Kubernetes rollout, frontend App Engine service, and OAuth sign-in flow.
+
+## Common tasks
+
+- Add a new collaborator deployment: [Add Collaborator Deployment](/docs/deploy-gcp/add-collaborator)
+- Manage infrastructure: [Terraform Infrastructure](/docs/deploy-gcp/terraform)
+- Deploy backend services: [Backend on GKE](/docs/deploy-gcp/backend-gke)
+- Deploy frontend services: [Frontend on App Engine](/docs/deploy-gcp/frontend-app-engine)
+- Configure repository credentials: [GitHub Secrets and Variables](/docs/deploy-gcp/github-secrets)
+- Reference the old VM path: [Legacy Backend VM Deployment](/docs/deploy-gcp/legacy-vm)

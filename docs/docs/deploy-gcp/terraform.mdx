@@ -1,0 +1,160 @@
+---
+title: Terraform Infrastructure
+description: Manage OGRRE backend infrastructure with Terraform.
+sidebar_position: 2
+---
+
+# Terraform Infrastructure
+
+Terraform lives in `orphaned-wells-ui-server/deployment/terraform`.
+
+It currently manages both the GKE deployment infrastructure and the legacy backend VM resources. `enable_gke` defaults to `true`, but it is additive: it includes GKE resources in the plan and does not disable the VM module.
+
+## What Terraform manages
+
+- Shared GKE Autopilot cluster.
+- One global static IP per backend collaborator for Kubernetes Ingress.
+- Optional `<collaborator>-k8s-server.uow-carbon.org` test DNS records.
+- Optional primary backend DNS records, such as `staging-server.uow-carbon.org`, pointing to the GKE static IP.
+- `kubernetes_deploy_targets`, the output consumed by backend GitHub Actions.
+- Legacy Compute Engine VM resources for every entry in `local.collaborators`.
+
+:::caution
+Adding a collaborator to `local.collaborators` currently creates both GKE resources and legacy VM resources for that collaborator. Review the plan before applying.
+:::
+
+## Prerequisites
+
+- Terraform 1.x.
+- Google Cloud SDK.
+- `jq` for output export and state verification commands.
+- Access to the target GCP project.
+- Access to the shared Terraform state bucket: `gs://tidy-outlet-412020-ogrre-terraform-state`.
+- A local `terraform.tfvars` file with project and deployment values.
+
+Example `terraform.tfvars`:
+
+```hcl
+project_id = "tidy-outlet-412020"
+region     = "us-central1"
+zone       = "us-central1-a"
+
+enable_gke = true
+
+gke_backend_hostnames = {
+  staging = "staging-server.uow-carbon.org"
+}
+
+primary_dns_to_gke_backends = ["staging"]
+```
+
+`*.tfvars` and `.env` files are local operational files and should not be committed. Terraform state is stored remotely in GCS; do not commit local state backups or state migration files.
+
+## Authenticate
+
+```bash
+cd orphaned-wells-ui-server/deployment/terraform
+
+gcloud auth login
+gcloud config set project <PROJECT_ID>
+gcloud auth application-default login
+```
+
+## Plan and apply
+
+```bash
+terraform init
+terraform workspace select ogrre
+terraform workspace show
+terraform plan -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+To exclude GKE resources from a plan:
+
+```bash
+terraform plan -var-file=terraform.tfvars -var='enable_gke=false'
+```
+
+## Export GKE deployment targets
+
+After apply, export the Kubernetes deployment target map:
+
+```bash
+terraform workspace select ogrre
+terraform output -json kubernetes_deploy_targets | jq -c .
+```
+
+Store that exact JSON as `K8S_DEPLOY_TARGETS` in the backend repository. Re-export it any time Terraform changes hostnames, static IP names, namespaces, resource requests, or cluster metadata.
+
+## Workspaces and state
+
+This Terraform setup uses a shared GCS backend configured in `backend.tf`:
+
+```text
+gs://tidy-outlet-412020-ogrre-terraform-state/orphaned-wells-ui-server
+```
+
+The backend bucket is bootstrap infrastructure. It is configured by `backend.tf` and created or updated out-of-band with `scripts/bootstrap_terraform_state_bucket.sh`; it is not itself a Terraform-managed resource in this root module. The bucket should have uniform bucket-level access, public access prevention, and object versioning enabled.
+
+Use the shared `ogrre` workspace for normal infrastructure work:
+
+```bash
+terraform init
+terraform workspace select ogrre
+terraform workspace show
+terraform plan -var-file=terraform.tfvars
+```
+
+If this is your first time using the backend, confirm the remote workspace is visible:
+
+```bash
+terraform workspace list
+```
+
+You can also verify that Terraform is reading remote state:
+
+```bash
+terraform state pull > /private/tmp/ogrre-remote.tfstate
+jq -r '.resources | length' /private/tmp/ogrre-remote.tfstate
+gcloud storage ls -r gs://tidy-outlet-412020-ogrre-terraform-state/orphaned-wells-ui-server
+```
+
+:::caution
+Treat the shared remote state as production infrastructure metadata. Do not run `terraform state push`, `terraform state rm`, `terraform state mv`, `terraform import`, `terraform workspace new`, or `terraform workspace delete` against the shared backend unless you are intentionally doing state maintenance.
+:::
+
+:::warning
+If `terraform init` asks whether to migrate all local workspaces to `gcs`, do not answer `yes` unless you intentionally want to overwrite or copy every local workspace into the shared backend. For selective migration, back up the local state and push only the known-good state file.
+:::
+
+Workspaces are still available with the GCS backend, but use a separate workspace only when you intentionally want an isolated remote state:
+
+```bash
+terraform workspace new <workspace_name>
+terraform workspace select <workspace_name>
+```
+
+Do not use ad hoc workspaces for shared collaborator infrastructure. A plan from an empty or incorrect workspace may propose recreating existing cloud resources.
+
+## State recovery and imports
+
+Imports are normally unnecessary now that the shared `ogrre` state is remote. If you are recovering or bootstrapping a state file, use the backend repository import scripts and review the summary before applying:
+
+```bash
+bash scripts/import_existing_infrastructure.sh --target-workspace ogrre --dry-run
+bash scripts/import_existing_infrastructure.sh --target-workspace ogrre
+```
+
+The comprehensive importer reads this repo's Terraform naming conventions and attempts to import the configured firewalls, GKE resources, DNS records, static IPs, and legacy VM resources. Missing resources are reported and do not stop the script unless `--strict` is passed.
+
+## Targeted plans
+
+Use `-target` only for isolated Terraform work:
+
+```bash
+terraform plan -target='module.backend_vms["staging"]' -var-file=terraform.tfvars
+terraform apply -target='module.backend_vms["staging"]' -var-file=terraform.tfvars
+```
+
+Targeting bypasses part of Terraform's normal dependency planning, so use a full plan afterward when possible.

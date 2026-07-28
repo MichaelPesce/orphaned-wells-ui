@@ -1,0 +1,181 @@
+---
+title: Backend on GKE
+description: Deploy and operate OGRRE collaborator backends on GKE.
+sidebar_position: 3
+---
+
+# Backend on GKE
+
+The current backend deployment path runs each collaborator as a Kubernetes workload in the shared GKE cluster.
+
+Terraform owns the cloud infrastructure. GitHub Actions renders `orphaned-wells-ui-server/deployment/kubernetes/backend.yaml` with collaborator-specific values and applies it to GKE.
+
+## Architecture
+
+Terraform creates:
+
+- Shared GKE Autopilot cluster.
+- One global static IP per collaborator backend.
+- Optional test DNS records at `<collaborator>-k8s-server.uow-carbon.org`.
+- Primary backend DNS records when the collaborator is listed in `primary_dns_to_gke_backends`.
+- `kubernetes_deploy_targets`, the JSON map consumed by GitHub Actions.
+
+Kubernetes creates one namespace per collaborator, using the `uow-<collaborator>` naming pattern. Each namespace contains:
+
+- `Deployment/backend`
+- `Service/backend`
+- `BackendConfig/backend-config`
+- `ManagedCertificate/backend-cert`
+- `FrontendConfig/backend-frontend-config`
+- `Ingress/backend`
+- `Secret/backend-runtime-env`
+- `Secret/backend-runtime-files`
+- `Secret/dockerhub-pull`
+
+## Prerequisites
+
+Required local tools for manual operations:
+
+- `gcloud`
+- `kubectl`
+- `terraform`
+- `jq`
+
+Required Google APIs:
+
+- Kubernetes Engine API: `container.googleapis.com`
+- Compute Engine API: `compute.googleapis.com`
+- Cloud DNS API: `dns.googleapis.com`
+
+The identity running Terraform needs permissions to manage GKE, Compute addresses, Cloud DNS, and project services if Terraform manages API enablement. The GitHub Actions service account in `SERVICE_KEY_JSON` needs enough access to fetch GKE credentials and apply Kubernetes resources.
+
+## Prepare deployment targets
+
+Apply Terraform first:
+
+```bash
+cd orphaned-wells-ui-server/deployment/terraform
+terraform init
+terraform workspace select ogrre
+terraform plan -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+Then export and store the target map:
+
+```bash
+terraform workspace select ogrre
+terraform output -json kubernetes_deploy_targets | jq -c .
+```
+
+Save the output as the backend repository secret `K8S_DEPLOY_TARGETS`.
+
+The `host` field controls the Kubernetes Ingress host and the Google-managed certificate domain. DNS alone is not enough; after changing hostnames in Terraform, update `K8S_DEPLOY_TARGETS` and redeploy the backend.
+
+## Required backend secrets
+
+The GKE deployment workflows require:
+
+- `PROJECT_ID`
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_ACCESS_TOKEN`
+- `CREDS_JSON`
+- `SERVICE_KEY_JSON`
+- `K8S_DEPLOY_TARGETS`
+- One runtime env secret per dispatch-supported collaborator, currently `STAGING_ENV`, `CA_ENV`, `ISGS_ENV`, `NEWTS_ENV`, and `OSAGE_ENV`
+
+The environment-file secret should contain the same key/value pairs used by the VM `.env` file. The workflow overrides these Kubernetes-owned values:
+
+- `ENVIRONMENT`
+- `BACKEND_URL`
+- `LOG_DIR`
+- `LOCAL_STORAGE_ROOT`
+- `LOCAL_STORAGE_URL_BASE`
+
+Keep `COLLABORATOR` in the runtime secret when the backend needs collaborator-specific processor metadata.
+
+When adding a collaborator, update `deploy-k8s-dispatch.yml` with the new `DEPLOY_ENV`, `<COLLABORATOR>_ENV` secret, and runtime-env case branch before relying on a dedicated workflow. A dedicated `deploy-k8s-<collaborator>.yml` workflow calls the dispatch workflow and will fail until dispatch supports that collaborator.
+
+## Deploy with GitHub Actions
+
+The staging workflow builds and pushes the backend image, then deploys staging:
+
+```bash
+gh workflow run deploy-k8s-staging.yml \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server \
+  --ref main
+```
+
+Collaborator workflows deploy an existing image tag, defaulting to `latest`:
+
+```bash
+gh workflow run deploy-k8s-isgs.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref isgs
+gh workflow run deploy-k8s-newts.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref newts
+gh workflow run deploy-k8s-osage.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref osage
+gh workflow run deploy-k8s-ca.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref ca
+```
+
+The exact set of deployable collaborators is controlled by `.github/workflows/deploy-k8s-dispatch.yml`. Confirm the collaborator is present in `workflow_dispatch.inputs.DEPLOY_ENV.options` and in the runtime-env secret mapping before dispatching it.
+
+Automatic deployments are controlled by repository variables:
+
+```text
+ENABLE_GKE_DEPLOYMENTS=true
+```
+
+Or one collaborator at a time:
+
+```text
+ENABLE_GKE_STAGING_DEPLOY=true
+ENABLE_GKE_CA_DEPLOY=true
+ENABLE_GKE_ISGS_DEPLOY=true
+ENABLE_GKE_NEWTS_DEPLOY=true
+ENABLE_GKE_OSAGE_DEPLOY=true
+```
+
+## Check rollout status
+
+Authenticate to the cluster:
+
+```bash
+gcloud container clusters get-credentials uow-backend-gke \
+  --region us-central1 \
+  --project <PROJECT_ID>
+```
+
+Check one backend:
+
+```bash
+kubectl -n uow-staging get deployment backend
+kubectl -n uow-staging get pods -l app.kubernetes.io/name=orphaned-wells-ui-server -o wide
+kubectl -n uow-staging get ingress backend
+kubectl -n uow-staging get managedcertificate backend-cert
+```
+
+Read logs:
+
+```bash
+kubectl -n uow-staging logs deployment/backend --tail=200
+kubectl -n uow-staging logs deployment/backend --tail=200 -f
+```
+
+Restart a backend deployment:
+
+```bash
+kubectl -n uow-staging rollout restart deployment/backend
+kubectl -n uow-staging rollout status deployment/backend --timeout=10m
+```
+
+Check resource usage:
+
+```bash
+kubectl top pods -n uow-staging
+kubectl top nodes
+```
+
+## Notes
+
+- GKE replaces VM nginx/certbot with GKE Ingress, `ManagedCertificate`, `FrontendConfig`, and `BackendConfig`.
+- Google-managed certificates require DNS to point at the GKE load balancer before they become active.
+- The rendered manifest in `deployment/kubernetes/rendered/backend.yaml` is an ephemeral artifact. Do not commit it.
+- The Kubernetes Deployment uses pod-local `emptyDir` volumes for `/logs` and `/data`. Production document storage should continue using Google Cloud Storage.
