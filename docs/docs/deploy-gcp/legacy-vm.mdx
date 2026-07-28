@@ -56,7 +56,9 @@ If Terraform manages this VM, import the existing VM resources before applying T
 
 ```bash
 cd orphaned-wells-ui-server/deployment/terraform
-bash scripts/import_backend_vms.sh <collaborator>
+terraform init
+terraform workspace select ogrre
+bash scripts/import_existing_infrastructure.sh --target-workspace ogrre --backend-vms-only <collaborator>
 ```
 
 ## nginx and Docker Compose

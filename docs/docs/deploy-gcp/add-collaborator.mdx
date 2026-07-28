@@ -65,6 +65,7 @@ The current Terraform code creates legacy VM resources for every entry in `local
 Export the target map:
 
 ```bash
+terraform workspace select ogrre
 terraform output -json kubernetes_deploy_targets | jq -c .
 ```
 
@@ -73,6 +74,7 @@ Store the output as the backend repository secret `K8S_DEPLOY_TARGETS`.
 Confirm the new collaborator exists in the JSON:
 
 ```bash
+terraform workspace select ogrre
 terraform output -json kubernetes_deploy_targets | jq --arg collaborator "<collaborator>" '.[$collaborator]'
 ```
 

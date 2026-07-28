@@ -27,6 +27,7 @@ Adding a collaborator to `local.collaborators` currently creates both GKE resour
 
 - Terraform 1.x.
 - Google Cloud SDK.
+- `jq` for output export and state verification commands.
 - Access to the target GCP project.
 - Access to the shared Terraform state bucket: `gs://tidy-outlet-412020-ogrre-terraform-state`.
 - A local `terraform.tfvars` file with project and deployment values.
@@ -64,6 +65,7 @@ gcloud auth application-default login
 ```bash
 terraform init
 terraform workspace select ogrre
+terraform workspace show
 terraform plan -var-file=terraform.tfvars
 terraform apply -var-file=terraform.tfvars
 ```
@@ -79,6 +81,7 @@ terraform plan -var-file=terraform.tfvars -var='enable_gke=false'
 After apply, export the Kubernetes deployment target map:
 
 ```bash
+terraform workspace select ogrre
 terraform output -json kubernetes_deploy_targets | jq -c .
 ```
 
@@ -91,6 +94,8 @@ This Terraform setup uses a shared GCS backend configured in `backend.tf`:
 ```text
 gs://tidy-outlet-412020-ogrre-terraform-state/orphaned-wells-ui-server
 ```
+
+The backend bucket is bootstrap infrastructure. It is configured by `backend.tf` and created or updated out-of-band with `scripts/bootstrap_terraform_state_bucket.sh`; it is not itself a Terraform-managed resource in this root module. The bucket should have uniform bucket-level access, public access prevention, and object versioning enabled.
 
 Use the shared `ogrre` workspace for normal infrastructure work:
 
@@ -132,7 +137,7 @@ terraform workspace select <workspace_name>
 
 Do not use ad hoc workspaces for shared collaborator infrastructure. A plan from an empty or incorrect workspace may propose recreating existing cloud resources.
 
-## Import existing VM resources
+## State recovery and imports
 
 Imports are normally unnecessary now that the shared `ogrre` state is remote. If you are recovering or bootstrapping a state file, use the backend repository import scripts and review the summary before applying:
 

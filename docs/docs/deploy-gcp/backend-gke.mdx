@@ -64,6 +64,7 @@ terraform apply -var-file=terraform.tfvars
 Then export and store the target map:
 
 ```bash
+terraform workspace select ogrre
 terraform output -json kubernetes_deploy_targets | jq -c .
 ```
 
@@ -81,7 +82,7 @@ The GKE deployment workflows require:
 - `CREDS_JSON`
 - `SERVICE_KEY_JSON`
 - `K8S_DEPLOY_TARGETS`
-- One runtime env secret per collaborator, such as `STAGING_ENV`, `CA_ENV`, `ISGS_ENV`, `NEWTS_ENV`, or `OSAGE_ENV`
+- One runtime env secret per dispatch-supported collaborator, currently `STAGING_ENV`, `CA_ENV`, `ISGS_ENV`, `NEWTS_ENV`, and `OSAGE_ENV`
 
 The environment-file secret should contain the same key/value pairs used by the VM `.env` file. The workflow overrides these Kubernetes-owned values:
 
@@ -92,6 +93,8 @@ The environment-file secret should contain the same key/value pairs used by the 
 - `LOCAL_STORAGE_URL_BASE`
 
 Keep `COLLABORATOR` in the runtime secret when the backend needs collaborator-specific processor metadata.
+
+When adding a collaborator, update `deploy-k8s-dispatch.yml` with the new `DEPLOY_ENV`, `<COLLABORATOR>_ENV` secret, and runtime-env case branch before relying on a dedicated workflow. A dedicated `deploy-k8s-<collaborator>.yml` workflow calls the dispatch workflow and will fail until dispatch supports that collaborator.
 
 ## Deploy with GitHub Actions
 
@@ -111,6 +114,8 @@ gh workflow run deploy-k8s-newts.yml --repo CATALOG-Historic-Records/orphaned-we
 gh workflow run deploy-k8s-osage.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref osage
 gh workflow run deploy-k8s-ca.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref ca
 ```
+
+The exact set of deployable collaborators is controlled by `.github/workflows/deploy-k8s-dispatch.yml`. Confirm the collaborator is present in `workflow_dispatch.inputs.DEPLOY_ENV.options` and in the runtime-env secret mapping before dispatching it.
 
 Automatic deployments are controlled by repository variables:
 

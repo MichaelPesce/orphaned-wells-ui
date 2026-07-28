@@ -19,7 +19,7 @@ The current backend deployment path is GKE. The older Compute Engine VM path is 
 ## Standard deployment order
 
 1. Confirm the [Google Cloud](/docs/install/gcp_setup), [MongoDB](/docs/install/database_setup), and [GitHub secrets](/docs/deploy-gcp/github-secrets) prerequisites.
-2. Use [Terraform infrastructure](/docs/deploy-gcp/terraform) to create or update the GKE cluster, backend static IPs, DNS records, and deployment target outputs.
+2. Use [Terraform infrastructure](/docs/deploy-gcp/terraform) from the shared `ogrre` remote-state workspace to create or update the GKE cluster, backend static IPs, DNS records, and deployment target outputs.
 3. Export `kubernetes_deploy_targets` from Terraform and store it as the backend repository secret `K8S_DEPLOY_TARGETS`.
 4. Deploy or update the [backend on GKE](/docs/deploy-gcp/backend-gke).
 5. Deploy or update the [frontend on App Engine](/docs/deploy-gcp/frontend-app-engine).
