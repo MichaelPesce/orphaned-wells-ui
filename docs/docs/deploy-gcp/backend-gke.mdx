@@ -56,6 +56,7 @@ Apply Terraform first:
 ```bash
 cd orphaned-wells-ui-server/deployment/terraform
 terraform init
+terraform workspace select ogrre
 terraform plan -var-file=terraform.tfvars
 terraform apply -var-file=terraform.tfvars
 ```
