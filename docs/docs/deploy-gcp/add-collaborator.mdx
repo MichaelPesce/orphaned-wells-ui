@@ -95,7 +95,27 @@ Optionally add a dedicated workflow such as:
 .github/workflows/deploy-k8s-<env>.yml
 ```
 
-## 5. Deploy and verify the backend
+## 5. Initialize MongoDB
+
+Before the new backend is used, initialize the collaborator database with the required OGRRE roles, first team, and first user.
+
+Use the `InitializeMongoDB.py` script referenced in [Create and connect MongoDB database](/docs/install/database_setup#initialize-database-for-ogrre). Run it once for the new database:
+
+```bash
+python InitializeMongoDB.py \
+  --team_name "<team name>" \
+  --email "<initial-admin-email>" \
+  --database_username "<DB_USERNAME>" \
+  --database_password "<DB_PASSWORD>" \
+  --database_hostname "<DB_CONNECTION>" \
+  --database_name "<DB_NAME>"
+```
+
+Use the same `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_CONNECTION` values that will be stored in the backend `<ENV>_ENV` secret. The database hostname should match the host portion expected by the script, without the `mongodb+srv://` prefix.
+
+After initialization, confirm the database contains the required `roles`, `teams`, and `users` collections.
+
+## 6. Deploy and verify the backend
 
 Run the dedicated workflow or dispatch workflow. Then verify:
 
@@ -110,7 +130,7 @@ kubectl -n uow-<env> get managedcertificate backend-cert
 curl -f https://<env>-server.uow-carbon.org/health
 ```
 
-## 6. Add the frontend
+## 7. Add the frontend
 
 In `orphaned-wells-ui`:
 
@@ -123,7 +143,7 @@ In `orphaned-wells-ui`:
 
 See [Frontend on App Engine](./frontend-app-engine) for details.
 
-## 7. Configure frontend DNS and OAuth
+## 8. Configure frontend DNS and OAuth
 
 Add frontend DNS records for `<state>.uow-carbon.org` using the same App Engine frontend IPv4 and IPv6 addresses as the other environments.
 
@@ -132,7 +152,7 @@ Add both frontend URLs to Google OAuth credentials:
 - The App Engine generated service URL.
 - `https://<state>.uow-carbon.org`.
 
-## 8. Confirm application setup
+## 9. Confirm application setup
 
 Confirm the environment has:
 
