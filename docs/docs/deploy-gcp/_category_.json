@@ -1,0 +1,8 @@
+{
+  "label": "Deploy to GCP",
+  "position": 3,
+  "link": {
+    "type": "doc",
+    "id": "deploy-gcp/index"
+  }
+}

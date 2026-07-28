@@ -1,0 +1,124 @@
+---
+title: Frontend on App Engine
+description: Deploy OGRRE frontend environments to Google App Engine.
+sidebar_position: 4
+---
+
+# Frontend on App Engine
+
+Frontend deployment lives in `orphaned-wells-ui/deployment/app-engine`.
+
+Each frontend environment has its own App Engine service, branch-triggered GitHub Actions workflow, backend URL secret, dispatch route, DNS records, custom domain, and OAuth configuration.
+
+Use `<state>` as the short environment name, such as `ca`, `isgs`, `newts`, `osage`, or `rrc`.
+
+## Add or update an App Engine service
+
+Add an App Engine service config:
+
+```text
+deployment/app-engine/app-<state>.yaml
+```
+
+Copy an existing `app-*.yaml` file and update the `service` value. Existing services use the `<state>-uow` naming pattern:
+
+```yaml
+service: <state>-uow
+runtime: python310
+```
+
+## Add a deployment workflow
+
+Add a frontend workflow:
+
+```text
+.github/workflows/deploy-<state>.yml
+```
+
+Copy an existing state deployment workflow and update:
+
+- Workflow name.
+- Trigger branch.
+- Job name.
+- `app_yaml`.
+- `state`.
+- `collaborator`, if needed.
+- `app_environment`.
+- Backend URL secret name.
+
+The workflow calls `.github/workflows/deploy-dispatch.yml`, which builds the React app and deploys the configured App Engine service.
+
+## Add the backend URL secret
+
+Add a frontend repository secret:
+
+```text
+<STATE>_BACKEND_URL
+```
+
+The value should be the public backend URL and must not include a trailing slash:
+
+```text
+https://<state>-server.uow-carbon.org
+```
+
+## Deploy the frontend
+
+Deploy by pushing to the workflow's configured branch, or run the workflow manually if the workflow supports manual dispatch.
+
+The deployment workflow writes the build-time React environment values:
+
+- `REACT_APP_BACKEND_URL`
+- `REACT_APP_GOOGLE_CLIENTID`
+- `REACT_APP_STATE`
+- `REACT_APP_COLLABORATOR`, when configured
+- `REACT_APP_ENVIRONMENT`
+
+## Add the App Engine dispatch route
+
+Add the hostname to `deployment/app-engine/dispatch.yaml`:
+
+```yaml
+- url: "<state>.uow-carbon.org/*"
+  service: <state>-uow
+```
+
+Deploy the dispatch file from the App Engine deployment directory:
+
+```bash
+cd orphaned-wells-ui/deployment/app-engine
+gcloud app deploy dispatch.yaml
+```
+
+## Configure DNS and custom domain
+
+In Google Cloud DNS, add records for:
+
+```text
+<state>.uow-carbon.org
+```
+
+Use the same frontend IPv4 and IPv6 addresses as the other frontend instances:
+
+- `A` record for IPv4.
+- `AAAA` record for IPv6.
+
+Then add `<state>.uow-carbon.org` in App Engine custom domains.
+
+## Update OAuth
+
+In Google OAuth credentials, add both frontend URLs wherever frontend origins are required:
+
+- The App Engine generated service URL.
+- `https://<state>.uow-carbon.org`.
+
+Use the exact URL format required by the OAuth client. Avoid trailing slashes unless the existing entries use them.
+
+## Verify
+
+After deployment:
+
+- Visit `https://<state>.uow-carbon.org`.
+- Confirm the frontend calls the expected backend URL.
+- Confirm sign-in works for the custom domain.
+- Confirm the App Engine dispatch route sends the host to the expected service.

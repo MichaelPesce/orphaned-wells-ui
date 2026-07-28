@@ -1,12 +1,19 @@
 ---
-title: Installation
+title: Setup
 ---
-import { InstallOverview } from '@site/src/components/InstallFeatures/Index';
 
-# Installation
+# Setup
 
-This section contains instructions on how to get started with OGRRE. OGRRE is a web application that runs using a Python backend server and a javascript frontend. In addition, the application relies on Google Cloud services and MongoDB for a database.
+This section covers local setup and service configuration for OGRRE. Use it when preparing a developer machine, connecting MongoDB, configuring Google Cloud integrations, or connecting trained Document AI processors.
 
-For the easiest local setup, follow the [Run OGRRE with Docker](./install/docker_setup) instructions.
+For the easiest local setup, follow the [Run OGRRE with Docker](/docs/install/docker_setup) instructions.
 
-<InstallOverview/>
+Production deployment steps now live in [Deploy to GCP](/docs/deploy-gcp).
+
+## Setup pages
+
+- [Create and connect a Google project](/docs/install/gcp_setup)
+- [Create and connect MongoDB database](/docs/install/database_setup)
+- [Run OGRRE with Docker](/docs/install/docker_setup)
+- [Install OGRRE on your computer](/docs/install/install_ogrre)
+- [Connect trained processors to OGRRE](/docs/install/connect_processors)

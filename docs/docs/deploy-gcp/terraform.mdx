@@ -1,0 +1,122 @@
+---
+title: Terraform Infrastructure
+description: Manage OGRRE backend infrastructure with Terraform.
+sidebar_position: 2
+---
+
+# Terraform Infrastructure
+
+Terraform lives in `orphaned-wells-ui-server/deployment/terraform`.
+
+It currently manages both the GKE deployment infrastructure and the legacy backend VM resources. `enable_gke` defaults to `true`, but it is additive: it includes GKE resources in the plan and does not disable the VM module.
+
+## What Terraform manages
+
+- Shared GKE Autopilot cluster.
+- One global static IP per backend environment for Kubernetes Ingress.
+- Optional `<env>-k8s-server.uow-carbon.org` test DNS records.
+- Optional primary backend DNS records, such as `staging-server.uow-carbon.org`, pointing to the GKE static IP.
+- `kubernetes_deploy_targets`, the output consumed by backend GitHub Actions.
+- Legacy Compute Engine VM resources for every entry in `local.collaborators`.
+
+:::caution
+Adding a collaborator to `local.collaborators` currently creates both GKE resources and legacy VM resources for that collaborator. Review the plan before applying.
+:::
+
+## Prerequisites
+
+- Terraform 1.x.
+- Google Cloud SDK.
+- Access to the target GCP project.
+- A local `terraform.tfvars` file with project and deployment values.
+
+Example `terraform.tfvars`:
+
+```hcl
+project_id = "tidy-outlet-412020"
+region     = "us-central1"
+zone       = "us-central1-a"
+
+enable_gke = true
+
+gke_backend_hostnames = {
+  staging = "staging-server.uow-carbon.org"
+}
+
+primary_dns_to_gke_backends = ["staging"]
+```
+
+`*.tfvars`, `.env`, and Terraform state files are local operational files and should not be committed.
+
+## Authenticate
+
+```bash
+cd orphaned-wells-ui-server/deployment/terraform
+
+gcloud auth login
+gcloud config set project <PROJECT_ID>
+gcloud auth application-default login
+```
+
+## Plan and apply
+
+```bash
+terraform init
+terraform plan -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+To exclude GKE resources from a plan:
+
+```bash
+terraform plan -var-file=terraform.tfvars -var='enable_gke=false'
+```
+
+## Export GKE deployment targets
+
+After apply, export the Kubernetes deployment target map:
+
+```bash
+terraform output -json kubernetes_deploy_targets | jq -c .
+```
+
+Store that exact JSON as `K8S_DEPLOY_TARGETS` in the backend repository. Re-export it any time Terraform changes hostnames, static IP names, namespaces, resource requests, or cluster metadata.
+
+## Workspaces and state
+
+This Terraform setup uses local state by default. Check the active workspace before planning:
+
+```bash
+terraform workspace show
+terraform workspace list
+```
+
+Use workspaces only when you intentionally want a separate state file:
+
+```bash
+terraform workspace new <workspace_name>
+terraform workspace select <workspace_name>
+```
+
+Do not delete or lose `terraform.tfstate` files unless you intend to recreate or re-import infrastructure.
+
+## Import existing VM resources
+
+If a backend VM already exists in GCP and should be managed by Terraform, import it before applying:
+
+```bash
+bash scripts/import_backend_vms.sh <env>
+```
+
+The import script imports the Compute Engine instance, the regional static IP, and the primary backend DNS record for that environment.
+
+## Targeted plans
+
+Use `-target` only for isolated Terraform work:
+
+```bash
+terraform plan -target='module.backend_vms["staging"]' -var-file=terraform.tfvars
+terraform apply -target='module.backend_vms["staging"]' -var-file=terraform.tfvars
+```
+
+Targeting bypasses part of Terraform's normal dependency planning, so use a full plan afterward when possible.

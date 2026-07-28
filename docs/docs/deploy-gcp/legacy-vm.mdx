@@ -1,0 +1,110 @@
+---
+title: Legacy Backend VM Deployment
+description: Legacy Compute Engine VM deployment path for OGRRE backend environments.
+sidebar_position: 7
+---
+
+# Legacy Backend VM Deployment
+
+:::warning Legacy path
+The current backend deployment path is GKE. Use this page only for existing Compute Engine VM operations, rollback context, or environments that have not been migrated.
+:::
+
+The legacy path runs each backend on a dedicated Compute Engine VM with Docker Compose, nginx, Certbot, a static external IP, and a primary DNS record.
+
+## When to use this page
+
+Use this page only when:
+
+- You are maintaining an existing backend VM.
+- You need to understand the older VM deployment flow.
+- You intentionally need a temporary VM deployment instead of GKE.
+
+For the current backend path, use [Backend on GKE](./backend-gke).
+
+## Backend VM setup
+
+1. Create a Compute Engine instance.
+2. Name it `<env>-uow-server`.
+3. Allow full access to Google Cloud APIs.
+4. Reserve a static external IP address.
+5. Copy the required SSH keys from an existing server.
+6. Resize the boot disk if needed.
+
+SSH into the VM and install required packages:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y gcc
+```
+
+Create the backend runtime `.env` file on the VM with database, OAuth, storage, Document AI, and collaborator settings.
+
+Install Docker using the standard Docker installation instructions for the VM operating system.
+
+## DNS
+
+In Google Cloud DNS, add an `A` record:
+
+```text
+<env>-server.uow-carbon.org
+```
+
+Point it to the VM static external IP.
+
+If Terraform manages this VM, import the existing VM resources before applying Terraform:
+
+```bash
+cd orphaned-wells-ui-server/deployment/terraform
+bash scripts/import_backend_vms.sh <env>
+```
+
+## nginx and Docker Compose
+
+On the VM, add or copy the Docker Compose and nginx configuration files for the environment.
+
+Start with an HTTP-only nginx config so Certbot can validate the domain:
+
+```bash
+sudo docker compose up -d
+sudo docker logs nginx
+```
+
+After HTTP is reachable, request the TLS certificate:
+
+```bash
+sudo docker compose run --rm certbot certonly --webroot -w /var/www/certbot \
+  --email mpesce@lbl.gov --agree-tos --no-eff-email \
+  -d <env>-server.uow-carbon.org --force-renewal
+```
+
+Then add the HTTPS nginx configuration and restart:
+
+```bash
+sudo docker compose down
+sudo docker compose up -d
+```
+
+## Certificate renewal
+
+Renew manually:
+
+```bash
+sudo docker compose run --rm certbot renew
+sudo docker compose exec nginx nginx -s reload
+```
+
+Use cron or another scheduler to run renewal checks regularly:
+
+```cron
+0 3 * * * cd /home/<user> && docker compose run --rm certbot renew && docker compose exec nginx nginx -s reload >> /var/log/certbot-renew.log 2>&1
+```
+
+## Legacy GitHub Actions
+
+Older VM workflows deploy over SSH to a target VM. They require legacy backend repository secrets such as:
+
+- `DEPLOY_TARGETS`
+- `SSH_USERNAME`
+
+Prefer GKE workflows for current deployments. Keep legacy VM workflow changes isolated and clearly labeled when they are still needed.
