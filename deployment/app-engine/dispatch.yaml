@@ -15,4 +15,4 @@ dispatch:
     service: newts-uow
 
   - url: "rrc.uow-carbon.org/*"
-    service: newts-uow
+    service: rrc-uow
