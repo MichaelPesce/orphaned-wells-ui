@@ -27,6 +27,7 @@ export interface RecordData {
     range?: string;
     error_message?: string;
     rank?: number; // index of record based on current sorting, filtering
+    record_number?: number;
     image_whitespace?: WhitespaceDetectionResult[];
 }
 
