@@ -1,0 +1,18 @@
+name: Deploy Texas RRC Frontend
+
+on:
+  push:
+    branches: [rrc]
+
+jobs:
+  rrc-production-deploy:
+    if: github.repository == 'CATALOG-Historic-Records/orphaned-wells-ui'
+    name: Deploy to Google App Engine
+    uses: ./.github/workflows/deploy-dispatch.yml
+    with:
+      app_yaml: deployment/app-engine/app-rrc.yaml
+      collaborator: rrc
+    secrets:
+      backend_url: ${{ secrets.RRC_BACKEND_URL }}
+      google_clientid: ${{ secrets.GOOGLE_CLIENTID }}
+      gcloud_service_account_json: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_JSON }}
