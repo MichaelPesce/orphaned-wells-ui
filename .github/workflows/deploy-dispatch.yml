@@ -36,13 +36,11 @@ jobs:
           REACT_APP_BACKEND_URL: ${{ secrets.backend_url }}
           REACT_APP_GOOGLE_CLIENTID: ${{ secrets.google_clientid }}
           REACT_APP_COLLABORATOR: ${{ inputs.collaborator }}
-          REACT_APP_ENVIRONMENT: ${{ inputs.collaborator }}
         run: |
           {
             echo "REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL}"
             echo "REACT_APP_GOOGLE_CLIENTID=${REACT_APP_GOOGLE_CLIENTID}"
             echo "REACT_APP_COLLABORATOR=${REACT_APP_COLLABORATOR}"
-            echo "REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}"
           } >> .env
 
       - name: Build frontend
