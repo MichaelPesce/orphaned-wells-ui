@@ -289,7 +289,13 @@ When editing the frontend workflow, set the existing `collaborator` field to the
 
 See [Frontend on App Engine](./frontend-app-engine) for details.
 
-## 8. Configure frontend DNS and OAuth
+## 8. Add the App Engine custom domain
+
+In the Google Cloud console, open **App Engine -> Settings -> Custom domains**. If the console labels this page differently, use **Domain mappings**.
+
+Add a new custom domain mapping for <CollaboratorInline suffix=".uow-carbon.org" /> and associate it with the App Engine frontend service, <CollaboratorInline suffix="-uow" />.
+
+## 9. Configure frontend DNS and OAuth
 
 Add frontend DNS records for <CollaboratorInline suffix=".uow-carbon.org" /> using the same App Engine frontend IPv4 and IPv6 addresses as the other frontend deployments.
 
@@ -298,7 +304,7 @@ Add both frontend URLs to Google OAuth credentials:
 - The App Engine generated service URL.
 - <CollaboratorInline prefix="https://" suffix=".uow-carbon.org" />.
 
-## 9. Confirm application setup
+## 10. Confirm application setup
 
 Confirm the collaborator deployment has:
 
