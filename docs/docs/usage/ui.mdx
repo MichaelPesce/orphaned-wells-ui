@@ -9,8 +9,9 @@ import {
   ProjectReportsImg,
   ProjectReviewImg,
   ProjectViewImg,
-  UploadRecordsModalImg,
-  UploadDirectoryImg
+  UploadDocumentImg,
+  UploadDirectoryImg,
+  GcsUploadImg
 } from "../screenshots.jsx";
 
 # Overview
@@ -62,16 +63,28 @@ You will need to have been added by an administrator as a valid user of this dep
 ## Upload documents
 
 *To upload records, a user must have **team_lead** or **sys_admin** role.* \
-Navigate to the record group that you would like to upload documents to. Click on `Upload New Record(s)`. You will see a modal with the processor status and an upload box:
+Navigate to the record group that you would like to upload documents to. Click on `Upload New Record(s)`. You will see a modal with the processor status, the document upload area, and three upload options:
 
-<UploadRecordsModalImg/>
+<UploadDocumentImg/>
 
 If the processor is not deployed, click on `Deploy Processor`. It may take a couple minutes for the processor to deploy. \
-Once the processor is deployed, you will have the option to upload individual files or a directory of files. You can choose to run the cleaning functions defined in your processor schema when uploading the document(s) by clicking on the switch available. When uploading a directory, you also have the options to choose the amount of files to upload, and to prevent duplicates if you wish (this will query your database and remove any files already found in that record group from the upload list):
+Once the processor is deployed, choose one of the supported upload methods:
+
+- `Upload File`: upload one supported file from your machine. Drag a file into the upload area or click `Browse files`, then click `Upload File`. Supported file types are TIFF, TIF, PDF, PNG, JPG, JPEG, and ZIP, with a maximum file size of 10 MB.
+- `Local Directory`: upload supported files from a folder on your machine. After selecting a directory, choose how many files to upload, review the file list, and optionally leave `Prevent Duplicates` enabled so OGRRE skips filenames already present in the current record group.
+- `GCS Directory`: start a batch upload from Google Cloud Storage. Enter the bucket name without `gs://` and, if needed, enter a prefix or folder path. Click `Check Bucket/Path` to confirm how many supported files will be submitted, then click `Start Batch Processing`.
+
+For all upload methods, the `Run cleaning functions` switch controls whether OGRRE runs the cleaning functions defined in the processor schema for the uploaded records.
+
+The local directory option shows the selected directory, the number of files that will be uploaded, and duplicate-prevention controls before upload:
 
 <UploadDirectoryImg/>
 
-When ready, click `Upload` and the document processing will begin.
+The GCS directory option is intended for larger batches that are already staged in a Google Cloud Storage bucket:
+
+<GcsUploadImg/>
+
+When ready, click the upload or batch-processing button for the selected method and document processing will begin.
 
 ## Review records
 

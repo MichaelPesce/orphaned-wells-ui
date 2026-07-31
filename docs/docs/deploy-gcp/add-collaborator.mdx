@@ -263,7 +263,9 @@ Optionally add a dedicated workflow such as:
 
 Before the new backend is used, initialize the collaborator database with the required OGRRE roles, first team, and first user.
 
-Use the `InitializeMongoDB.py` script referenced in [Create and connect MongoDB database](/docs/install/database_setup#initialize-database-for-ogrre). Run it once for the new database:
+First create a MongoDB database user for the collaborator, such as `ogrre-<collaborator-name>`, and grant it the privileges OGRRE needs on the new collaborator database. This must be done by someone with MongoDB privileges. Store this user's credentials as `DB_USERNAME` and `DB_PASSWORD` in the backend <CollaboratorInline suffix="_ENV" uppercase /> secret.
+
+Use the `InitializeMongoDB.py` script referenced in [Create and connect MongoDB database](/docs/install/database_setup#initialize-database-for-ogrre). Download it directly here: <a href="/orphaned-wells-ui/downloads/InitializeMongoDB.py" download>InitializeMongoDB.py</a>. Run it once for the new database:
 
 ```bash
 python InitializeMongoDB.py \

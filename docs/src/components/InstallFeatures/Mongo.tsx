@@ -28,7 +28,7 @@ export function HowToSetupMongo() {
 export function InitializeDatabase() {
   return (
     <div>
-      <i>It is necessary to add some initial collections to your database before running OGRRE</i>. OGRRE stores teams, authorized users, and assigned roles/permissions in the MongoDB database, which must be availabe as collections called <code>teams</code>, <code>users</code>, and <code>roles</code>. Furthermore, there must be at least one team and one user associated with that team, as well as a list of roles that are specific to OGRRE. You can create these manually, or use the python script we have provided to create these documents for you. The script can be downloaded <a href="/orphaned-wells-ui/downloads/InitializeMongoDB.py" download>here</a>. The script takes the following arguments:
+      <i>It is necessary to add some initial collections to your database before running OGRRE</i>. To easily do so, you can use the<a href="/orphaned-wells-ui/downloads/InitializeMongoDB.py" download>InitializeMongoDB.py script</a>. OGRRE stores teams, authorized users, and assigned roles/permissions in the MongoDB database, which must be availabe as collections called <code>teams</code>, <code>users</code>, and <code>roles</code>. Furthermore, there must be at least one team and one user associated with that team, as well as a list of roles that are specific to OGRRE. You can create these manually, or use the python script provided above. The script takes the following arguments:
       <ul>
         <li><b>team_name</b> (<b>-t</b>): the initial team name [<i>required</i>]</li>
         <li><b>email</b> (<b>-e</b>): email of the initial user [<i>required</i>]</li>
