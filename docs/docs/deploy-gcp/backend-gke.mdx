@@ -47,7 +47,9 @@ Required Google APIs:
 - Compute Engine API: `compute.googleapis.com`
 - Cloud DNS API: `dns.googleapis.com`
 
-The identity running Terraform needs permissions to manage GKE, Compute addresses, Cloud DNS, and project services if Terraform manages API enablement. The GitHub Actions service account in `SERVICE_KEY_JSON` needs enough access to fetch GKE credentials and apply Kubernetes resources.
+Other Required Tools:
+-ability to edit Github Secrets/Actions for OGRRE github project CATALOG-HISTORIC-RECORDS
+-permissions to manage GKE, Compute addresses, Cloud DNS, OAUTH and project services in gcloud
 
 ## Prepare deployment targets
 
