@@ -168,27 +168,43 @@ Keep branch names, workflow names, secrets, App Engine service names, and DNS na
 
 ## 2. Update Terraform
 
-In `orphaned-wells-ui-server/deployment/terraform/terraform.tfvars`, add the collaborator to the GKE backend list:
+In `orphaned-wells-ui-server/deployment/terraform/variables.tf`, add the collaborator to the `gke_backends` default map for a shared, long-lived deployment:
 
 <CollaboratorCodeBlock language="hcl">{`
-gke_backend_names = [
-  # existing names...
-  "__COLLABORATOR__",
-]
-`}</CollaboratorCodeBlock>
+variable "gke_backends" {
+  # existing type declaration...
 
-Add its canonical backend hostname:
-
-<CollaboratorCodeBlock language="hcl">{`
-gke_backend_hostnames = {
-  __COLLABORATOR__ = "__COLLABORATOR__-server.uow-carbon.org"
+  default = {
+    # existing collaborators...
+    "__COLLABORATOR__" = {}
+  }
 }
 `}</CollaboratorCodeBlock>
 
-If the primary backend DNS record should point to GKE, include it in:
+Use `terraform.tfvars` only for uncommitted local overrides or testing. For example:
 
 <CollaboratorCodeBlock language="hcl">{`
-primary_dns_to_gke_backends = ["__COLLABORATOR__"]
+gke_backend_overrides = {
+  "__COLLABORATOR__" = {}
+}
+`}</CollaboratorCodeBlock>
+
+Default naming creates the backend namespace, GKE static IP, primary DNS record, and test DNS record from the collaborator key. Add optional settings in the same map only when defaults are not enough:
+
+<CollaboratorCodeBlock language="hcl">{`
+variable "gke_backends" {
+  # existing type declaration...
+
+  default = {
+    # existing collaborators...
+    "__COLLABORATOR__" = {
+      replicas             = 1
+      memory_request       = "8Gi"
+      memory_limit         = "8Gi"
+      persistent_disk_size = "20Gi"
+    }
+  }
+}
 `}</CollaboratorCodeBlock>
 
 Run Terraform:
@@ -197,12 +213,12 @@ Run Terraform:
 cd orphaned-wells-ui-server/deployment/terraform
 terraform init
 terraform workspace select ogrre
-terraform plan -var-file=terraform.tfvars
-terraform apply -var-file=terraform.tfvars
+terraform plan
+terraform apply
 ```
 
 :::caution
-Adding a name to `gke_backend_names` creates only the GKE backend infrastructure for that collaborator. Only add an entry to `local.collaborators` in `main.tf` if you intentionally need Terraform to manage a legacy VM.
+Adding a name to `gke_backends` or `gke_backend_overrides` creates only the GKE backend infrastructure for that collaborator. Only add an entry to `legacy_backend_vms` if you intentionally need Terraform to manage a legacy VM.
 :::
 
 ## 3. Update backend deployment targets
