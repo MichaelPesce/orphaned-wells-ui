@@ -15,6 +15,7 @@ Terraform owns the cloud infrastructure. GitHub Actions renders `orphaned-wells-
 Terraform creates:
 
 - Shared GKE Autopilot cluster.
+- One Cloud Storage upload bucket per unique backend bucket name.
 - One global static IP per collaborator backend.
 - Optional test DNS records at `<collaborator>-k8s-server.uow-carbon.org`.
 - Primary backend DNS records at `<collaborator>-server.uow-carbon.org`.
@@ -40,17 +41,19 @@ Required local tools for manual operations:
 - `kubectl`
 - `terraform`
 - `jq`
+- `gh`
 
 Required Google APIs:
 
 - Kubernetes Engine API: `container.googleapis.com`
 - Compute Engine API: `compute.googleapis.com`
 - Cloud DNS API: `dns.googleapis.com`
+- Cloud Storage API: `storage.googleapis.com`
 
 Other required access:
 
 - Ability to edit GitHub Secrets and Actions for the OGRRE GitHub project `CATALOG-HISTORIC-RECORDS`.
-- Permissions to manage GKE, Compute addresses, Cloud DNS, OAuth, and project services in Google Cloud.
+- Permissions to manage GKE, Compute addresses, Cloud DNS, Cloud Storage buckets, OAuth, and project services in Google Cloud.
 
 ## Prepare deployment targets
 
@@ -64,16 +67,17 @@ terraform plan
 terraform apply
 ```
 
-Then export and store the target map:
+Then export and store the target map. The `gh` command requires a GitHub account with permission to edit repository Actions secrets:
 
 ```bash
 terraform workspace select ogrre
-terraform output -json kubernetes_deploy_targets | jq -c .
+gh auth login
+gh secret set K8S_DEPLOY_TARGETS \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server \
+  --body "$(terraform output -json kubernetes_deploy_targets | jq -c .)"
 ```
 
-Save the output as the backend repository secret `K8S_DEPLOY_TARGETS`.
-
-The `host` field controls the Kubernetes Ingress host and the Google-managed certificate domain. DNS alone is not enough; after changing hostnames in Terraform, update `K8S_DEPLOY_TARGETS` and redeploy the backend.
+The `host` field controls the Kubernetes Ingress host and the Google-managed certificate domain. The `storage_bucket_name` field controls the runtime `STORAGE_BUCKET_NAME` written to `Secret/backend-runtime-env`. DNS or bucket changes in Terraform are not enough by themselves; update `K8S_DEPLOY_TARGETS` and redeploy the backend.
 
 ## Required backend secrets
 
@@ -94,6 +98,7 @@ The environment-file secret should contain the same key/value pairs used by the 
 - `LOG_DIR`
 - `LOCAL_STORAGE_ROOT`
 - `LOCAL_STORAGE_URL_BASE`
+- `STORAGE_BUCKET_NAME`
 
 Keep `COLLABORATOR` in the runtime secret when the backend needs collaborator-specific processor metadata.
 
@@ -183,4 +188,4 @@ kubectl top nodes
 - GKE replaces VM nginx/certbot with GKE Ingress, `ManagedCertificate`, `FrontendConfig`, and `BackendConfig`.
 - Google-managed certificates require DNS to point at the GKE load balancer before they become active.
 - The rendered manifest in `deployment/kubernetes/rendered/backend.yaml` is an ephemeral artifact. Do not commit it.
-- The Kubernetes Deployment uses pod-local `emptyDir` volumes for `/logs` and `/data`. Production document storage should continue using Google Cloud Storage.
+- The Kubernetes Deployment uses pod-local `emptyDir` volumes for `/logs` and `/data`. Production document storage should continue using the Terraform-managed Google Cloud Storage upload bucket.
