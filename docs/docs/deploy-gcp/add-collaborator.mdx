@@ -154,6 +154,10 @@ Confirm the names before changing code:
       <td><CollaboratorInline suffix="-uow-gke-ip" /></td>
     </tr>
     <tr>
+      <td>Upload bucket</td>
+      <td><CollaboratorInline suffix="_uploads" /></td>
+    </tr>
+    <tr>
       <td>Frontend host</td>
       <td><CollaboratorInline suffix=".uow-carbon.org" /></td>
     </tr>
@@ -189,7 +193,7 @@ gke_backend_overrides = {
 }
 `}</CollaboratorCodeBlock>
 
-Default naming creates the backend namespace, GKE static IP, primary DNS record, and test DNS record from the collaborator key. Add optional settings in the same map only when defaults are not enough:
+Default naming creates the backend namespace, upload bucket, GKE static IP, primary DNS record, and test DNS record from the collaborator key. Add optional settings in the same map only when defaults are not enough:
 
 <CollaboratorCodeBlock language="hcl">{`
 variable "gke_backends" {
@@ -198,6 +202,8 @@ variable "gke_backends" {
   default = {
     # existing collaborators...
     "__COLLABORATOR__" = {
+      # Only set this when the bucket cannot use the default "__COLLABORATOR___uploads" name.
+      upload_bucket_name   = "existing-bucket-name"
       replicas             = 1
       memory_request       = "8Gi"
       memory_limit         = "8Gi"
@@ -218,19 +224,20 @@ terraform apply
 ```
 
 :::caution
-Adding a name to `gke_backends` or `gke_backend_overrides` creates only the GKE backend infrastructure for that collaborator. Only add an entry to `legacy_backend_vms` if you intentionally need Terraform to manage a legacy VM.
+Adding a name to `gke_backends` or `gke_backend_overrides` creates only the GKE backend infrastructure for that collaborator. Only add an entry to `legacy_backend_vms` and `enabled_legacy_backend_vms` if you intentionally need Terraform to manage a legacy VM.
 :::
 
 ## 3. Update backend deployment targets
 
-Export the target map:
+Export the target map and update the backend repository secret. The `gh` command requires a GitHub account with permission to edit repository Actions secrets:
 
 ```bash
 terraform workspace select ogrre
-terraform output -json kubernetes_deploy_targets | jq -c .
+gh auth login
+gh secret set K8S_DEPLOY_TARGETS \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server \
+  --body "$(terraform output -json kubernetes_deploy_targets | jq -c .)"
 ```
-
-Store the output as the backend repository secret `K8S_DEPLOY_TARGETS`.
 
 Confirm the new collaborator exists in the JSON:
 
@@ -245,6 +252,8 @@ __COLLABORATOR_UPPER___ENV
 `}</CollaboratorCodeBlock>
 
 The secret should contain the backend runtime `.env` content for this collaborator. Set both `ENVIRONMENT` and `COLLABORATOR` to the collaborator key unless there is a specific reason for that deployment to differ.
+
+For GKE deployments, the workflow strips and rewrites `STORAGE_BUCKET_NAME` from `K8S_DEPLOY_TARGETS`. Do not rely on the runtime env secret to override the Terraform upload bucket name.
 
 Update `.github/workflows/deploy-k8s-dispatch.yml` so it accepts the new collaborator:
 
@@ -338,8 +347,8 @@ Confirm the collaborator deployment has:
 
 ## Common pitfalls
 
-- `enable_gke=true` does not disable legacy VM resources.
+- `enable_gke=true` controls only GKE resources; legacy VMs are managed only when listed in `enabled_legacy_backend_vms`.
 - Updating DNS is not enough for GKE. The Ingress host and ManagedCertificate domain must match the hostname from `K8S_DEPLOY_TARGETS`.
-- After Terraform changes, update `K8S_DEPLOY_TARGETS` before redeploying the backend.
+- After Terraform changes to hosts, namespaces, static IPs, resource settings, or upload bucket names, update `K8S_DEPLOY_TARGETS` before redeploying the backend.
 - Frontend backend URL secrets should not have trailing slashes.
 - New collaborators must be added to `deploy-k8s-dispatch.yml`; a dedicated workflow alone is not enough.
