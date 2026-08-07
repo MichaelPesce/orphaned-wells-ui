@@ -1,0 +1,80 @@
+---
+title: E2E Test Contract
+description: Shared assumptions and conventions for the Cypress E2E suite.
+---
+
+# E2E Test Contract
+
+The Cypress suite is a reusable test contract for the frontend against a running backend. It verifies the critical OGRRE workflows without requiring backend source changes.
+
+## Covered workflows
+
+The current suite covers:
+
+- Core navigation from projects to record groups to records.
+- Project and record group creation, editing, and cleanup.
+- Record review actions, defective marking, and record-to-record navigation.
+- Record notes creation, editing, and deletion.
+- Team and scoped records table filtering.
+- Upload validation, upload API calls, and export/download behavior.
+- Schema field create, edit, and delete flows.
+- Login redirects and permission-gated navigation/actions.
+
+## Seed data
+
+Seed-dependent tests read expected names from `cypress/fixtures/seeded-data.json`. The default seed currently expects:
+
+| Fixture key | Expected value |
+| --- | --- |
+| `projectName` | `ISGS Project` |
+| `recordGroupName` | `Precambrian_WellCompletion_1` |
+| `recordName` | `121190087702_WELL_COMPLETION_REPORT_1` |
+| `nextRecordName` | `120650345000_WELL_COMPLETION_REPORT_1` |
+| `previousRecordName` | `120272454800_WELL_COMPLETION_REPORT_1` |
+| `reviewFieldName` | `Fractured` |
+| `filterRecordName` | `120710031700_WELL_COMPLETION_REPORT_1` |
+| `filterNextRecordName` | `120973414200_WELL_COMPLETION_REPORT_2` |
+| `recordGroupRecordCount` | `17` |
+
+When seed data changes, update the fixture in the same commit as the test adjustment. Prefer stable names over database ObjectIds so the suite can run against restored dumps, local Docker, or deployed test environments.
+
+## Test ownership
+
+Tests that create data use test-owned names and clean up through backend APIs. Specs should not depend on execution order. Mutating specs should either restore seed data before they run or create their own isolated project and record group.
+
+Use the shared Cypress helpers in `cypress/support/commands.js` for backend lookup, API cleanup, login setup, and seeded entity resolution.
+
+## Authentication modes
+
+Configure auth with `CYPRESS_AUTH_MODE`:
+
+| Mode | Use |
+| --- | --- |
+| `disabled` | Local Docker or CI backend with `REQUIRE_AUTH=false`. This is the default contract for full workflow tests. |
+| `mock`, `stub`, or `stubbed` | Stub `/check_auth` responses for frontend permission and auth gate coverage. |
+| `google` | Legacy Google token login. Use only when intentionally testing a real auth-integrated environment. |
+| `required` | Auth-required API checks. Specs that need this mode skip unless it is explicitly set. |
+
+## Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `CYPRESS_BASE_URL` | Frontend URL used by Cypress. Defaults to `http://localhost:3000`. |
+| `CYPRESS_BACKEND_URL` | Backend API URL used by `cy.api` and auth intercepts. Defaults to `REACT_APP_BACKEND_URL` or `http://localhost:8001`. |
+| `CYPRESS_AUTH_MODE` | Auth behavior for the run. |
+| `CYPRESS_TEAM` | Optional default team used by mocked users. |
+| `CYPRESS_COLLABORATOR` | Collaborator context. Defaults to `isgs`. |
+| `CYPRESS_RESET_DB` | Restores the sample database before specs that call `cy.resetSeedData`. |
+| `CYPRESS_DB_SEED_COMMAND` | Overrides the default Docker Mongo restore command. |
+
+## Backend modes
+
+The Docker development stack can run the backend from local source or from an image. The Cypress contract should work in either mode when the backend exposes the same API and sample seed data.
+
+Set `BACKEND_MODE=image` in CI when the frontend repo should test against a published backend image. Set `BACKEND_MODE=source` or leave `BACKEND_MODE=auto` when a sibling backend checkout should be used locally.
+
+## Mocking policy
+
+The E2E suite should use the real frontend and backend for OGRRE workflows. Mock external services at the boundary when a live integration would make tests slow, flaky, expensive, or credential-dependent. Common candidates are cloud uploads, export downloads, and third-party auth responses.
+
+Avoid mocking backend OGRRE APIs in full workflow specs. If a backend behavior must be stubbed, keep it scoped to a frontend-only auth, permission, or error-state assertion.

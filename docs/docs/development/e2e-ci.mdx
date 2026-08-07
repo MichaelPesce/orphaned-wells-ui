@@ -1,0 +1,86 @@
+---
+title: E2E CI
+description: Continuous integration setup for the Cypress E2E suite.
+---
+
+# E2E CI
+
+The frontend repository includes `.github/workflows/frontend-tests-dispatch.yml` for reusable frontend validation. The workflow runs unit tests, starts the Docker development stack, verifies service health, and runs Cypress with CI-oriented settings.
+
+## Workflow shape
+
+The CI job should:
+
+1. Check out the frontend repository.
+2. Install Node dependencies with `npm ci`.
+3. Run unit tests with `npm test -- --watchAll=false --runInBand`.
+4. Prepare frontend and Docker environment files.
+5. Start the Docker development stack.
+6. Wait for the backend health endpoint and frontend URL.
+7. Run `npm run e2e:ci`.
+8. Upload Cypress screenshots and videos when a run fails.
+9. Stop the Docker stack.
+
+## CI Cypress environment
+
+Use these defaults for the local Docker-backed CI path:
+
+```dotenv
+CYPRESS_BASE_URL=http://localhost:3000
+CYPRESS_BACKEND_URL=http://localhost:8001
+CYPRESS_AUTH_MODE=disabled
+CYPRESS_COLLABORATOR=isgs
+CYPRESS_RESET_DB=true
+```
+
+The backend should run with:
+
+```dotenv
+REQUIRE_AUTH=false
+REACT_APP_BACKEND_URL=http://localhost:8001
+```
+
+This keeps the full workflow suite focused on application behavior instead of external authentication setup.
+
+## Database reset
+
+The Docker stack restores `deployment/mongo-dumps/sample_mongodump` when the Mongo volume is first created. CI should also enable `CYPRESS_RESET_DB=true` so specs that mutate records can restore the seed before they run.
+
+For non-Docker environments, provide a seed command explicitly:
+
+```console
+CYPRESS_DB_SEED_COMMAND="your seed command" npm run e2e:ci
+```
+
+The command runs from the frontend repository root.
+
+## Backend source or image
+
+Use `BACKEND_MODE=image` when CI should validate the frontend against a published backend image. Use `BACKEND_MODE=source` when CI checks out the backend repository next to the frontend and should build that source.
+
+For source-backed CI runs, make sure backend-only runtime dependencies, including any required processor or data-cleaning packages, are available before starting the Docker stack.
+
+## Artifacts
+
+Cypress writes runtime artifacts to:
+
+- `cypress/screenshots/`
+- `cypress/videos/`
+- `cypress/downloads/`
+
+These paths are ignored by git. CI should upload screenshots and videos on failure so the failing screen state is preserved outside the repository.
+
+## Troubleshooting
+
+If Cypress fails before tests start with a binary verification error, clear or reinstall the local Cypress binary cache, then rerun:
+
+```console
+./node_modules/.bin/cypress verify
+```
+
+If tests cannot reach the app, confirm:
+
+- The frontend URL matches `CYPRESS_BASE_URL`.
+- The backend URL matches `CYPRESS_BACKEND_URL` and returns from `/health` or `/docs`.
+- `REQUIRE_AUTH=false` is set when `CYPRESS_AUTH_MODE=disabled`.
+- Seed data exists and matches `cypress/fixtures/seeded-data.json`.

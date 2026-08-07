@@ -182,6 +182,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
       </Grid>
       <Grid item xs={12}>
         <TextField
+          data-cy="gcs-bucket-input"
           fullWidth
           label="Bucket name"
           placeholder="my-upload-bucket"
@@ -193,6 +194,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
       </Grid>
       <Grid item xs={12}>
         <TextField
+          data-cy="gcs-prefix-input"
           fullWidth
           label="Prefix or folder path"
           placeholder="incoming/well-records/"
@@ -206,6 +208,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
         <Stack direction="row" flexWrap="wrap" gap={2}>
           <Tooltip title={"When selected, filenames that are already present in database will not be uploaded."}>
             <FormControlLabel
+              data-cy="gcs-prevent-duplicates-toggle"
               disabled={uploading || checkingPath}
               control={<Switch />}
               label="Prevent Duplicates"
@@ -214,6 +217,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
             />
           </Tooltip>
           <FormControlLabel
+            data-cy="gcs-run-cleaning-toggle"
             disabled={uploading || checkingPath}
             control={<Switch />}
             label="Run cleaning functions"
@@ -267,6 +271,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
           ) : (
             <>
               <Button
+                data-cy="gcs-check-path-button"
                 variant="outlined"
                 sx={styles.button}
                 onClick={checkPath}
@@ -275,6 +280,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
                 {checkingPath ? "Checking..." : "Check Bucket/Path"}
               </Button>
               <Button
+                data-cy="gcs-start-batch-button"
                 variant="contained"
                 sx={styles.button}
                 onClick={submit}

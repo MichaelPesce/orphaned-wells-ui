@@ -115,6 +115,7 @@ const Bottombar = (props: BottombarProps) => {
   const getNextButton = () => {
     if (recordData.review_status === "reviewed" || recordData.review_status === "defective" || locked || recordData.verification_status === "required") {
       return <Button 
+        data-cy="next-record-button"
         sx={styles.button} 
         variant="contained" 
         endIcon={<KeyboardArrowRightIcon />}
@@ -125,6 +126,7 @@ const Bottombar = (props: BottombarProps) => {
     }
     else if (recordData.review_status === "unreviewed" || recordData.review_status === "incomplete") {
       return <Button 
+        data-cy="mark-reviewed-next-button"
         sx={styles.button} 
         variant="contained" 
         startIcon={<CheckCircleIcon sx={{ color: "#43A047" }} />}
@@ -153,6 +155,7 @@ const Bottombar = (props: BottombarProps) => {
           <Grid item xs={3}>
             <Box sx={{ display: "flex", justifyContent: "flex-start", marginLeft: "10px" }}>
               <Button 
+                data-cy="previous-record-button"
                 variant="outlined" 
                 startIcon={<KeyboardArrowLeftIcon />}
                 onClick={onPreviousButtonClick}
@@ -164,6 +167,7 @@ const Bottombar = (props: BottombarProps) => {
           <Grid item xs={9}>
             <Box sx={{ display: "flex", justifyContent: "flex-end", marginRight: "10px" }}>
               <Button 
+                data-cy="record-notes-open-button"
                 sx={styles.button} 
                 variant="outlined" 
                 startIcon={<BorderColorIcon />}

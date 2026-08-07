@@ -1,0 +1,113 @@
+---
+title: Testing
+description: Run frontend unit tests and Cypress E2E tests for OGRRE.
+---
+
+# Testing
+
+The frontend test framework has two layers:
+
+- React unit and component tests, run through Create React App.
+- Cypress E2E tests, run against a real frontend and backend stack.
+
+## Unit tests
+
+Run the frontend test suite from the repository root:
+
+```console
+npm test -- --watchAll=false --runInBand
+```
+
+Use the same command before merging frontend changes that alter React behavior, API calls, permissions, table state, or routing.
+
+## E2E prerequisites
+
+The Cypress suite expects:
+
+- The frontend app to be reachable at `CYPRESS_BASE_URL`, defaulting to `http://localhost:3000`.
+- The backend API to be reachable at `CYPRESS_BACKEND_URL`, defaulting to `http://localhost:8001`.
+- MongoDB to contain the sample seed data described in [E2E Test Contract](/docs/development/e2e-test-contract).
+- Authentication to match `CYPRESS_AUTH_MODE`.
+
+For local development, the Docker stack is the recommended runtime:
+
+```console
+cp deployment/.env.example deployment/.env
+npm run docker:start
+```
+
+For the default local E2E setup, keep these values in `deployment/.env`:
+
+```dotenv
+REACT_APP_BACKEND_URL=http://localhost:8001
+REACT_APP_COLLABORATOR=isgs
+REQUIRE_AUTH=false
+```
+
+## Cypress commands
+
+Open Cypress interactively:
+
+```console
+npm run e2e:open
+```
+
+Run all Cypress specs:
+
+```console
+npm run e2e:run
+```
+
+Run the lightweight smoke and auth-gate checks:
+
+```console
+npm run e2e:smoke
+```
+
+Run the full E2E suite:
+
+```console
+npm run e2e:full
+```
+
+Run the CI browser configuration:
+
+```console
+npm run e2e:ci
+```
+
+## Local E2E run
+
+With the Docker stack running and auth disabled, run:
+
+```console
+CYPRESS_BASE_URL=http://localhost:3000 \
+CYPRESS_BACKEND_URL=http://localhost:8001 \
+CYPRESS_AUTH_MODE=disabled \
+CYPRESS_COLLABORATOR=isgs \
+npm run e2e:smoke
+```
+
+Use `npm run e2e:full` when changing project navigation, record group workflows, record review, notes, table filters, uploads, exports, schema management, or permission-driven UI.
+
+## Reset seed data
+
+Set `CYPRESS_RESET_DB=true` when a Cypress run should restore the sample Mongo dump before mutating specs:
+
+```console
+CYPRESS_RESET_DB=true npm run e2e:full
+```
+
+By default, Cypress runs this command when reset is enabled:
+
+```console
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml --profile seed run --rm mongo-restore
+```
+
+Override it with `CYPRESS_DB_SEED_COMMAND` when the backend or database is provided by a different environment.
+
+## Selectors
+
+Prefer user-facing selectors from Testing Library commands, such as `cy.findByRole`, when labels and roles are stable. Use `data-cy` selectors for repeated table rows, icon-only controls, MUI-generated markup, or controls whose accessible text changes with state.
+
+Test selectors are part of the E2E contract. Avoid changing or removing `data-cy` values without updating the Cypress specs in the same change.

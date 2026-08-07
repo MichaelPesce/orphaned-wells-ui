@@ -33,7 +33,7 @@ export default function ProjectTabs({ options, value, setValue }: ProjectTabProp
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs value={value} onChange={handleChange} aria-label="project tabs" centered variant="fullWidth">
           {options.map((v, idx) => (
-            <Tab sx={styles.tab} key={v} label={options[idx]} {...a11yProps(idx)} />
+            <Tab data-cy="project-tab" data-tab-name={options[idx]} sx={styles.tab} key={v} label={options[idx]} {...a11yProps(idx)} />
           ))}
         </Tabs>
       </Box>

@@ -46,6 +46,11 @@
     "docs:start": "npm --prefix docs run start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "e2e:open": "cypress open",
+    "e2e:run": "cypress run",
+    "e2e:smoke": "cypress run --spec \"cypress/e2e/smoke.cy.js,cypress/e2e/auth-gates.cy.js\"",
+    "e2e:full": "cypress run",
+    "e2e:ci": "cypress run --browser chrome",
     "eject": "react-scripts eject",
     "lint": "eslint . --fix",
     "gcp-build": ""

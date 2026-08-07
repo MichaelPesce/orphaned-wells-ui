@@ -138,6 +138,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
     <Dialog
       open={open}
       onClose={handleClose}
+      data-cy="new-record-group-dialog"
       scroll={"paper"}
       aria-labelledby="new-dg-dialog"
       aria-describedby="new-dg-dialog-description"
@@ -168,6 +169,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
           <Grid container>
             <Grid item xs={5}>
               <TextField
+                data-cy="record-group-name-input"
                 fullWidth
                 label="Record Group Name"
                 variant="outlined"
@@ -177,6 +179,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
                 id="dg-name-textbox"
               />
               <TextField
+                data-cy="record-group-description-input"
                 fullWidth
                 label="Description"
                 variant="outlined"
@@ -211,6 +214,8 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
                         <Box sx={styles.processorImageBox} onClick={() => handleSelectProcessor(processorData)}>
                           <Tooltip title={processorData.documentType}>
                             <img 
+                              data-cy="processor-option"
+                              data-processor-name={processorData.name}
                               id={`processor_${idx}`}
                               src={`${process.env.PUBLIC_URL}/img/${processorData["name"]}.png`}
                               style={getImageStyle(processorData["processorId"])}
@@ -229,6 +234,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
           </Grid>
         </DialogContentText>
         <Button
+          data-cy="create-record-group-button"
           variant="contained"
           sx={{
             position: "absolute",

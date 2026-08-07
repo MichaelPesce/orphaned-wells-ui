@@ -126,6 +126,8 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
       <TableBody>
         {processors.map((row: any, idx: number) => (
           <TableRow
+            data-cy="schema-processor-row"
+            data-processor-name={row.name}
             onClick={() => {
               const newTabValue = idx+1;
               setTabValue(newTabValue);

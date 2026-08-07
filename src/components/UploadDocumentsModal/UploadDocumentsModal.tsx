@@ -193,7 +193,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
 
   const fileUploaderContainer = () => {
     return (
-      <Box sx={styles.fileUploaderBox}>
+      <Box data-cy="upload-dropzone" sx={styles.fileUploaderBox}>
         <Box sx={styles.uploadContainerBox}>
           <IconButton sx={styles.uploadIcon}>
             <UploadFileIcon/>
@@ -283,6 +283,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
         </Tooltip>
         <Grid item xs={12}>
           <input
+            data-cy="local-directory-input"
             ref={inputRef}
             type="file"
             onChange={handleChooseDirectory}
@@ -294,6 +295,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
         <Grid item xs={12}>
           <Box sx={{display: "flex", justifyContent: "space-around", marginBottom: 1}}>
             <FormControlLabel
+              data-cy="upload-run-cleaning-toggle"
               control={<Switch/>}
               label="Run cleaning functions"
               onChange={(e: any) => setRunCleaningFunctions(e.target.checked)}
@@ -302,6 +304,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
           </Box>
           <Box sx={{display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 2}}>
             <Button
+              data-cy="upload-file-button"
               variant="contained"
               style={styles.button}
               startIcon={<UploadFileIcon/>}
@@ -311,6 +314,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
                             Upload File
             </Button>
             <Button
+              data-cy="local-directory-button"
               variant="outlined"
               style={styles.button}
               startIcon={<CreateNewFolderIcon/>}
@@ -320,6 +324,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
                           Local Directory
             </Button>
             <Button
+              data-cy="gcs-directory-button"
               variant="outlined"
               style={styles.button}
               startIcon={<CloudQueueIcon/>}
@@ -338,6 +343,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
     <Modal
       open={true}
       onClose={handleClose}
+      data-cy="upload-documents-modal"
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
     >
@@ -346,7 +352,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
         <Grid item xs={3}>
           {(uploadDirectory || showGcsUpload) &&
                         <Box sx={{display: "flex", justifyContent: "flex-start", marginLeft: "10px"}}>
-                          <IconButton onClick={handleBack}><ArrowBackIcon/></IconButton>
+                          <IconButton data-cy="upload-back-button" onClick={handleBack}><ArrowBackIcon/></IconButton>
                         </Box>
           }
         </Grid>

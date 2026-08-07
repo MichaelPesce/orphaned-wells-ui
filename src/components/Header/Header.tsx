@@ -202,13 +202,13 @@ const Header = (props: any) => {
             textColor='inherit'
             TabIndicatorProps={{ style: { background: "#727272" } }}
           >
-            <Tab label="Projects" {...a11yProps(0)} />
-            <Tab label="Records" {...a11yProps(1)} />
+            <Tab data-cy="header-tab-projects" label="Projects" {...a11yProps(0)} />
+            <Tab data-cy="header-tab-records" label="Records" {...a11yProps(1)} />
             {hasPermission("manage_team") &&
-              <Tab label="Users" {...a11yProps(2)} />
+              <Tab data-cy="header-tab-users" label="Users" {...a11yProps(2)} />
             }
             {hasPermission("manage_schema") &&
-              <Tab label="Schema" {...a11yProps(3)} />
+              <Tab data-cy="header-tab-schema" label="Schema" {...a11yProps(3)} />
             }
           </Tabs>
         </div>
@@ -231,7 +231,7 @@ const Header = (props: any) => {
             Report an issue
           </Button>
             
-          <IconButton sx={styles.icon} onClick={handleShowProfileActions}>
+          <IconButton data-cy="profile-menu-button" sx={styles.icon} onClick={handleShowProfileActions}>
             <Avatar sx={styles.avatar} alt={userName} src={userPhoto}/>
             
           </IconButton>
@@ -267,7 +267,7 @@ const Header = (props: any) => {
             )
             }
             {hasPermission("manage_schema") && (
-              <MenuItem onClick={handleViewOgrreVersion}>
+              <MenuItem data-cy="ogrre-version-menu-item" onClick={handleViewOgrreVersion}>
                 <ListItemIcon>
                   <InfoOutlinedIcon fontSize="small" />
                 </ListItemIcon>

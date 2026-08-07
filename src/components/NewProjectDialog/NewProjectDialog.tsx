@@ -78,6 +78,7 @@ const NewProjectDialog = ({ open, onClose, setErrorMsg }: NewProjectDialogProps)
     <Dialog
       open={open}
       onClose={handleClose}
+      data-cy="new-project-dialog"
       scroll={"paper"}
       aria-labelledby="new-project-dialog"
       aria-describedby="new-project-dialog-description"
@@ -108,6 +109,7 @@ const NewProjectDialog = ({ open, onClose, setErrorMsg }: NewProjectDialogProps)
           <Grid container>
             <Grid item xs={12}>
               <TextField
+                data-cy="project-name-input"
                 fullWidth
                 label="Project Name"
                 variant="outlined"
@@ -117,6 +119,7 @@ const NewProjectDialog = ({ open, onClose, setErrorMsg }: NewProjectDialogProps)
                 id="project-name-textbox"
               />
               <TextField
+                data-cy="project-description-input"
                 fullWidth
                 label="Description"
                 variant="outlined"
@@ -131,6 +134,7 @@ const NewProjectDialog = ({ open, onClose, setErrorMsg }: NewProjectDialogProps)
           </Grid>
         </DialogContentText>
         <Button
+          data-cy="create-project-button"
           variant="contained"
           sx={{
             position: "absolute",

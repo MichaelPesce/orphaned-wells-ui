@@ -149,6 +149,7 @@ const RecordGroupsTable = ({ record_groups, sortRecordGroups, projectId, handleU
                 Filter
               </Button>
               <Button
+                data-cy="record-groups-export-button"
                 onClick={() => setOpenColumnSelect(true)}
                 startIcon={<IosShareIcon />}
                 disabled={selectedRecordGroupIds.length === 0 || isDownloading || !projectId}
@@ -164,7 +165,7 @@ const RecordGroupsTable = ({ record_groups, sortRecordGroups, projectId, handleU
               <TableCell />
               {Object.entries(COLUMNS).map(( [key, column]) => (
                 <TableCell sx={styles.headerRow} key={key} align={column.align}>
-                  <p style={getParagraphStyle(key)} onClick={() => handleSort(key)}>
+                  <p data-cy={`record-groups-sort-${key}`} style={getParagraphStyle(key)} onClick={() => handleSort(key)}>
                     {key === sortBy &&
                       <IconButton>
                         {
@@ -189,9 +190,13 @@ const RecordGroupsTable = ({ record_groups, sortRecordGroups, projectId, handleU
                 onClick={() => handleClickRecordGroup(row._id)}
                 id={row.name.replaceAll(" ", "")+"_record_group_row"}
                 className="record_group_row"
+                data-cy="record-group-row"
+                data-record-group-id={row._id}
+                data-record-group-name={row.name}
               >
                 <TableCell padding="checkbox">
                   <Checkbox
+                    data-cy="record-group-select"
                     checked={selectedRecordGroupIds.includes(row._id)}
                     onChange={(event) => handleToggleRecordGroup(event, row._id)}
                     onClick={(event) => event.stopPropagation()}

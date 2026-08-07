@@ -77,6 +77,7 @@ const DefectiveDialog = ({ open, handleMarkDefective, onClose }: DefectiveDialog
     <Dialog
       open={open}
       onClose={handleClose}
+      data-cy="defective-dialog"
       scroll={"paper"}
       aria-labelledby="new-project-dialog"
       aria-describedby="new-project-dialog-description"
@@ -111,6 +112,8 @@ const DefectiveDialog = ({ open, handleMarkDefective, onClose }: DefectiveDialog
             <Grid item xs={12} sx={styles.chipBox}>
               {categoryOptions.map((option) => (
                 <Chip 
+                  data-cy="defective-category"
+                  data-category={option}
                   key={option}
                   color={"primary"}
                   sx={selectedCategories.includes(option) ? styles.chip.filled : styles.chip.unfilled}
@@ -126,6 +129,7 @@ const DefectiveDialog = ({ open, handleMarkDefective, onClose }: DefectiveDialog
             </Grid>
             <Grid item xs={12} sx={styles.chipBox}>
               <TextField
+                data-cy="defective-description-input"
                 id='defective-description'
                 value={defectiveDescription}
                 fullWidth
@@ -148,6 +152,7 @@ const DefectiveDialog = ({ open, handleMarkDefective, onClose }: DefectiveDialog
             }}
           >
             <Button
+              data-cy="mark-defective-submit"
               variant="contained"
               sx={
                 styles.submitButton

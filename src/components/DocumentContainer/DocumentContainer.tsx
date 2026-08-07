@@ -374,16 +374,16 @@ const DocumentContainer = ({
                           </p>
                           <p>
                                     Raw Values 
-                            <Switch checked={showRawValues} onChange={() => setShowRawValues(!showRawValues)} size='small'/>
-                            <IconButton id='record-history-table-button' onClick={handleGetRecordHistory}>
+                            <Switch data-cy="raw-values-toggle" checked={showRawValues} onChange={() => setShowRawValues(!showRawValues)} size='small'/>
+                            <IconButton data-cy="record-history-button" id='record-history-table-button' onClick={handleGetRecordHistory}>
                               <HistoryIcon/>
                             </IconButton>
-                            <IconButton id='fullscreen-table-button' onClick={() => handleSetFullscreen("table")}>
+                            <IconButton data-cy="fullscreen-table-button" id='fullscreen-table-button' onClick={() => handleSetFullscreen("table")}>
                               { 
                                 fullscreen === "table" ? <FullscreenExitIcon/> : <FullscreenIcon/> 
                               }
                             </IconButton>
-                            <IconButton id='hotkey-info-button' onClick={handleToggleHotkeys}>
+                            <IconButton data-cy="hotkey-info-button" id='hotkey-info-button' onClick={handleToggleHotkeys}>
                               <KeyboardIcon/>
                             </IconButton>
                             <HotkeyInfo anchorEl={hotkeysAnchor} onClose={() => setHotkeysAnchor(undefined)}/>
