@@ -10,6 +10,9 @@
 /cypress/downloads/
 /cypress/screenshots/
 /cypress/videos/
+/deployment/.env.e2e
+.env.cypress
+.env.cypress.local
 
 # production
 /build

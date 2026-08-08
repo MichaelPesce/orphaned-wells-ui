@@ -1,9 +1,17 @@
 import { defineConfig } from "cypress";
 declare let require: any;
 declare let process: any;
-require("dotenv").config();
+const dotenv = require("dotenv");
 
 const { spawnSync } = require("child_process");
+
+const shellEnv = { ...process.env };
+dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env.cypress", override: true });
+dotenv.config({ path: ".env.cypress.local", override: true });
+Object.entries(shellEnv).forEach(([key, value]) => {
+  if (value !== undefined) process.env[key] = value;
+});
 
 const parseBoolean = (value: string | undefined, defaultValue = false) => {
   if (value === undefined) return defaultValue;

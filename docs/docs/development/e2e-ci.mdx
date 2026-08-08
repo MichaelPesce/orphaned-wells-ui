@@ -7,6 +7,8 @@ description: Continuous integration setup for the Cypress E2E suite.
 
 The frontend repository includes `.github/workflows/frontend-tests-dispatch.yml` for reusable frontend validation. The workflow runs unit tests, starts the Docker development stack, verifies service health, and runs Cypress with CI-oriented settings.
 
+CI intentionally uses explicit workflow environment variables and `npm run e2e:ci`. Local developers should use `npm run docker:e2e` plus `npm run e2e:smoke` or `npm run e2e:full` for the isolated E2E stack.
+
 ## Workflow shape
 
 The CI job should:
@@ -20,6 +22,8 @@ The CI job should:
 7. Run `npm run e2e:ci`.
 8. Upload Cypress screenshots and videos when a run fails.
 9. Stop the Docker stack.
+
+The local E2E stack uses `deployment/.env.e2e.example` and ports `3001` and `8002` by default. CI can continue using the normal development ports `3000` and `8001` because the workflow creates disposable containers and volumes for each run.
 
 ## CI Cypress environment
 
@@ -45,6 +49,12 @@ This keeps the full workflow suite focused on application behavior instead of ex
 ## Database reset
 
 The Docker stack restores `deployment/mongo-dumps/sample_mongodump` when the Mongo volume is first created. CI should also enable `CYPRESS_RESET_DB=true` so specs that mutate records can restore the seed before they run.
+
+When `CYPRESS_DB_SEED_COMMAND` is not set, Cypress uses the standard Docker development restore command:
+
+```console
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml --profile seed run --rm mongo-restore
+```
 
 For non-Docker environments, provide a seed command explicitly:
 

@@ -57,21 +57,34 @@ Configure auth with `CYPRESS_AUTH_MODE`:
 
 ## Environment variables
 
+Local npm scripts set E2E-safe defaults before launching Cypress. They read ports and collaborator values from `deployment/.env.e2e` or `deployment/.env.e2e.example`, then set the corresponding `CYPRESS_*` values. Shell environment variables can still override the defaults for one-off runs.
+
 | Variable | Purpose |
 | --- | --- |
-| `CYPRESS_BASE_URL` | Frontend URL used by Cypress. Defaults to `http://localhost:3000`. |
-| `CYPRESS_BACKEND_URL` | Backend API URL used by `cy.api` and auth intercepts. Defaults to `REACT_APP_BACKEND_URL` or `http://localhost:8001`. |
+| `CYPRESS_BASE_URL` | Frontend URL used by Cypress. Local E2E scripts default this from `FRONTEND_HOST_PORT`, usually `http://localhost:3001`. |
+| `CYPRESS_BACKEND_URL` | Backend API URL used by `cy.api` and auth intercepts. Local E2E scripts default this from `BACKEND_HOST_PORT`, usually `http://localhost:8002`. |
 | `CYPRESS_AUTH_MODE` | Auth behavior for the run. |
 | `CYPRESS_TEAM` | Optional default team used by mocked users. |
 | `CYPRESS_COLLABORATOR` | Collaborator context. Defaults to `isgs`. |
-| `CYPRESS_RESET_DB` | Restores the sample database before specs that call `cy.resetSeedData`. |
-| `CYPRESS_DB_SEED_COMMAND` | Overrides the default Docker Mongo restore command. |
+| `CYPRESS_RESET_DB` | Restores the sample database before specs that call `cy.resetSeedData`. Local E2E scripts default this to `true`. |
+| `CYPRESS_DB_SEED_COMMAND` | Seed command used when reset is enabled. Local E2E scripts default this to `node deployment/docker-e2e-stack.cjs seed`. |
 
 ## Backend modes
 
-The Docker development stack can run the backend from local source or from an image. The Cypress contract should work in either mode when the backend exposes the same API and sample seed data.
+The Docker development and E2E stacks can run the backend from local source or from an image. The Cypress contract should work in either mode when the backend exposes the same API and sample seed data.
 
-Set `BACKEND_MODE=image` in CI when the frontend repo should test against a published backend image. Set `BACKEND_MODE=source` or leave `BACKEND_MODE=auto` when a sibling backend checkout should be used locally.
+Set `BACKEND_MODE=image` when the frontend repo should test against a published backend image. Set `BACKEND_MODE=source` or leave `BACKEND_MODE=auto` when a sibling backend checkout should be used locally.
+
+For local E2E, these values live in `deployment/.env.e2e`:
+
+```dotenv
+BACKEND_MODE=auto
+DB_CONNECTION=mongodb://mongodb:27017
+DB_NAME=isgs_e2e
+REQUIRE_AUTH=false
+```
+
+Use a disposable E2E database name. Do not point full workflow tests at a database containing hand-curated local, staging, or production data.
 
 ## Mocking policy
 

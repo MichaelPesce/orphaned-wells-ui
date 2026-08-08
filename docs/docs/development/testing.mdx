@@ -24,25 +24,31 @@ Use the same command before merging frontend changes that alter React behavior, 
 
 The Cypress suite expects:
 
-- The frontend app to be reachable at `CYPRESS_BASE_URL`, defaulting to `http://localhost:3000`.
-- The backend API to be reachable at `CYPRESS_BACKEND_URL`, defaulting to `http://localhost:8001`.
+- The frontend app to be reachable at `CYPRESS_BASE_URL`.
+- The backend API to be reachable at `CYPRESS_BACKEND_URL`.
 - MongoDB to contain the sample seed data described in [E2E Test Contract](/docs/development/e2e-test-contract).
 - Authentication to match `CYPRESS_AUTH_MODE`.
 
-For local development, the Docker stack is the recommended runtime:
+For local E2E runs, use the isolated Docker E2E stack:
 
 ```console
-cp deployment/.env.example deployment/.env
-npm run docker:start
+npm run docker:e2e
 ```
 
-For the default local E2E setup, keep these values in `deployment/.env`:
+The command uses `deployment/.env.e2e` if it exists. Otherwise, it creates one from `deployment/.env.e2e.example`. The default E2E stack uses:
 
 ```dotenv
-REACT_APP_BACKEND_URL=http://localhost:8001
+COMPOSE_PROJECT_NAME=orphaned-wells-e2e
+FRONTEND_HOST_PORT=3001
+BACKEND_HOST_PORT=8002
+MONGODB_HOST_PORT=27019
+REACT_APP_BACKEND_URL=http://localhost:8002
+DB_NAME=isgs_e2e
 REACT_APP_COLLABORATOR=isgs
 REQUIRE_AUTH=false
 ```
+
+This keeps E2E database mutations separate from the normal local development stack.
 
 ## Cypress commands
 
@@ -76,35 +82,74 @@ Run the CI browser configuration:
 npm run e2e:ci
 ```
 
+The local `e2e:open`, `e2e:run`, `e2e:smoke`, and `e2e:full` scripts derive Cypress defaults from the E2E Docker environment:
+
+| Cypress value | Local default |
+| --- | --- |
+| `CYPRESS_BASE_URL` | `http://localhost:<FRONTEND_HOST_PORT>` from `deployment/.env.e2e`, default `http://localhost:3001` |
+| `CYPRESS_BACKEND_URL` | `http://localhost:<BACKEND_HOST_PORT>` from `deployment/.env.e2e`, default `http://localhost:8002` |
+| `CYPRESS_AUTH_MODE` | `disabled` |
+| `CYPRESS_COLLABORATOR` | `REACT_APP_COLLABORATOR` or `COLLABORATOR`, default `isgs` |
+| `CYPRESS_RESET_DB` | `true` |
+| `CYPRESS_DB_SEED_COMMAND` | `node deployment/docker-e2e-stack.cjs seed` |
+
+Shell environment variables still override these local defaults.
+
+For manual Cypress runs outside the npm scripts, `cypress.config.ts` loads `.env`, then `.env.cypress`, then `.env.cypress.local`. The Cypress-specific files are ignored by git and can be used for local overrides without changing the shared E2E stack defaults.
+
 ## Local E2E run
 
-With the Docker stack running and auth disabled, run:
+Start the isolated app:
 
 ```console
-CYPRESS_BASE_URL=http://localhost:3000 \
-CYPRESS_BACKEND_URL=http://localhost:8001 \
-CYPRESS_AUTH_MODE=disabled \
-CYPRESS_COLLABORATOR=isgs \
+npm run docker:e2e
+```
+
+Run a quick pass:
+
+```console
 npm run e2e:smoke
+```
+
+Run the full suite:
+
+```console
+npm run e2e:full
 ```
 
 Use `npm run e2e:full` when changing project navigation, record group workflows, record review, notes, table filters, uploads, exports, schema management, or permission-driven UI.
 
 ## Reset seed data
 
-Set `CYPRESS_RESET_DB=true` when a Cypress run should restore the sample Mongo dump before mutating specs:
+Local E2E scripts set `CYPRESS_RESET_DB=true` by default. Before specs that call `cy.resetSeedData`, Cypress runs:
 
 ```console
-CYPRESS_RESET_DB=true npm run e2e:full
+node deployment/docker-e2e-stack.cjs seed
 ```
 
-By default, Cypress runs this command when reset is enabled:
+That command restores the sample dump into `DB_NAME` from `deployment/.env.e2e`, defaulting to `isgs_e2e`.
+
+You can manually restore the isolated E2E database with:
 
 ```console
-docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml --profile seed run --rm mongo-restore
+npm run docker:e2e:seed
 ```
 
-Override it with `CYPRESS_DB_SEED_COMMAND` when the backend or database is provided by a different environment.
+Override `CYPRESS_DB_SEED_COMMAND` when the backend or database is provided by a different environment.
+
+## Stop or reset the E2E stack
+
+Stop E2E containers without deleting volumes:
+
+```console
+npm run docker:e2e:down
+```
+
+Delete the isolated E2E database and uploaded-file volumes:
+
+```console
+npm run docker:e2e:clean
+```
 
 ## Selectors
 
