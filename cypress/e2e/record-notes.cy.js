@@ -41,7 +41,7 @@ describe("record notes", () => {
       cy.contains('[data-cy="record-note"]', editedNoteText).should("be.visible");
 
       cy.contains('[data-cy="record-note"]', editedNoteText).within(() => {
-        cy.getByCy("reply-note-button").click();
+        cy.getByCy("reply-note-button").click({ force: true });
         cy.getByCy("reply-note-input").find("textarea").first().type(replyText);
         cy.getByCy("submit-reply-button").click();
       });

@@ -5,6 +5,17 @@ const getAttributeRow = (fieldName) => (
     .first()
 );
 
+const openAttributeEditor = (fieldName) => {
+  getAttributeRow(fieldName).then(($row) => {
+    if ($row.find('[data-cy="edit-field-button"]').length) {
+      return cy.wrap($row).find('[data-cy="edit-field-button"]').click();
+    }
+
+    cy.wrap($row).click();
+    return cy.wrap($row).find('[data-cy="edit-field-button"]').click();
+  });
+};
+
 describe("record review workflow", () => {
   beforeEach(() => {
     cy.resetSeedData();
@@ -17,9 +28,7 @@ describe("record review workflow", () => {
       cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
       cy.getByCy("fullscreen-table-button").click();
 
-      getAttributeRow(seed.reviewFieldName).as("fieldRow");
-      cy.get("@fieldRow").click();
-      cy.getByCy("edit-field-button").click();
+      openAttributeEditor(seed.reviewFieldName);
 
       cy.intercept("POST", `${Cypress.env("backendURL")}/update_record/**`).as("updateRecord");
       cy.getByCy("edit-field-input").find("input").clear().type("edited{enter}");
@@ -27,8 +36,7 @@ describe("record review workflow", () => {
       getAttributeRow(seed.reviewFieldName).should("contain.text", "Edited");
       cy.getByCy("review-status-chip").should("contain.text", "incomplete");
 
-      getAttributeRow(seed.reviewFieldName).click();
-      cy.getByCy("edit-field-button").click();
+      openAttributeEditor(seed.reviewFieldName);
       cy.getByCy("edit-field-input").find("input").clear().type("cancelled{esc}");
       getAttributeRow(seed.reviewFieldName).should("not.contain.text", "cancelled");
 

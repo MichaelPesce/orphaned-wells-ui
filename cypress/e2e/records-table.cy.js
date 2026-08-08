@@ -2,8 +2,10 @@ const openRecordGroupTable = () => {
   return cy.findSeededEntities().then(({ seed, recordGroup }) => {
     cy.visitApp(`/record_group/${recordGroup._id}`);
     cy.getByCy("subheader-title", { timeout: 10000 }).should("contain", seed.recordGroupName);
-    cy.getByCy("record-row", { timeout: 30000 }).should("exist");
-    return { seed, recordGroup };
+    return cy.getByCy("record-row", { timeout: 30000 }).should("exist").then(() => ({
+      seed,
+      recordGroup,
+    }));
   });
 };
 

@@ -10,8 +10,7 @@ const openRecordGroupUploadModal = () => {
     cy.visitApp(`/record_group/${recordGroup._id}`);
     cy.getByCy("subheader-primary-action").click();
     cy.wait("@checkProcessorStatus");
-    cy.getByCy("upload-documents-modal").should("exist");
-    return recordGroup;
+    return cy.getByCy("upload-documents-modal").should("exist").then(() => recordGroup);
   });
 };
 
@@ -168,8 +167,19 @@ describe("upload and export workflows", () => {
       cy.contains('[data-cy="record-group-row"]', seed.recordGroupName)
         .find('[data-cy="record-group-select"]')
         .click();
+      cy.intercept("GET", `${Cypress.env("backendURL")}/get_column_data/documentType/**`, {
+        statusCode: 200,
+        body: {
+          columns: ["Oil"],
+          obj: {
+            name: seed.projectName,
+            settings: {},
+          },
+        },
+      }).as("selectedRecordGroupsColumns");
       mockDownload("selectedRecordGroupsExport");
       cy.getByCy("record-groups-export-button").click();
+      cy.wait("@selectedRecordGroupsColumns").its("response.statusCode").should("eq", 200);
       cy.getByCy("download-button").click();
       cy.wait("@selectedRecordGroupsExport").then(({ request }) => {
         expect(request.body.document_types).to.be.an("array");

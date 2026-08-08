@@ -33,17 +33,19 @@ describe("schema UI", () => {
       cy.intercept("POST", `${Cypress.env("backendURL")}/update_processor_attribute`).as("updateSchema");
       cy.getByCy("add-schema-submit").click();
       cy.wait("@updateSchema").its("response.statusCode").should("eq", 200);
-      cy.contains('[data-cy="schema-field-row"]', fieldName, { timeout: 10000 }).should("be.visible");
+      cy.contains('[data-cy="schema-field-row"]', fieldName, { timeout: 10000 })
+        .scrollIntoView()
+        .should("be.visible");
 
-      cy.contains('[data-cy="schema-field-row"]', fieldName).within(() => {
+      cy.contains('[data-cy="schema-field-row"]', fieldName).scrollIntoView().within(() => {
         cy.getByCy("schema-edit-field-button").click();
         cy.getByCy("schema-edit-alias").find("input").clear().type(editedAlias);
         cy.getByCy("schema-save-field-button").click();
       });
       cy.wait("@updateSchema").its("response.statusCode").should("eq", 200);
-      cy.contains('[data-cy="schema-field-row"]', editedAlias).should("be.visible");
+      cy.contains('[data-cy="schema-field-row"]', editedAlias).scrollIntoView().should("be.visible");
 
-      cy.contains('[data-cy="schema-field-row"]', fieldName).within(() => {
+      cy.contains('[data-cy="schema-field-row"]', fieldName).scrollIntoView().within(() => {
         cy.getByCy("schema-remove-field-button").click();
       });
       cy.getByCy("popup-primary-button").click();
