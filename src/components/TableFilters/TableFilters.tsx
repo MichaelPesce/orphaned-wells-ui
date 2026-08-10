@@ -5,7 +5,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import Draggable from "react-draggable";
+// import Draggable from "react-draggable";
 import ApprovalIcon from "@mui/icons-material/Approval";
 import { DEFAULT_FILTER_OPTIONS } from "../../util";
 import { FilterOption, TableFiltersProps } from "../../types";
@@ -91,7 +91,7 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
                 Filters
       </Button>
       {
-        <Draggable handle="#filter-menu">
+        // <Draggable handle="#filter-menu">
           <Menu
             id="filter-menu"
             anchorEl={anchorFilterMenu}
@@ -105,7 +105,7 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
               aria-label="close"
               onClick={() => handleClose()}
               sx={styles.closeIcon}
-              id="close-filters-button"
+              data-cy="close-filters-button"
             >
               <CloseIcon />
             </IconButton>
@@ -139,7 +139,7 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
               </Button>
             </Box>
           </Menu>
-        </Draggable>
+        // </Draggable>
       }
     </div>
   );
