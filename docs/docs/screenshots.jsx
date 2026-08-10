@@ -7,7 +7,9 @@ import AddNewUserUrl from '@site/static/screenshots/add-new-user.png';
 import UsersPageUrl from '@site/static/screenshots/users-page.png';
 import UpdateUserRoleButtonUrl from '@site/static/screenshots/update-user-button.png';
 import UploadRecordsModalUrl from '@site/static/screenshots/upload-records-modal.png';
+import UploadDocumentUrl from '@site/static/screenshots/upload-document.png';
 import UploadDirectoryUrl from '@site/static/screenshots/upload-directory.png';
+import GcsUploadUrl from '@site/static/screenshots/GCS-upload.png';
 import SchemaViewUrl from '@site/static/screenshots/schema-view.png';
 import UploadProcessorUrl from '@site/static/screenshots/upload-processor.png';
 import EditProcessorUrl from '@site/static/screenshots/edit-processor.png';
@@ -46,8 +48,14 @@ export function UpdateUserRoleButton() {
 export function UploadRecordsModalImg() {
     return <img src={UploadRecordsModalUrl} style={imageStyle}/>;
 }
+export function UploadDocumentImg() {
+    return <img src={UploadDocumentUrl} style={imageStyle}/>;
+}
 export function UploadDirectoryImg() {
     return <img src={UploadDirectoryUrl} style={imageStyle}/>;
+}
+export function GcsUploadImg() {
+    return <img src={GcsUploadUrl} style={imageStyle}/>;
 }
 export function SchemaViewImg() {
     return <img src={SchemaViewUrl} style={imageStyle}/>;
