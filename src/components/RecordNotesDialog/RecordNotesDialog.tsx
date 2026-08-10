@@ -258,8 +258,8 @@ const RecordNotesDialog = ({ record_id, open, onClose }: RecordNotesDialogProps)
                               <Typography sx={styles.resolvedCommentsText}>
                                         Resolved comments
                               </Typography>
-                              <Tooltip title='show resolved comment'>
-                                <IconButton onClick={() => setShowResolved((showResolved) => !showResolved)}>
+                              <Tooltip title='show resolved comment' placement="left">
+                                <IconButton data-cy="show-resolved-comments" onClick={() => setShowResolved((showResolved) => !showResolved)}>
                                   {showResolved ? 
                                     <KeyboardArrowUpIcon sx={styles.icon}/>
                                     :
@@ -505,7 +505,8 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
                               }
                               {note.creator === userEmail &&
                                     <Tooltip title='delete'>
-                                      <IconButton data-cy="delete-note-button" disabled={editMode} onClick={() => handleClickAction(idx, "delete")}>
+                                      <IconButton
+                                        data-cy={note.isReply ? "delete-reply-button" : "delete-note-button"} disabled={editMode} onClick={() => handleClickAction(idx, "delete")}>
                                         <DeleteIcon sx={styles.icon}/>
                                       </IconButton>
                                     </Tooltip>
@@ -515,11 +516,13 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
                             
             </Stack>
           </Stack>
-          <Tooltip title={`last updated on ${formatDateTime(note.lastUpdated || -1)}`} enterDelay={1000}>
+          
             <Typography sx={styles.metadata}>
-                            - <i>{note.creator || "unknown"}</i>, {formatDateTime(note.timestamp || -1)}
+                <Tooltip title={`last updated on ${formatDateTime(note.lastUpdated || -1)}`} enterDelay={1000}>
+              <span>- <i>{note.creator || "unknown"}</i>, {formatDateTime(note.timestamp || -1)}
+              </span></Tooltip>
+                            
             </Typography>
-          </Tooltip>
                     
         </div>
                 

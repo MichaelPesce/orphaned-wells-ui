@@ -42,7 +42,7 @@ describe("record notes", () => {
 
       cy.contains('[data-cy="record-note"]', editedNoteText).within(() => {
         cy.getByCy("reply-note-button").click({ force: true });
-        cy.getByCy("reply-note-input").find("textarea").first().type(replyText);
+        cy.getByCy("reply-note-input").type(replyText);
         cy.getByCy("submit-reply-button").click();
       });
       cy.wait("@updateNotes").its("response.statusCode").should("eq", 200);
@@ -53,9 +53,8 @@ describe("record notes", () => {
       });
       cy.wait("@updateNotes").its("response.statusCode").should("eq", 200);
       cy.contains("Resolved comments").should("be.visible");
-      cy.contains('[data-cy="record-note"]', editedNoteText).within(() => {
-        cy.getByCy("reopen-note-button").click();
-      });
+      cy.getByCy("show-resolved-comments").click();
+      cy.getByCy("reopen-note-button").click();
       cy.wait("@updateNotes").its("response.statusCode").should("eq", 200);
 
       cy.contains('[data-cy="record-note"]', editedNoteText).within(() => {
