@@ -31,14 +31,16 @@ const setCheckboxFilterToOnly = (columnName, selectedName, allNames) => {
   cy.getByCy("filter-column-select").last().click();
   cy.contains("li", columnName).click();
   cy.getByCy("filter-values-select").last().click();
-
   allNames
     .filter((name) => name !== selectedName)
     .forEach((name) => {
-      cy.contains("li", name).click();
+      cy.getByDataValue(name).click();
     });
-
   cy.get("body").type("{esc}");
+};
+
+const applyFilters = () => {
+  cy.getByCy("apply-filters-button").click({ force: true });
 };
 
 describe("record tables", () => {
@@ -52,7 +54,7 @@ describe("record tables", () => {
 
       cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("getRecords");
       addFilter("Record Name", "Contains", "_2");
-      cy.getByCy("apply-filters-button").click();
+      applyFilters();
       cy.wait("@getRecords").its("request.body.filter.name.$regex").should("eq", "_2");
       cy.getByCy("record-row").should("have.length", 1);
 
@@ -67,31 +69,34 @@ describe("record tables", () => {
 
     cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("getRecords");
     setCheckboxFilterToOnly("Review Status", "unreviewed", ["reviewed", "unreviewed", "incomplete", "defective"]);
-    cy.getByCy("apply-filters-button").click();
+    applyFilters();
     cy.wait("@getRecords").its("request.body.filter.review_status.$in").should("deep.eq", ["unreviewed"]);
 
     cy.getByCy("filters-button").click();
     cy.getByCy("reset-filters-button").click();
+    cy.getByCy("close-filters-button").click();
 
     cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("getVerificationRecords");
     setCheckboxFilterToOnly("Verification Status", "unverified", ["unverified", "awaiting verification", "verified"]);
-    cy.getByCy("apply-filters-button").click();
+    applyFilters();
     cy.wait("@getVerificationRecords").its("request.body.filter.verification_status.$in").should("deep.eq", [null]);
 
     cy.getByCy("filters-button").click();
     cy.getByCy("reset-filters-button").click();
+    cy.getByCy("close-filters-button").click();
 
     cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("getErrorRecords");
     setCheckboxFilterToOnly("Error Status", "no cleaning errors", ["has cleaning errors", "no cleaning errors"]);
-    cy.getByCy("apply-filters-button").click();
+    applyFilters();
     cy.wait("@getErrorRecords").its("request.body.filter").should("have.property", "$nor");
 
     cy.getByCy("filters-button").click();
     cy.getByCy("reset-filters-button").click();
+    cy.getByCy("close-filters-button").click();
 
     cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("getDateRecords");
     addFilter("Date Uploaded", "Is Before", "2026-01-01");
-    cy.getByCy("apply-filters-button").click();
+    applyFilters();
     cy.wait("@getDateRecords").its("request.body.filter.dateCreated.$lt").should("be.a", "number");
   });
 

@@ -39,6 +39,10 @@ Cypress.Commands.add("getByCy", (selector, ...args) => {
   return cy.get(`[data-cy="${selector}"]`, ...args);
 });
 
+Cypress.Commands.add("getByDataValue", (selector, ...args) => {
+  return cy.get(`[data-value="${selector}"]`, ...args);
+});
+
 Cypress.Commands.add("resetSeedData", () => {
   if (!Cypress.env("resetDb")) return;
   cy.task("seedDatabase", null, { timeout: 120000 });
