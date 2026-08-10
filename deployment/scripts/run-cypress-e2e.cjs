@@ -26,7 +26,7 @@ const [commandName = "full", ...extraArgs] = process.argv.slice(2);
 const cypressArgs = commands[commandName];
 
 if (!cypressArgs) {
-  console.error("Usage: node deployment/run-cypress-e2e.cjs <open|run|full|ci|smoke> [cypress args]");
+  console.error("Usage: node deployment/scripts/run-cypress-e2e.cjs <open|run|full|ci|smoke> [cypress args]");
   process.exit(1);
 }
 
@@ -44,7 +44,7 @@ setDefault("CYPRESS_BACKEND_URL", `http://localhost:${e2eEnv.BACKEND_HOST_PORT |
 setDefault("CYPRESS_AUTH_MODE", "disabled");
 setDefault("CYPRESS_COLLABORATOR", e2eEnv.REACT_APP_COLLABORATOR || e2eEnv.COLLABORATOR || "isgs");
 setDefault("CYPRESS_RESET_DB", "true");
-setDefault("CYPRESS_DB_SEED_COMMAND", "node deployment/docker-e2e-stack.cjs seed");
+setDefault("CYPRESS_DB_SEED_COMMAND", "node deployment/scripts/docker-e2e-stack.cjs seed");
 
 console.log(`Using Cypress base URL: ${childEnv.CYPRESS_BASE_URL}`);
 console.log(`Using Cypress backend URL: ${childEnv.CYPRESS_BACKEND_URL}`);

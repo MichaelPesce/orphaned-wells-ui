@@ -67,7 +67,7 @@ Local npm scripts set E2E-safe defaults before launching Cypress. They read port
 | `CYPRESS_TEAM` | Optional default team used by mocked users. |
 | `CYPRESS_COLLABORATOR` | Collaborator context. Defaults to `isgs`. |
 | `CYPRESS_RESET_DB` | Restores the sample database before specs that call `cy.resetSeedData`. Local E2E scripts default this to `true`. |
-| `CYPRESS_DB_SEED_COMMAND` | Seed command used when reset is enabled. Local E2E scripts default this to `node deployment/docker-e2e-stack.cjs seed`. |
+| `CYPRESS_DB_SEED_COMMAND` | Seed command used when reset is enabled. Local E2E scripts default this to `node deployment/scripts/docker-e2e-stack.cjs seed`. |
 
 ## Backend modes
 

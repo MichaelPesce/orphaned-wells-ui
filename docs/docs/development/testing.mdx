@@ -91,7 +91,7 @@ The local `e2e:open`, `e2e:run`, `e2e:smoke`, `e2e:full`, and `e2e:ci` scripts d
 | `CYPRESS_AUTH_MODE` | `disabled` |
 | `CYPRESS_COLLABORATOR` | `REACT_APP_COLLABORATOR` or `COLLABORATOR`, default `isgs` |
 | `CYPRESS_RESET_DB` | `true` |
-| `CYPRESS_DB_SEED_COMMAND` | `node deployment/docker-e2e-stack.cjs seed` |
+| `CYPRESS_DB_SEED_COMMAND` | `node deployment/scripts/docker-e2e-stack.cjs seed` |
 
 Shell environment variables still override these local defaults.
 
@@ -124,7 +124,7 @@ Use `npm run e2e:full` when changing project navigation, record group workflows,
 Local E2E scripts set `CYPRESS_RESET_DB=true` by default. Before specs that call `cy.resetSeedData`, Cypress runs:
 
 ```console
-node deployment/docker-e2e-stack.cjs seed
+node deployment/scripts/docker-e2e-stack.cjs seed
 ```
 
 That command restores the sample dump into `DB_NAME` from `deployment/.env.e2e`, defaulting to `isgs_e2e`.

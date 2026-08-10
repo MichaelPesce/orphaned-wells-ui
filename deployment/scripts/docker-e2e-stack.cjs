@@ -45,7 +45,7 @@ const [actionName, ...extraArgs] = process.argv.slice(2);
 const action = actions[actionName];
 
 if (!action) {
-  console.error("Usage: node deployment/docker-e2e-stack.cjs <start|stop|down|clean|seed> [docker compose args]");
+  console.error("Usage: node deployment/scripts/docker-e2e-stack.cjs <start|stop|down|clean|seed> [docker compose args]");
   process.exit(1);
 }
 

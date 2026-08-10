@@ -25,7 +25,7 @@ The CI job should:
 
 ## CI Cypress environment
 
-The Cypress CI command derives defaults from `deployment/.env.e2e` through `deployment/run-cypress-e2e.cjs`:
+The Cypress CI command derives defaults from `deployment/.env.e2e` through `deployment/scripts/run-cypress-e2e.cjs`:
 
 ```dotenv
 CYPRESS_BASE_URL=http://localhost:3001
@@ -33,7 +33,7 @@ CYPRESS_BACKEND_URL=http://localhost:8002
 CYPRESS_AUTH_MODE=disabled
 CYPRESS_COLLABORATOR=isgs
 CYPRESS_RESET_DB=true
-CYPRESS_DB_SEED_COMMAND=node deployment/docker-e2e-stack.cjs seed
+CYPRESS_DB_SEED_COMMAND=node deployment/scripts/docker-e2e-stack.cjs seed
 ```
 
 The backend should run with:
@@ -51,7 +51,7 @@ This keeps the full workflow suite focused on application behavior instead of ex
 The E2E Docker stack restores `deployment/mongo-dumps/sample_mongodump` when the Mongo volume is first created. Cypress also sets `CYPRESS_RESET_DB=true`, so specs that call `cy.resetSeedData` restore the sample dump before mutating records.
 
 ```console
-node deployment/docker-e2e-stack.cjs seed
+node deployment/scripts/docker-e2e-stack.cjs seed
 ```
 
 For non-Docker environments, provide a seed command explicitly:
