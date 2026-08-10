@@ -79,7 +79,7 @@ jobs:
 
       - name: Configure test environment
         run: |
-          cp deployment/.env.example deployment/.env
+          cp deployment/.env.e2e.example deployment/.env.e2e
 
           set_env() {
             file="$1"
@@ -92,34 +92,25 @@ jobs:
             fi
           }
 
-          touch .env
-          set_env .env REACT_APP_BACKEND_URL http://localhost:8001
-          set_env .env BYPASS_AUTH true
-          set_env .env CYPRESS_BASE_URL http://localhost:3000
-          set_env .env CYPRESS_BACKEND_URL http://localhost:8001
-          set_env .env CYPRESS_AUTH_MODE disabled
-          set_env .env CYPRESS_COLLABORATOR isgs
-          set_env .env CYPRESS_RESET_DB true
-          set_env .env REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
-
-          set_env deployment/.env REACT_APP_BACKEND_URL http://localhost:8001
-          set_env deployment/.env REACT_APP_COLLABORATOR isgs
-          set_env deployment/.env REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
-          set_env deployment/.env REQUIRE_AUTH false
-          set_env deployment/.env ALLOWED_ORIGINS http://localhost:3000
-          set_env deployment/.env SESSION_COOKIE_DOMAIN ""
-          set_env deployment/.env SESSION_COOKIE_SECURE false
-          set_env deployment/.env SESSION_COOKIE_SAMESITE lax
+          set_env deployment/.env.e2e BACKEND_MODE image
+          set_env deployment/.env.e2e REACT_APP_BACKEND_URL http://localhost:8002
+          set_env deployment/.env.e2e REACT_APP_COLLABORATOR isgs
+          set_env deployment/.env.e2e REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
+          set_env deployment/.env.e2e REQUIRE_AUTH false
+          set_env deployment/.env.e2e ALLOWED_ORIGINS http://localhost:3001
+          set_env deployment/.env.e2e SESSION_COOKIE_DOMAIN ""
+          set_env deployment/.env.e2e SESSION_COOKIE_SECURE false
+          set_env deployment/.env.e2e SESSION_COOKIE_SAMESITE lax
 
       - name: Start docker containers
-        run: npm run docker:start
+        run: npm run docker:e2e
 
       - name: Install Python package under test in backend container
         if: ${{ inputs.install_python_package }}
         env:
           PYTHON_PACKAGE_PATH: ${{ inputs.python_package_path }}
         run: |
-          compose=(docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml)
+          compose=(docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml)
 
           for i in {1..180}; do
             if [ -n "$("${compose[@]}" ps --status running -q backend)" ]; then
@@ -142,28 +133,22 @@ jobs:
       - name: Wait for docker app health
         run: |
           for i in {1..180}; do
-            if curl -fsS http://localhost:8001/docs >/dev/null && curl -fsS http://localhost:3000 >/dev/null; then
+            if curl -fsS http://localhost:8002/docs >/dev/null && curl -fsS http://localhost:3001 >/dev/null; then
               exit 0
             fi
-            docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml ps
+            docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml ps
             sleep 2
           done
 
-          docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml logs --no-color --tail=200
+          docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml logs --no-color --tail=200
           exit 1
 
       - name: Run E2E tests
-        env:
-          CYPRESS_BASE_URL: http://localhost:3000
-          CYPRESS_BACKEND_URL: http://localhost:8001
-          CYPRESS_AUTH_MODE: disabled
-          CYPRESS_COLLABORATOR: isgs
-          CYPRESS_RESET_DB: true
         run: npm run e2e:ci
 
       - name: Shut down docker containers
         if: always()
-        run: npm run docker:clean
+        run: npm run docker:e2e:clean
 
       - name: Upload artifact for screenshots & videos
         uses: actions/upload-artifact@v4

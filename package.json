@@ -55,7 +55,7 @@
     "e2e:run": "node deployment/run-cypress-e2e.cjs run",
     "e2e:smoke": "node deployment/run-cypress-e2e.cjs smoke",
     "e2e:full": "node deployment/run-cypress-e2e.cjs full",
-    "e2e:ci": "cypress run --browser chrome",
+    "e2e:ci": "node deployment/run-cypress-e2e.cjs ci",
     "eject": "react-scripts eject",
     "lint": "eslint . --fix",
     "gcp-build": ""
