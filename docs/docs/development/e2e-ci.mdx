@@ -5,9 +5,9 @@ description: Continuous integration setup for the Cypress E2E suite.
 
 # E2E CI
 
-The frontend repository includes `.github/workflows/frontend-tests-dispatch.yml` for reusable frontend validation. The workflow runs unit tests, starts the Docker development stack, verifies service health, and runs Cypress with CI-oriented settings.
+The frontend repository includes `.github/workflows/frontend-tests-dispatch.yml` for reusable frontend validation. The workflow runs unit tests, starts the isolated Docker E2E stack, verifies service health, and runs Cypress with CI-oriented settings.
 
-CI intentionally uses explicit workflow environment variables and `npm run e2e:ci`. Local developers should use `npm run docker:e2e` plus `npm run e2e:smoke` or `npm run e2e:full` for the isolated E2E stack.
+CI uses the same E2E harness as local development: `npm run docker:e2e` plus `npm run e2e:ci`. The CI command uses the local Cypress wrapper with Chrome enabled.
 
 ## Workflow shape
 
@@ -16,44 +16,42 @@ The CI job should:
 1. Check out the frontend repository.
 2. Install Node dependencies with `npm ci`.
 3. Run unit tests with `npm test -- --watchAll=false --runInBand`.
-4. Prepare frontend and Docker environment files.
-5. Start the Docker development stack.
-6. Wait for the backend health endpoint and frontend URL.
+4. Create `deployment/.env.e2e` from `deployment/.env.e2e.example`.
+5. Start the isolated E2E Docker stack with `npm run docker:e2e`.
+6. Wait for `http://localhost:8002/docs` and `http://localhost:3001`.
 7. Run `npm run e2e:ci`.
 8. Upload Cypress screenshots and videos when a run fails.
-9. Stop the Docker stack.
-
-The local E2E stack uses `deployment/.env.e2e.example` and ports `3001` and `8002` by default. CI can continue using the normal development ports `3000` and `8001` because the workflow creates disposable containers and volumes for each run.
+9. Stop and remove the E2E stack with `npm run docker:e2e:clean`.
 
 ## CI Cypress environment
 
-Use these defaults for the local Docker-backed CI path:
+The Cypress CI command derives defaults from `deployment/.env.e2e` through `deployment/run-cypress-e2e.cjs`:
 
 ```dotenv
-CYPRESS_BASE_URL=http://localhost:3000
-CYPRESS_BACKEND_URL=http://localhost:8001
+CYPRESS_BASE_URL=http://localhost:3001
+CYPRESS_BACKEND_URL=http://localhost:8002
 CYPRESS_AUTH_MODE=disabled
 CYPRESS_COLLABORATOR=isgs
 CYPRESS_RESET_DB=true
+CYPRESS_DB_SEED_COMMAND=node deployment/docker-e2e-stack.cjs seed
 ```
 
 The backend should run with:
 
 ```dotenv
 REQUIRE_AUTH=false
-REACT_APP_BACKEND_URL=http://localhost:8001
+REACT_APP_BACKEND_URL=http://localhost:8002
+DB_NAME=isgs_e2e
 ```
 
 This keeps the full workflow suite focused on application behavior instead of external authentication setup.
 
 ## Database reset
 
-The Docker stack restores `deployment/mongo-dumps/sample_mongodump` when the Mongo volume is first created. CI should also enable `CYPRESS_RESET_DB=true` so specs that mutate records can restore the seed before they run.
-
-When `CYPRESS_DB_SEED_COMMAND` is not set, Cypress uses the standard Docker development restore command:
+The E2E Docker stack restores `deployment/mongo-dumps/sample_mongodump` when the Mongo volume is first created. Cypress also sets `CYPRESS_RESET_DB=true`, so specs that call `cy.resetSeedData` restore the sample dump before mutating records.
 
 ```console
-docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml --profile seed run --rm mongo-restore
+node deployment/docker-e2e-stack.cjs seed
 ```
 
 For non-Docker environments, provide a seed command explicitly:
@@ -66,7 +64,7 @@ The command runs from the frontend repository root.
 
 ## Backend source or image
 
-Use `BACKEND_MODE=image` when CI should validate the frontend against a published backend image. Use `BACKEND_MODE=source` when CI checks out the backend repository next to the frontend and should build that source.
+CI sets `BACKEND_MODE=image` so the frontend workflow validates against the configured backend image. Local runs can leave `BACKEND_MODE=auto` to use a sibling backend checkout when one exists.
 
 For source-backed CI runs, make sure backend-only runtime dependencies, including any required processor or data-cleaning packages, are available before starting the Docker stack.
 
@@ -93,4 +91,5 @@ If tests cannot reach the app, confirm:
 - The frontend URL matches `CYPRESS_BASE_URL`.
 - The backend URL matches `CYPRESS_BACKEND_URL` and returns from `/health` or `/docs`.
 - `REQUIRE_AUTH=false` is set when `CYPRESS_AUTH_MODE=disabled`.
+- `deployment/.env.e2e` exists and matches the E2E stack ports.
 - Seed data exists and matches `cypress/fixtures/seeded-data.json`.

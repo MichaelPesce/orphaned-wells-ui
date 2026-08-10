@@ -18,6 +18,7 @@ const commands = {
   open: ["open"],
   run: ["run"],
   full: ["run"],
+  ci: ["run", "--browser", "chrome"],
   smoke: ["run", "--spec", "cypress/e2e/smoke.cy.js,cypress/e2e/auth-gates.cy.js"],
 };
 
@@ -25,7 +26,7 @@ const [commandName = "full", ...extraArgs] = process.argv.slice(2);
 const cypressArgs = commands[commandName];
 
 if (!cypressArgs) {
-  console.error("Usage: node deployment/run-cypress-e2e.cjs <open|run|full|smoke> [cypress args]");
+  console.error("Usage: node deployment/run-cypress-e2e.cjs <open|run|full|ci|smoke> [cypress args]");
   process.exit(1);
 }
 
