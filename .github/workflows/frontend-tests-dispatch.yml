@@ -192,6 +192,105 @@ jobs:
       - name: Run E2E tests
         run: npm run e2e:ci
 
+      - name: Debug E2E data after test failure
+        if: failure()
+        run: |
+          compose=(docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml)
+          record_group_id="6674a33a398907ecaeb2e574"
+          seeded_record_id="6674a36da6bd70da99aa03ff"
+          next_record_id="6674a36d4cde4e8ee6caec8b"
+
+          echo "Docker compose status:"
+          "${compose[@]}" ps || true
+
+          echo "Post-failure Mongo summary:"
+          if [ -n "$("${compose[@]}" ps --status running -q mongodb || true)" ]; then
+            "${compose[@]}" exec -T mongodb mongosh isgs_e2e --quiet --eval "
+              const recordGroupId = '${record_group_id}';
+              print(JSON.stringify({
+                db: db.getName(),
+                projects: db.projects.countDocuments({ name: 'ISGS Project' }),
+                recordGroups: db.record_groups.countDocuments({
+                  _id: ObjectId(recordGroupId),
+                  name: 'Precambrian_WellCompletion_1'
+                }),
+                recordsForGroup: db.records.countDocuments({ record_group_id: recordGroupId }),
+                seededRecord: db.records.countDocuments({ _id: ObjectId('${seeded_record_id}') }),
+                nextRecord: db.records.countDocuments({ _id: ObjectId('${next_record_id}') }),
+                reviewStatusCounts: db.records.aggregate([
+                  { \$match: { record_group_id: recordGroupId } },
+                  { \$group: { _id: '\$review_status', count: { \$sum: 1 } } },
+                  { \$sort: { _id: 1 } }
+                ]).toArray()
+              }));
+            " || true
+          else
+            echo "MongoDB container is not running."
+          fi
+
+          post_json() {
+            local url="$1"
+            local body="$2"
+            local label="$3"
+            local response
+            local status
+            local payload
+
+            response=$(curl -sS -w '\nHTTP_STATUS:%{http_code}' -X POST "${url}" \
+              -H "Content-Type: application/json" \
+              --data "${body}" || true)
+            status=$(echo "${response}" | sed -n 's/^HTTP_STATUS://p')
+            payload=$(echo "${response}" | sed '/^HTTP_STATUS:/d')
+
+            echo "${label} HTTP status: ${status:-curl_failed}"
+            if echo "${payload}" | jq -e . >/dev/null 2>&1; then
+              echo "${label} summary: $(echo "${payload}" | jq -c '
+                if type == "object" and has("records") then
+                  {
+                    record_count,
+                    returned_records: (.records | length),
+                    names: [.records[].name]
+                  }
+                elif type == "object" and has("recordData") then
+                  {
+                    name: .recordData.name,
+                    record_group_id: .recordData.record_group_id,
+                    rank: .recordData.rank,
+                    previous_id: .recordData.previous_id,
+                    next_id: .recordData.next_id,
+                    review_status: .recordData.review_status
+                  }
+                else
+                  .
+                end
+              ')"
+            else
+              echo "${label} raw response: ${payload}"
+            fi
+          }
+
+          get_records_body="{\"sort\":[\"dateCreated\",1],\"filter\":{},\"id\":\"${record_group_id}\"}"
+          post_json \
+            "http://localhost:8002/get_records/record_group?page=0&records_per_page=100" \
+            "${get_records_body}" \
+            "Post-failure get_records"
+
+          get_record_body="{\"location\":\"record_group\",\"group_id\":\"${record_group_id}\",\"filterBy\":{},\"sortBy\":[\"dateCreated\",1]}"
+          post_json \
+            "http://localhost:8002/get_record/${seeded_record_id}" \
+            "${get_record_body}" \
+            "Post-failure seeded get_record"
+          post_json \
+            "http://localhost:8002/get_record/${next_record_id}" \
+            "${get_record_body}" \
+            "Post-failure next get_record"
+
+          echo "Recent backend logs:"
+          "${compose[@]}" logs --no-color --tail=300 backend || true
+
+          echo "Recent MongoDB logs:"
+          "${compose[@]}" logs --no-color --tail=200 mongodb || true
+
       - name: Shut down docker containers
         if: always()
         run: npm run docker:e2e:clean
