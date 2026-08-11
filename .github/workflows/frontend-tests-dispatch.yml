@@ -143,6 +143,52 @@ jobs:
           docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml logs --no-color --tail=200
           exit 1
 
+      - name: Verify E2E seed data
+        run: |
+          npm run docker:e2e:seed
+
+          compose=(docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml)
+          record_group_id="6674a33a398907ecaeb2e574"
+          expected_record_count="17"
+
+          mongo_summary=$("${compose[@]}" exec -T mongodb mongosh isgs_e2e --quiet --eval "
+            const recordGroupId = '${record_group_id}';
+            print(JSON.stringify({
+              db: db.getName(),
+              projects: db.projects.countDocuments({ name: 'ISGS Project' }),
+              recordGroups: db.record_groups.countDocuments({
+                _id: ObjectId(recordGroupId),
+                name: 'Precambrian_WellCompletion_1'
+              }),
+              recordsForGroup: db.records.countDocuments({ record_group_id: recordGroupId }),
+              seededRecord: db.records.countDocuments({
+                record_group_id: recordGroupId,
+                name: '121190087702_WELL_COMPLETION_REPORT_1'
+              })
+            }));
+          ")
+          echo "Mongo seed summary: ${mongo_summary}"
+
+          mongo_record_count=$(echo "${mongo_summary}" | jq -r '.recordsForGroup')
+          if [ "${mongo_record_count}" != "${expected_record_count}" ]; then
+            echo "Expected ${expected_record_count} Mongo records for ${record_group_id}, found ${mongo_record_count}."
+            "${compose[@]}" logs --no-color --tail=200 mongodb mongo-restore backend
+            exit 1
+          fi
+
+          api_response=$(curl -fsS -X POST "http://localhost:8002/get_records/record_group?page=0&records_per_page=100" \
+            -H "Content-Type: application/json" \
+            --data "{\"sort\":[\"dateCreated\",1],\"filter\":{},\"id\":\"${record_group_id}\"}")
+          echo "Backend get_records summary: $(echo "${api_response}" | jq -c '{record_count, returned_records: (.records | length), first_record: (.records[0].name // null)}')"
+
+          api_record_count=$(echo "${api_response}" | jq -r '.record_count')
+          api_returned_records=$(echo "${api_response}" | jq -r '.records | length')
+          if [ "${api_record_count}" != "${expected_record_count}" ] || [ "${api_returned_records}" = "0" ]; then
+            echo "Expected backend API to return ${expected_record_count} records for ${record_group_id}."
+            "${compose[@]}" logs --no-color --tail=200 backend
+            exit 1
+          fi
+
       - name: Run E2E tests
         run: npm run e2e:ci
 
