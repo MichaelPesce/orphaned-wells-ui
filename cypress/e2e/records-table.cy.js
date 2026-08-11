@@ -1,8 +1,10 @@
 const openRecordGroupTable = () => {
   return cy.findSeededEntities().then(({ seed, recordGroup }) => {
+    cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/record_group*`).as("loadRecordGroupRecords");
     cy.visitApp(`/record_group/${recordGroup._id}`);
     cy.getByCy("subheader-title", { timeout: 10000 }).should("contain", seed.recordGroupName);
-    return cy.getByCy("record-row", { timeout: 30000 }).should("exist").then(() => ({
+    waitForRecordGroupRecords("@loadRecordGroupRecords", recordGroup._id, seed.recordName);
+    return cy.contains('[data-cy="record-row"]', seed.recordName, { timeout: 30000 }).should("exist").then(() => ({
       seed,
       recordGroup,
     }));
@@ -41,6 +43,15 @@ const setCheckboxFilterToOnly = (columnName, selectedName, allNames) => {
 
 const applyFilters = () => {
   cy.getByCy("apply-filters-button").click({ force: true });
+};
+
+const waitForRecordGroupRecords = (alias, recordGroupId, expectedRecordName) => {
+  return cy.wait(alias, { timeout: 30000 }).then(({ request, response }) => {
+    expect(request.body.id).to.eq(recordGroupId);
+    expect(response?.statusCode).to.eq(200);
+    expect(response?.body.record_count, "record count").to.be.greaterThan(0);
+    expect(response?.body.records.map((record) => record.name)).to.include(expectedRecordName);
+  });
 };
 
 const waitForRecordsPage = (alias, page, pageSize) => {

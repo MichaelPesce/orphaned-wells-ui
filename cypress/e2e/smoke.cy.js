@@ -1,3 +1,19 @@
+const waitForRecordGroupRecords = (alias, recordGroupId, expectedRecordName) => {
+  return cy.wait(alias, { timeout: 30000 }).then(({ request, response }) => {
+    expect(request.body.id).to.eq(recordGroupId);
+    expect(response?.statusCode).to.eq(200);
+    expect(response?.body.record_count, "record count").to.be.greaterThan(0);
+    expect(response?.body.records.map((record) => record.name)).to.include(expectedRecordName);
+  });
+};
+
+const waitForRecordFetch = (alias, expectedRecordName) => {
+  return cy.wait(alias, { timeout: 30000 }).then(({ response }) => {
+    expect(response?.statusCode).to.be.oneOf([200, 303]);
+    expect(response?.body.recordData.name).to.eq(expectedRecordName);
+  });
+};
+
 describe("core navigation smoke", () => {
   before(() => {
     cy.resetSeedData();
@@ -8,18 +24,22 @@ describe("core navigation smoke", () => {
   });
 
   it("loads seeded data and navigates projects to project to record group to record", () => {
-    cy.findSeededEntities().then(({ seed }) => {
+    cy.findSeededEntities().then(({ seed, recordGroup, record }) => {
       cy.visitApp("/projects");
 
       cy.getByCy("project-row").contains(seed.projectName).click();
       cy.getByCy("subheader-title").should("contain", seed.projectName);
       cy.findByRole("columnheader", { name: /record group name/i }).should("be.visible");
 
+      cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/record_group*`).as("loadRecordGroupRecords");
       cy.getByCy("record-group-row").contains(seed.recordGroupName).click();
       cy.getByCy("subheader-title").should("contain", seed.recordGroupName);
       cy.findByRole("columnheader", { name: /record name/i }).should("be.visible");
+      waitForRecordGroupRecords("@loadRecordGroupRecords", recordGroup._id, seed.recordName);
 
-      cy.getByCy("record-row").contains(seed.recordName).click();
+      cy.intercept("POST", `${Cypress.env("backendURL")}/get_record/${record._id}`).as("getSeedRecord");
+      cy.contains('[data-cy="record-row"]', seed.recordName, { timeout: 30000 }).click();
+      waitForRecordFetch("@getSeedRecord", seed.recordName);
       cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
       cy.getByCy("subheader-title").should("contain", seed.recordName);
     });
