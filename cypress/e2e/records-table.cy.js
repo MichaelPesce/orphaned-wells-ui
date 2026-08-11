@@ -43,6 +43,28 @@ const applyFilters = () => {
   cy.getByCy("apply-filters-button").click({ force: true });
 };
 
+const waitForRecordsPage = (alias, page, pageSize) => {
+  return cy.wait(alias, { timeout: 30000 }).then(({ request, response }) => {
+    const requestUrl = new URL(request.url);
+    expect(requestUrl.searchParams.get("page")).to.eq(`${page}`);
+    expect(requestUrl.searchParams.get("records_per_page")).to.eq(`${pageSize}`);
+    expect(response?.statusCode).to.eq(200);
+    expect(response?.body.records, `records on page ${page + 1}`).to.have.length.greaterThan(0);
+    return response.body.records;
+  });
+};
+
+const findRecordWithAttributes = (records) => {
+  const record = records.find((candidate) => (
+    candidate.status !== "error" &&
+    Array.isArray(candidate.attributesList) &&
+    candidate.attributesList.length > 0
+  ));
+
+  expect(record, "page record with attributes").to.exist;
+  return record;
+};
+
 describe("record tables", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
@@ -104,14 +126,28 @@ describe("record tables", () => {
     openRecordGroupTable().then(({ recordGroup }) => {
       cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("getRecords");
       cy.getByCy("records-sort-dateCreated").click();
-      cy.wait("@getRecords").its("request.body.sort.0").should("eq", "dateCreated");
+      cy.wait("@getRecords").its("request.body.sort").should("deep.eq", ["dateCreated", -1]);
 
       cy.findByLabelText(/rows per page/i).select("10");
+      waitForRecordsPage("@getRecords", 0, 10);
       cy.location("search").should("include", "pageSize=10");
       cy.findByLabelText(/next page/i).click();
       cy.location("search").should("include", "page=2");
+      waitForRecordsPage("@getRecords", 1, 10).then((records) => {
+        const record = findRecordWithAttributes(records);
+        cy.intercept("POST", `${Cypress.env("backendURL")}/get_record/${record._id}`).as("getRecord");
 
-      cy.getByCy("record-row").first().click();
+        cy.getByCy("record-row")
+          .filter(`[data-record-id="${record._id}"]`)
+          .should("contain.text", record.name)
+          .click();
+
+        cy.wait("@getRecord", { timeout: 30000 }).then(({ response }) => {
+          expect(response?.statusCode).to.be.oneOf([200, 303]);
+          expect(response?.body.recordData.name).to.eq(record.name);
+          expect(response?.body.recordData.attributesList).to.have.length.greaterThan(0);
+        });
+      });
       cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
       cy.contains('[data-cy="breadcrumb-link"]', recordGroup.name).click();
 
