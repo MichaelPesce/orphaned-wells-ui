@@ -1,3 +1,72 @@
+const expectedNoteCreator = () => {
+  const authMode = String(Cypress.env("authMode") || "mock").toLowerCase();
+  if (["disabled", "mock", "stub", "stubbed"].includes(authMode)) return "anonymous";
+  return undefined;
+};
+
+const logInterception = (label, interception) => {
+  const { request, response, error } = interception;
+  const recordData = response?.body?.recordData;
+  const summary = {
+    method: request?.method,
+    url: request?.url,
+    requestBody: request?.body,
+    statusCode: response?.statusCode,
+    recordData: recordData ? {
+      _id: recordData._id,
+      name: recordData.name,
+      record_group_id: recordData.record_group_id,
+      review_status: recordData.review_status,
+      previous_id: recordData.previous_id,
+      next_id: recordData.next_id,
+    } : response?.body,
+    error: error ? {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    } : undefined,
+  };
+
+  cy.task("log", `${label}:\n${JSON.stringify(summary, null, 2)}`);
+};
+
+const waitForRecordFetch = (alias, expectedName) => {
+  return cy.wait(alias, { timeout: 30000 }).then((interception) => {
+    logInterception("record-notes get_record", interception);
+    expect(interception.error, `get_record network error for ${interception.request.url}`).to.not.exist;
+    expect(interception.response?.statusCode).to.be.oneOf([200, 303]);
+    expect(interception.response?.body?.recordData?.name).to.eq(expectedName);
+  });
+};
+
+const visitRecordPage = (record, expectedName, alias = "loadRecord") => {
+  cy.intercept("POST", `${Cypress.env("backendURL")}/get_record/${record._id}`).as(alias);
+  cy.visitApp(`/record/${record._id}`);
+  waitForRecordFetch(`@${alias}`, expectedName);
+  cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
+};
+
+const expectEditableNoteFromApi = (recordId, noteText) => {
+  cy.api("GET", `/get_record_notes/${recordId}`).then(({ body }) => {
+    const note = body.find((candidate) => candidate.text === noteText && !candidate.deleted);
+    const noteSummary = note ? {
+      text: note.text,
+      creator: note.creator,
+      resolved: note.resolved,
+      deleted: note.deleted,
+      isReply: note.isReply,
+    } : null;
+
+    cy.task("log", `record-notes API note metadata:\n${JSON.stringify(noteSummary, null, 2)}`);
+    expect(note, `note '${noteText}' returned by get_record_notes`).to.exist;
+
+    const creator = expectedNoteCreator();
+    if (creator) {
+      expect(note.creator, `creator for note '${noteText}'`).to.eq(creator);
+    }
+  });
+};
+
 describe("record notes", () => {
   beforeEach(() => {
     cy.resetSeedData();
@@ -10,8 +79,7 @@ describe("record notes", () => {
     const replyText = `${noteText} reply`;
 
     cy.findSeededEntities().then(({ seed, recordGroup, record }) => {
-      cy.visitApp(`/record/${record._id}`);
-      cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
+      visitRecordPage(record, seed.recordName, "loadInitialRecord");
 
       cy.getByCy("record-notes-open-button").click();
       cy.getByCy("record-notes-dialog").should("be.visible");
@@ -20,6 +88,7 @@ describe("record notes", () => {
       cy.getByCy("add-note-button").click();
       cy.wait("@updateNotes").its("response.statusCode").should("eq", 200);
       cy.contains('[data-cy="record-note"]', noteText).should("be.visible");
+      expectEditableNoteFromApi(record._id, noteText);
 
       cy.findByLabelText(/close/i).click();
       cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/record_group*`).as("loadRecordGroupRecords");
@@ -33,10 +102,10 @@ describe("record notes", () => {
         .find('[data-cy="record-notes-button"]')
         .should("have.attr", "data-has-notes", "true");
 
-      cy.visitApp(`/record/${record._id}`);
-      cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
+      visitRecordPage(record, seed.recordName, "loadRecordForEdit");
       cy.getByCy("record-notes-open-button").click();
       cy.contains('[data-cy="record-note"]', noteText).should("be.visible");
+      expectEditableNoteFromApi(record._id, noteText);
 
       cy.contains('[data-cy="record-note"]', noteText).within(() => {
         cy.getByCy("edit-note-button").click();

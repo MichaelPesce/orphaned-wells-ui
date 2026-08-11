@@ -25,8 +25,8 @@ const normalizeAuthMode = () => String(Cypress.env("authMode") || "mock").toLowe
 const isMockAuthMode = () => ["mock", "stubbed", "stub"].includes(normalizeAuthMode());
 
 const buildMockUser = (overrides = {}) => ({
-  email: "cypress@example.test",
-  name: "Cypress User",
+  email: "anonymous",
+  name: "Cypress Anonymous User",
   picture: "",
   roles: {},
   permissions: ALL_PERMISSIONS,
