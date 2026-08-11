@@ -4,9 +4,10 @@ const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
-const repoRoot = path.resolve(__dirname, "..");
-const envFile = path.join(__dirname, ".env.e2e");
-const envExampleFile = path.join(__dirname, ".env.e2e.example");
+const deploymentDir = path.resolve(__dirname, "..");
+const repoRoot = path.resolve(deploymentDir, "..");
+const envFile = path.join(deploymentDir, ".env.e2e");
+const envExampleFile = path.join(deploymentDir, ".env.e2e.example");
 const cypressBin = path.join(
   repoRoot,
   "node_modules",

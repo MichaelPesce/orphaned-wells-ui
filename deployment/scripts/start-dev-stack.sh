@@ -2,10 +2,12 @@
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-env_file="${script_dir}/.env"
+deployment_dir=$(CDPATH= cd -- "${script_dir}/.." && pwd)
+repo_root=$(CDPATH= cd -- "${deployment_dir}/.." && pwd)
+env_file="${deployment_dir}/.env"
 
 if [ ! -f "${env_file}" ]; then
-  cp "${script_dir}/.env.example" "${env_file}"
+  cp "${deployment_dir}/.env.example" "${env_file}"
   echo "Created ${env_file} from .env.example"
 fi
 
@@ -20,7 +22,7 @@ backend_auto_clone="${BACKEND_AUTO_CLONE:-false}"
 
 case "${backend_dir}" in
   /*) backend_path="${backend_dir}" ;;
-  *) backend_path="${script_dir}/${backend_dir}" ;;
+  *) backend_path="${deployment_dir}/${backend_dir}" ;;
 esac
 
 has_backend_source() {
@@ -32,7 +34,7 @@ if [ "${backend_auto_clone}" = "true" ] && ! has_backend_source "${backend_path}
   git clone "${backend_url}" "${backend_path}"
 fi
 
-compose_files="-f ${script_dir}/docker-compose.dev.yml"
+compose_files="-f ${deployment_dir}/docker-compose.dev.yml"
 
 case "${backend_mode}" in
   source)
@@ -40,13 +42,13 @@ case "${backend_mode}" in
       echo "BACKEND_MODE=source requires backend source at ${backend_path}" >&2
       exit 1
     fi
-    compose_files="${compose_files} -f ${script_dir}/docker-compose.source.yml"
+    compose_files="${compose_files} -f ${deployment_dir}/docker-compose.source.yml"
     ;;
   image)
     ;;
   auto)
     if has_backend_source "${backend_path}"; then
-      compose_files="${compose_files} -f ${script_dir}/docker-compose.source.yml"
+      compose_files="${compose_files} -f ${deployment_dir}/docker-compose.source.yml"
     fi
     ;;
   *)
@@ -55,5 +57,6 @@ case "${backend_mode}" in
     ;;
 esac
 
+cd "${repo_root}"
 # shellcheck disable=SC2086
 docker compose --env-file "${env_file}" ${compose_files} up -d --build "$@"

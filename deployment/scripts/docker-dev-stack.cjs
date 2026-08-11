@@ -5,8 +5,10 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const scriptDir = __dirname;
-const envFile = path.join(scriptDir, ".env");
-const envExampleFile = path.join(scriptDir, ".env.example");
+const deploymentDir = path.resolve(scriptDir, "..");
+const repoRoot = path.resolve(deploymentDir, "..");
+const envFile = path.join(deploymentDir, ".env");
+const envExampleFile = path.join(deploymentDir, ".env.example");
 
 const actions = {
   start: {
@@ -57,7 +59,7 @@ const backendGitUrl =
 const backendAutoClone = childEnv.BACKEND_AUTO_CLONE || "false";
 const backendPath = path.isAbsolute(backendDir)
   ? backendDir
-  : path.resolve(scriptDir, backendDir);
+  : path.resolve(deploymentDir, backendDir);
 
 if (backendAutoClone === "true" && !hasBackendSource(backendPath)) {
   console.log(`Cloning backend repository into ${backendPath}...`);
@@ -65,7 +67,7 @@ if (backendAutoClone === "true" && !hasBackendSource(backendPath)) {
   runCommand("git", ["clone", backendGitUrl, backendPath], childEnv);
 }
 
-const composeFiles = [path.join(scriptDir, "docker-compose.dev.yml")];
+const composeFiles = [path.join(deploymentDir, "docker-compose.dev.yml")];
 
 switch (backendMode) {
   case "source":
@@ -73,7 +75,7 @@ switch (backendMode) {
       console.error(`BACKEND_MODE=source requires backend source at ${backendPath}`);
       process.exit(1);
     }
-    composeFiles.push(path.join(scriptDir, "docker-compose.source.yml"));
+    composeFiles.push(path.join(deploymentDir, "docker-compose.source.yml"));
     console.log(`Using local backend source at ${backendPath}`);
     break;
   case "image":
@@ -81,7 +83,7 @@ switch (backendMode) {
     break;
   case "auto":
     if (hasBackendSource(backendPath)) {
-      composeFiles.push(path.join(scriptDir, "docker-compose.source.yml"));
+      composeFiles.push(path.join(deploymentDir, "docker-compose.source.yml"));
       console.log(`Using local backend source at ${backendPath}`);
     } else {
       console.log("Using backend image from BACKEND_IMAGE");
@@ -164,7 +166,7 @@ function hasBackendSource(directory) {
 function runCommand(command, args, env) {
   console.log(`Running: ${command} ${args.map(formatArg).join(" ")}`);
   const result = spawnSync(command, args, {
-    cwd: path.resolve(scriptDir, ".."),
+    cwd: repoRoot,
     env,
     stdio: "inherit",
   });
