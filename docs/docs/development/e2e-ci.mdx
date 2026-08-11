@@ -30,7 +30,7 @@ The Cypress CI command derives defaults from `deployment/.env.e2e` through `depl
 ```dotenv
 CYPRESS_BASE_URL=http://localhost:3001
 CYPRESS_BACKEND_URL=http://localhost:8002
-CYPRESS_AUTH_MODE=disabled
+CYPRESS_AUTH_MODE=mock
 CYPRESS_COLLABORATOR=isgs
 CYPRESS_RESET_DB=true
 CYPRESS_DB_SEED_COMMAND=node deployment/scripts/docker-e2e-stack.cjs seed
@@ -45,6 +45,7 @@ DB_NAME=isgs_e2e
 ```
 
 This keeps the full workflow suite focused on application behavior instead of external authentication setup.
+The backend auth flag allows real API requests, while Cypress mocks the frontend `/check_auth` response to prevent login redirects during protected-route reloads.
 
 ## Database reset
 
@@ -90,6 +91,6 @@ If tests cannot reach the app, confirm:
 
 - The frontend URL matches `CYPRESS_BASE_URL`.
 - The backend URL matches `CYPRESS_BACKEND_URL` and returns from `/health` or `/docs`.
-- `REQUIRE_AUTH=false` is set when `CYPRESS_AUTH_MODE=disabled`.
+- `CYPRESS_AUTH_MODE=mock` is set, and the backend still has `REQUIRE_AUTH=false`.
 - `deployment/.env.e2e` exists and matches the E2E stack ports.
 - Seed data exists and matches `cypress/fixtures/seeded-data.json`.

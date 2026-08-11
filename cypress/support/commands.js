@@ -21,7 +21,8 @@ const ALL_PERMISSIONS = [
 
 const backendUrl = () => Cypress.env("backendURL") || "http://localhost:8001";
 
-const normalizeAuthMode = () => String(Cypress.env("authMode") || "disabled").toLowerCase();
+const normalizeAuthMode = () => String(Cypress.env("authMode") || "mock").toLowerCase();
+const isMockAuthMode = () => ["mock", "stubbed", "stub"].includes(normalizeAuthMode());
 
 const buildMockUser = (overrides = {}) => ({
   email: "cypress@example.test",
@@ -81,6 +82,14 @@ Cypress.Commands.add("mockCheckAuth", (userOverrides = {}) => {
   }).as("checkAuth");
 });
 
+Cypress.Commands.add("waitForAppAuth", () => {
+  if (!isMockAuthMode()) return cy.wrap(null, { log: false });
+
+  return cy.wait("@checkAuth", { timeout: 30000 })
+    .its("response.statusCode")
+    .should("eq", 200);
+});
+
 Cypress.Commands.add("loginByGoogleApi", () => {
   const bypassAuth = String(Cypress.env("BYPASS_AUTH")).toLowerCase() === "true";
   if (bypassAuth) {
@@ -130,14 +139,17 @@ Cypress.Commands.add("loginForE2E", (userOverrides = {}) => {
     return;
   }
 
-  if (authMode === "mock" || authMode === "stubbed" || authMode === "stub") {
-    cy.mockCheckAuth(userOverrides);
+  if (isMockAuthMode()) {
+    return cy.mockCheckAuth(userOverrides);
   }
+
+  return cy.wrap(null, { log: false });
 });
 
 Cypress.Commands.add("visitApp", (path = "/projects", userOverrides = {}) => {
   cy.loginForE2E(userOverrides);
   cy.visit(path);
+  cy.waitForAppAuth();
 });
 
 Cypress.Commands.add("findProjectByName", (projectName) => {

@@ -61,7 +61,7 @@ export default defineConfig({
     googleClientId: process.env.REACT_APP_GOOGLE_CLIENTID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || process.env.REACT_APP_GOOGLE_CLIENT_SECRET,
     backendURL: process.env.CYPRESS_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || DEFAULT_BACKEND_URL,
-    authMode: process.env.CYPRESS_AUTH_MODE || (parseBoolean(process.env.BYPASS_AUTH) ? "disabled" : "google"),
+    authMode: process.env.CYPRESS_AUTH_MODE || (parseBoolean(process.env.BYPASS_AUTH) ? "disabled" : "mock"),
     team: process.env.CYPRESS_TEAM || process.env.REACT_APP_TEAM || "",
     collaborator: process.env.CYPRESS_COLLABORATOR || process.env.REACT_APP_COLLABORATOR || "isgs",
     resetDb: parseBoolean(process.env.CYPRESS_RESET_DB),

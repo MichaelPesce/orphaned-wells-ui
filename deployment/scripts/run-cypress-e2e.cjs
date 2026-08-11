@@ -42,13 +42,14 @@ const childEnv = { ...process.env };
 
 setDefault("CYPRESS_BASE_URL", `http://localhost:${e2eEnv.FRONTEND_HOST_PORT || "3001"}`);
 setDefault("CYPRESS_BACKEND_URL", `http://localhost:${e2eEnv.BACKEND_HOST_PORT || "8002"}`);
-setDefault("CYPRESS_AUTH_MODE", "disabled");
+setDefault("CYPRESS_AUTH_MODE", "mock");
 setDefault("CYPRESS_COLLABORATOR", e2eEnv.REACT_APP_COLLABORATOR || e2eEnv.COLLABORATOR || "isgs");
 setDefault("CYPRESS_RESET_DB", "true");
 setDefault("CYPRESS_DB_SEED_COMMAND", "node deployment/scripts/docker-e2e-stack.cjs seed");
 
 console.log(`Using Cypress base URL: ${childEnv.CYPRESS_BASE_URL}`);
 console.log(`Using Cypress backend URL: ${childEnv.CYPRESS_BACKEND_URL}`);
+console.log(`Using Cypress auth mode: ${childEnv.CYPRESS_AUTH_MODE}`);
 console.log(`Using Cypress collaborator: ${childEnv.CYPRESS_COLLABORATOR}`);
 console.log(`Using Cypress DB reset: ${childEnv.CYPRESS_RESET_DB}`);
 

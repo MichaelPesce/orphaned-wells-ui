@@ -88,12 +88,12 @@ The local `e2e:open`, `e2e:run`, `e2e:smoke`, `e2e:full`, and `e2e:ci` scripts d
 | --- | --- |
 | `CYPRESS_BASE_URL` | `http://localhost:<FRONTEND_HOST_PORT>` from `deployment/.env.e2e`, default `http://localhost:3001` |
 | `CYPRESS_BACKEND_URL` | `http://localhost:<BACKEND_HOST_PORT>` from `deployment/.env.e2e`, default `http://localhost:8002` |
-| `CYPRESS_AUTH_MODE` | `disabled` |
+| `CYPRESS_AUTH_MODE` | `mock` |
 | `CYPRESS_COLLABORATOR` | `REACT_APP_COLLABORATOR` or `COLLABORATOR`, default `isgs` |
 | `CYPRESS_RESET_DB` | `true` |
 | `CYPRESS_DB_SEED_COMMAND` | `node deployment/scripts/docker-e2e-stack.cjs seed` |
 
-Shell environment variables still override these local defaults.
+Shell environment variables still override these local defaults. With `CYPRESS_AUTH_MODE=mock`, Cypress stubs `/check_auth` but leaves the rest of the app pointed at the real backend.
 
 For manual Cypress runs outside the npm scripts, `cypress.config.ts` loads `.env`, then `.env.cypress`, then `.env.cypress.local`. The Cypress-specific files are ignored by git and can be used for local overrides without changing the shared E2E stack defaults.
 

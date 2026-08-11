@@ -50,8 +50,8 @@ Configure auth with `CYPRESS_AUTH_MODE`:
 
 | Mode | Use |
 | --- | --- |
-| `disabled` | Local Docker or CI backend with `REQUIRE_AUTH=false`. This is the default contract for full workflow tests. |
-| `mock`, `stub`, or `stubbed` | Stub `/check_auth` responses for frontend permission and auth gate coverage. |
+| `mock`, `stub`, or `stubbed` | Stub `/check_auth` responses while running OGRRE workflows against the real backend. This is the default for local and CI E2E runs. |
+| `disabled` | Do not mock frontend auth. Use only when intentionally relying on the target backend's auth behavior. |
 | `google` | Legacy Google token login. Use only when intentionally testing a real auth-integrated environment. |
 | `required` | Auth-required API checks. Specs that need this mode skip unless it is explicitly set. |
 
@@ -85,6 +85,8 @@ REQUIRE_AUTH=false
 ```
 
 Use a disposable E2E database name. Do not point full workflow tests at a database containing hand-curated local, staging, or production data.
+
+`REQUIRE_AUTH=false` keeps the backend API reachable to Cypress and the app. Cypress still mocks `/check_auth` by default so protected frontend routes consistently render instead of redirecting to `/login`.
 
 ## Mocking policy
 

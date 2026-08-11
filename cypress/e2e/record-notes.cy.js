@@ -22,8 +22,14 @@ describe("record notes", () => {
       cy.contains('[data-cy="record-note"]', noteText).should("be.visible");
 
       cy.findByLabelText(/close/i).click();
+      cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/record_group*`).as("loadRecordGroupRecords");
       cy.visitApp(`/record_group/${recordGroup._id}`);
-      cy.contains('[data-cy="record-row"]', seed.recordName)
+      cy.wait("@loadRecordGroupRecords", { timeout: 30000 }).then(({ request, response }) => {
+        expect(request.body.id).to.eq(recordGroup._id);
+        expect(response?.statusCode).to.eq(200);
+        expect(response?.body.records.map((record) => record.name)).to.include(seed.recordName);
+      });
+      cy.contains('[data-cy="record-row"]', seed.recordName, { timeout: 30000 })
         .find('[data-cy="record-notes-button"]')
         .should("have.attr", "data-has-notes", "true");
 
