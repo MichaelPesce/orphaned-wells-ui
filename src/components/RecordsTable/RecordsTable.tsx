@@ -461,6 +461,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         data-record-id={row._id}
         data-record-name={row.name}
       >
+        <TableCell align="right">{row?.record_number}.</TableCell>
         {table_columns.keyNames.map((v,i) => (
           tableCell(row, v)
         ))}
@@ -519,6 +520,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         <Table sx={{ minWidth: 650, marginTop: 1 }} aria-label="records table" size="small">
           <TableHead>
             <TableRow>
+              <TableCell></TableCell>
               {
                 table_columns.displayNames.map((attribute, idx) => (
                   <TableCell sx={styles.headerCell} key={idx} align={idx > 0 ? "right" : "left"}>
