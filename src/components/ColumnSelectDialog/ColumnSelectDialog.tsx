@@ -168,6 +168,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     <Dialog
       open={open}
       onClose={!loadingFileSize ? handleClose : undefined} // if loading file size, must click x to close dialog
+      data-cy="export-dialog"
       scroll={"paper"}
       aria-labelledby="export-dialog"
       aria-describedby="export-dialog-description"
@@ -227,6 +228,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
           startIcon={<DownloadIcon/>}
           onClick={handleGetTotalBytes}
           id='download-button'
+          data-cy="download-button"
           disabled={disableDownload()}
         >
                         Export Data
@@ -259,6 +261,8 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
             {Object.entries(exportTypes).map(([ export_type, is_selected] ) => (
               <FormControlLabel
                 key={export_type}
+                data-cy="export-type-option"
+                data-export-type={export_type}
                 control={
                   <Checkbox checked={is_selected} onChange={handleChangeExportTypes} name={export_type} />
                 }
@@ -315,7 +319,7 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
         <FormGroup row>
           <FormControlLabel
             control={
-              <Checkbox checked={selected.length === columns.length} indeterminate={selected.length < columns.length && selected.length > 0} onChange={selectAll}/>
+              <Checkbox data-cy="export-select-all-columns" checked={selected.length === columns.length} indeterminate={selected.length < columns.length && selected.length > 0} onChange={selectAll}/>
             }
             label={<b>Select All</b>}
           />
@@ -330,8 +334,10 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                 sx={{overflowX: "hidden"}}
               >
                 <FormControlLabel
+                  data-cy="export-column-label"
+                  data-column={column}
                   control={
-                    <Checkbox checked={selected.includes(column)} onChange={handleChange} name={column} />
+                    <Checkbox data-cy="export-column-option" checked={selected.includes(column)} onChange={handleChange} name={column} />
                   }
                   label={
                     <Tooltip title={column?.includes("::") ? getSubfieldTooltipText(column) : null}>

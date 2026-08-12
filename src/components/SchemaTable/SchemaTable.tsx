@@ -73,6 +73,7 @@ const SchemaTable = (props: SchemaTableProps) => {
 
   return (
     <Paper
+      data-cy="schema-table"
       elevation={2}
       sx={{
         width: "100%",
@@ -94,9 +95,9 @@ const SchemaTable = (props: SchemaTableProps) => {
           scrollButtons={false}
           sx={styles.tabs}
         >
-          <Tab label="Overview"/>
+          <Tab data-cy="schema-tab-overview" label="Overview"/>
           {processors?.map((processor, idx) => (
-            <Tab key={`${idx}-${processor.name}`} label={processor.name} />
+            <Tab data-cy="schema-processor-tab" data-processor-name={processor.name} key={`${idx}-${processor.name}`} label={processor.name} />
           ))}
         </Tabs>
       </Box>

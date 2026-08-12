@@ -563,7 +563,14 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
   return (
     <>
-      <TableRow id={tableId} sx={fieldIsSelected ? {backgroundColor: "#EDEDED"} : {}} onClick={handleClickInside}>
+      <TableRow
+        id={tableId}
+        data-cy="attribute-row"
+        data-field-key={k}
+        data-field-alias={thisAlias}
+        sx={fieldIsSelected ? {backgroundColor: "#EDEDED"} : {}}
+        onClick={handleClickInside}
+      >
         <TableCell sx={styles.fieldKey}>
           <span>
             {thisAlias}
@@ -591,6 +598,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     <Tooltip title={`Expected data type: ${dbDataType}`} placement="top">
                       
                       <TextField 
+                        data-cy="edit-field-input"
                         onClick={(e) => e.stopPropagation()}
                         autoFocus
                         name={k}
@@ -608,7 +616,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                     <p style={v.cleaning_error ? styles.errorParagraph : styles.noErrorParagraph}>
                       {formatAttributeValue(v.value)}&nbsp;
                       {fieldIsSelected && !locked &&
-                                    <IconButton id='edit-field-icon' sx={styles.rowIconButton} onClick={handleClickEditIcon}>
+                                    <IconButton data-cy="edit-field-button" id='edit-field-icon' sx={styles.rowIconButton} onClick={handleClickEditIcon}>
                                       <EditIcon sx={styles.rowIcon}/>
                                     </IconButton>
                       }
@@ -667,7 +675,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                   </span>
                 </TableCell>
         }
-        <TableCell align="right" id={v.key+"_confidence"}>
+        <TableCell data-cy="attribute-confidence" align="right" id={v.key+"_confidence"}>
           {
             v.user_added ? (
               <Tooltip title={(v.lastUpdated) ? `Last updated ${formatDateTime(v.lastUpdated)} by ${v.lastUpdatedBy || "unknown"}` : ""}>

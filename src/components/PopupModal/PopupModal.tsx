@@ -61,7 +61,7 @@ const PopupModal = (props: PopupModalProps) => {
       aria-describedby="modal-modal-description"
     >
       {input ? 
-        <Grid container sx={styles.modalStyle} spacing={1}>
+        <Grid data-cy="popup-modal" container sx={styles.modalStyle} spacing={1}>
           <IconButton
             aria-label="close"
             onClick={handleClose}
@@ -75,6 +75,7 @@ const PopupModal = (props: PopupModalProps) => {
           </IconButton>
           <Grid item xs={12}>
             <TextField
+              data-cy="popup-input"
               required
               variant="standard"
               id="margin-none"
@@ -95,6 +96,7 @@ const PopupModal = (props: PopupModalProps) => {
                 color={buttonColor} 
                 disabled={disableSubmit}
                 className="popup-primary-button"
+                data-cy="popup-primary-button"
               >
                 {buttonText}
               </Button>
@@ -102,7 +104,7 @@ const PopupModal = (props: PopupModalProps) => {
           </Grid>
         </Grid>
         :
-        <Grid container sx={styles.modalStyle} spacing={1}>
+        <Grid data-cy="popup-modal" container sx={styles.modalStyle} spacing={1}>
           <IconButton
             aria-label="close"
             onClick={handleClose}
@@ -121,7 +123,7 @@ const PopupModal = (props: PopupModalProps) => {
             <>
               <Grid item xs={1}></Grid>
               <Grid item xs={4.5}>
-                <Button fullWidth onClick={handleButtonTwoClick} variant={buttonTwoVariant} color={buttonTwoColor} endIcon={iconTwo && iconTwo}>{buttonTwoText}</Button>
+                <Button data-cy="popup-secondary-button" fullWidth onClick={handleButtonTwoClick} variant={buttonTwoVariant} color={buttonTwoColor} endIcon={iconTwo && iconTwo}>{buttonTwoText}</Button>
               </Grid>
               <Grid item xs={1}></Grid>
               <Grid item xs={4.5}>
@@ -132,6 +134,7 @@ const PopupModal = (props: PopupModalProps) => {
                   color={buttonColor} 
                   endIcon={iconOne && iconOne}
                   className="popup-primary-button"
+                  data-cy="popup-primary-button"
                 >
                   {buttonText}
                 </Button>
@@ -149,6 +152,7 @@ const PopupModal = (props: PopupModalProps) => {
                   color={buttonColor} 
                   endIcon={iconOne && iconOne}
                   className="popup-primary-button"
+                  data-cy="popup-primary-button"
                 >
                   {buttonText}
                 </Button>

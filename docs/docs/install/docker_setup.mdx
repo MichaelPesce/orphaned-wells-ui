@@ -145,6 +145,8 @@ To restore the sample dump into an existing Docker MongoDB volume:
 docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml --profile seed run --rm mongo-restore
 ```
 
+The Cypress E2E suite uses the same sample dump for local and CI runs. Local E2E runs should use the isolated `npm run docker:e2e` stack, which restores into `DB_NAME=isgs_e2e` by default. See [Testing](/docs/development/testing) and [E2E CI](/docs/development/e2e-ci) for the test commands and reset behavior.
+
 ## Shell script variants
 
 The Node-backed npm commands are the cross-platform path for macOS, Linux, and Windows.

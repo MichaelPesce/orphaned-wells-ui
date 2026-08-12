@@ -170,6 +170,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
         <p style={{marginBottom: 0}}>How many files would you like to upload from the directory <i>{directoryName}</i>? Please enter an amount between 0 and {MAX_UPLOAD_AMT}.</p>
         <Stack direction='row' alignItems={"baseline"} justifyContent="space-around">
           <TextField 
+            data-cy="directory-upload-amount-input"
             id="amt-to_upload" 
             label="Upload Amount" 
             variant="standard" 
@@ -197,6 +198,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
           <Stack direction={"row"}>
             <Tooltip title={"When selected, filenames that are already present in database will not be uploaded."}>
               <FormControlLabel 
+                data-cy="directory-prevent-duplicates-toggle"
                 disabled={uploading || disabled}
                 control={<Switch/>} 
                 label="Prevent Duplicates" 
@@ -205,6 +207,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
               />
             </Tooltip>
             <FormControlLabel 
+              data-cy="directory-run-cleaning-toggle"
               disabled={uploading || disabled}
               control={<Switch/>} 
               label="Run cleaning functions" 
@@ -215,7 +218,7 @@ const UploadDirectory = (props: UploadDirectoryProps) => {
         </Box>
         <Box sx={{display: "flex", justifyContent: "space-around", marginTop: 1}}>
           {!uploading && !finishedUploading && 
-                        <Button variant="contained" sx={styles.button} onClick={upload} disabled={disabled}>
+                        <Button data-cy="directory-upload-button" variant="contained" sx={styles.button} onClick={upload} disabled={disabled}>
                             Upload
                         </Button>
           }

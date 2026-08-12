@@ -49,9 +49,11 @@ const SplitButton = ({ options, disabled }: SplitButtonProps) => {
         variant="outlined"
         ref={anchorRef}
         disabled={disabled}
+        data-cy="split-button-group"
       >
-        <Button startIcon={options[selectedIndex].icon} onClick={handleClick}>{options[selectedIndex].text}</Button>
+        <Button data-cy="split-button-primary" startIcon={options[selectedIndex].icon} onClick={handleClick}>{options[selectedIndex].text}</Button>
         <Button
+          data-cy="split-button-toggle"
           size="small"
           aria-controls={open ? "split-button-menu" : undefined}
           aria-expanded={open ? "true" : undefined}
@@ -86,6 +88,8 @@ const SplitButton = ({ options, disabled }: SplitButtonProps) => {
                   {options.map((option, index) => (
                     <MenuItem
                       key={option.text}
+                      data-cy="split-button-option"
+                      data-option={option.text}
                       onClick={() => handleMenuItemClick(index)}
                     >
                       {option.icon}&nbsp;&nbsp;
