@@ -273,6 +273,9 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
 const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   const { columns, selected, setSelected, disabled } = props;
 
+  const attributeColumns = columns.filter(col => col.toLowerCase() !== "notes");
+  const selectedAttributes = selected.filter(col => col.toLowerCase() !== "notes");
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const isSelected = event.target.checked;
     const attr = event.target.name;
@@ -289,8 +292,12 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   };
 
   const selectAll = () => {
-    if (selected.length < columns.length) setSelected([...columns]);
-    else setSelected([]);
+    const notesSelected = selected.filter(col => col.toLowerCase() === "notes");
+    if (selectedAttributes.length < attributeColumns.length) {
+      setSelected([...attributeColumns, ...notesSelected]);
+    } else {
+      setSelected([...notesSelected]);
+    }
   };
 
   const getSubfieldTooltipText = (name: string) => {
@@ -311,14 +318,41 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
         <FormGroup row>
           <FormControlLabel
             control={
-              <Checkbox checked={selected.length === columns.length} indeterminate={selected.length < columns.length && selected.length > 0} onChange={selectAll}/>
+              <Checkbox checked={selectedAttributes.length === attributeColumns.length} indeterminate={selectedAttributes.length < attributeColumns.length && selectedAttributes.length > 0} onChange={selectAll}/>
             }
-            label={<b>Select All</b>}
+            label={<b>Select All Fields</b>}
           />
+          {columns.some(col => col.toLowerCase() === "notes") && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={selected.some(col => col.toLowerCase() === "notes")}
+                  onChange={(event) => {
+                    const isChecked = event.target.checked;
+                    const notesKey = columns.find(col => col.toLowerCase() === "notes") || "Notes";
+                    const tempSelected = [...selected];
+                    if (isChecked) {
+                      if (!tempSelected.includes(notesKey)) {
+                        tempSelected.push(notesKey);
+                      }
+                    } else {
+                      const index = tempSelected.indexOf(notesKey);
+                      if (index > -1) {
+                        tempSelected.splice(index, 1);
+                      }
+                    }
+                    setSelected(tempSelected);
+                  }}
+                />
+              }
+              label={<b>Notes</b>}
+              sx={{ ml: 3 }}
+            />
+          )}
         </FormGroup>
         <FormGroup row>
           <Grid container columnSpacing={3}>
-            {columns.map((column: string, colIdx: number) => (
+            {columns.filter(col => col.toLowerCase() !== "notes").map((column: string, colIdx: number) => (
               <Grid
                 key={`${colIdx}_${column}`}
                 item
