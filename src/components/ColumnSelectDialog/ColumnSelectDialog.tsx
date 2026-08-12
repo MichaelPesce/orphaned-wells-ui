@@ -273,8 +273,8 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
 const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   const { columns, selected, setSelected, disabled } = props;
 
-  const attributeColumns = columns.filter(col => col.toLowerCase() !== "notes");
-  const selectedAttributes = selected.filter(col => col.toLowerCase() !== "notes");
+  const attributeColumns = columns.filter(col => col.toLowerCase() !== "record_notes");
+  const selectedAttributes = selected.filter(col => col.toLowerCase() !== "record_notes");
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const isSelected = event.target.checked;
@@ -292,7 +292,7 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   };
 
   const selectAll = () => {
-    const notesSelected = selected.filter(col => col.toLowerCase() === "notes");
+    const notesSelected = selected.filter(col => col.toLowerCase() === "record_notes");
     if (selectedAttributes.length < attributeColumns.length) {
       setSelected([...attributeColumns, ...notesSelected]);
     } else {
@@ -322,14 +322,14 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
             }
             label={<b>Select All Fields</b>}
           />
-          {columns.some(col => col.toLowerCase() === "notes") && (
+          {columns.some(col => col.toLowerCase() === "record_notes") && (
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={selected.some(col => col.toLowerCase() === "notes")}
+                  checked={selected.some(col => col.toLowerCase() === "record_notes")}
                   onChange={(event) => {
                     const isChecked = event.target.checked;
-                    const notesKey = columns.find(col => col.toLowerCase() === "notes") || "Notes";
+                    const notesKey = columns.find(col => col.toLowerCase() === "record_notes") || "record_notes";
                     const tempSelected = [...selected];
                     if (isChecked) {
                       if (!tempSelected.includes(notesKey)) {
@@ -345,14 +345,14 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                   }}
                 />
               }
-              label={<b>Notes</b>}
+              label={<b>record_notes</b>}
               sx={{ ml: 3 }}
             />
           )}
         </FormGroup>
         <FormGroup row>
           <Grid container columnSpacing={3}>
-            {columns.filter(col => col.toLowerCase() !== "notes").map((column: string, colIdx: number) => (
+            {columns.filter(col => col.toLowerCase() !== "record_notes").map((column: string, colIdx: number) => (
               <Grid
                 key={`${colIdx}_${column}`}
                 item
