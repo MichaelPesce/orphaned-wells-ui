@@ -175,7 +175,11 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
         sx: styles.dialogPaper
       }}
     >
-      <DialogTitle id="export-dialog-title">Export {location.replace("_"," ")}</DialogTitle>
+      <DialogTitle id="export-dialog-title">
+        {location === "documentType"
+          ? `Export Records: ${selectedRecordGroups?.length || 0} Record Groups Selected`
+          : `Export ${location.replace("_", " ")}`}
+      </DialogTitle>
       <IconButton
         aria-label="close"
         onClick={handleClose}
