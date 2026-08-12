@@ -154,12 +154,16 @@ describe("upload and export workflows", () => {
 
       mockDownload("selectedColumnExport");
       cy.getByCy("records-export-button").click();
-      cy.getByCy("export-select-all-columns").click({ force: true });
       cy.getByCy("export-column-label")
         .first()
         .invoke("attr", "data-column")
         .then((columnName) => {
-          cy.getByCy("export-column-label").first().click();
+          expect(columnName, "selected export column").to.be.a("string");
+          cy.getByCy("export-column-option").first().find("input").should("be.checked");
+          cy.getByCy("export-select-all-columns").click({ force: true });
+          cy.getByCy("export-column-option").first().find("input").should("not.be.checked");
+          cy.getByCy("export-column-option").first().click({ force: true });
+          cy.getByCy("export-column-option").first().find("input").should("be.checked");
           cy.getByCy("download-button").click();
           cy.wait("@selectedColumnExport").its("request.body.columns").should("deep.eq", [columnName]);
         });
