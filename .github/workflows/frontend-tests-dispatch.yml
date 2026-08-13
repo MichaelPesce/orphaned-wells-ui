@@ -1,4 +1,4 @@
-name: App Tests Dispatch
+name: App E2E Tests Dispatch
 
 on:
   workflow_call:
@@ -13,6 +13,31 @@ on:
         required: false
         type: string
         default: main
+      backend_mode:
+        description: Backend runtime mode for E2E tests. Use source when testing backend changes.
+        required: false
+        type: string
+        default: image
+      backend_image:
+        description: Backend image to use when backend_mode is image.
+        required: false
+        type: string
+        default: michaelpescelbl/orphaned-wells-ui-server:latest
+      backend_repository:
+        description: Backend repository to check out when backend_mode is source.
+        required: false
+        type: string
+        default: CATALOG-Historic-Records/orphaned-wells-ui-server
+      backend_ref:
+        description: Backend branch, tag, or SHA to check out when backend_mode is source.
+        required: false
+        type: string
+        default: main
+      backend_source_path:
+        description: Workspace path for the backend source checkout.
+        required: false
+        type: string
+        default: backend-under-test
       install_python_package:
         description: Install an additional Python package into the backend container before E2E tests. Use this when calling the workflow from OGRRE_data_cleaning.
         required: false
@@ -43,8 +68,8 @@ defaults:
     shell: bash -l {0}
 
 jobs:
-  frontend-tests:
-    name: Frontend testing (${{ matrix.os }})
+  e2e-tests:
+    name: E2E testing (${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     strategy:
       fail-fast: false
@@ -71,13 +96,23 @@ jobs:
           path: ${{ inputs.python_package_path }}
           token: ${{ secrets.checkout_token || github.token }}
 
+      - name: Check out backend source under test
+        if: ${{ inputs.backend_mode == 'source' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.backend_repository }}
+          ref: ${{ inputs.backend_ref }}
+          path: ${{ inputs.backend_source_path }}
+          token: ${{ secrets.checkout_token || github.token }}
+
       - name: Install JS dependencies
         run: npm clean-install
 
-      - name: Run component tests
-        run: npm test
-
       - name: Configure test environment
+        env:
+          BACKEND_IMAGE: ${{ inputs.backend_image }}
+          BACKEND_MODE: ${{ inputs.backend_mode }}
+          BACKEND_SOURCE_PATH: ${{ inputs.backend_source_path }}
         run: |
           cp deployment/.env.e2e.example deployment/.env.e2e
 
@@ -92,7 +127,9 @@ jobs:
             fi
           }
 
-          set_env deployment/.env.e2e BACKEND_MODE image
+          set_env deployment/.env.e2e BACKEND_MODE "$BACKEND_MODE"
+          set_env deployment/.env.e2e BACKEND_IMAGE "$BACKEND_IMAGE"
+          set_env deployment/.env.e2e BACKEND_DIR "../${BACKEND_SOURCE_PATH}"
           set_env deployment/.env.e2e REACT_APP_BACKEND_URL http://localhost:8002
           set_env deployment/.env.e2e REACT_APP_COLLABORATOR isgs
           set_env deployment/.env.e2e REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
