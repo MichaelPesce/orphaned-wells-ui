@@ -24,10 +24,62 @@ const waitForRecordFetch = (alias, expectedName) => {
   });
 };
 
+const findAttribute = (attributes, fieldName) => {
+  const attribute = attributes.find((candidate) => candidate.key === fieldName);
+  expect(attribute, `${fieldName} attribute`).to.exist;
+  return attribute;
+};
+
+const findUpdatedAttribute = (updateBody, fieldName) => {
+  const attribute = Object.entries(updateBody || {})
+    .filter(([key]) => key.startsWith("attributesList."))
+    .map(([, value]) => value)
+    .find((candidate) => candidate?.key === fieldName);
+  expect(attribute, `${fieldName} update response`).to.exist;
+  return attribute;
+};
+
+const expectCleanedHoleSize = (attribute) => {
+  expect(attribute.value).to.eq(8.75);
+  expect(attribute.normalized_value).to.eq(8.75);
+  expect(attribute.uncleaned_value).to.eq("8-3/4");
+  expect(attribute.cleaned).to.eq(true);
+  expect(attribute.cleaning_error).to.eq(false);
+  expect(attribute.last_cleaned).to.be.a("number");
+};
+
 describe("record review workflow", () => {
   beforeEach(() => {
     cy.resetSeedData();
     cy.clearLocalStorage();
+  });
+
+  it("applies a cleaning function when saving an edited field", () => {
+    const fieldName = "Hole_Size";
+
+    cy.findSeededEntities().then(({ seed, record }) => {
+      cy.intercept("POST", `${Cypress.env("backendURL")}/get_record/${record._id}`).as("getSeedRecord");
+      cy.visitApp(`/record/${record._id}`);
+      waitForRecordFetch("@getSeedRecord", seed.recordName);
+      cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
+      cy.getByCy("fullscreen-table-button").click();
+
+      openAttributeEditor(fieldName);
+
+      cy.intercept("POST", `${Cypress.env("backendURL")}/update_record/${record._id}`).as("updateRecord");
+      cy.getByCy("edit-field-input").find("input").clear().type("8-3/4{enter}");
+      cy.wait("@updateRecord").then(({ request, response }) => {
+        expect(request.body.fieldToClean, "field requested cleaning").to.exist;
+        expect(response?.statusCode).to.eq(200);
+        expectCleanedHoleSize(findUpdatedAttribute(response?.body, fieldName));
+      });
+
+      getAttributeRow(fieldName).should("contain.text", "8.75");
+      cy.api("POST", `/get_record/${record._id}`, {}, { failOnStatusCode: false }).then(({ status, body }) => {
+        expect(status).to.be.oneOf([200, 303]);
+        expectCleanedHoleSize(findAttribute(body.recordData.attributesList, fieldName));
+      });
+    });
   });
 
   it("edits a field, cancels with Escape, toggles raw values, and resets status", () => {
