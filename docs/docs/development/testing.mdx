@@ -1,0 +1,158 @@
+---
+title: Testing
+description: Run frontend unit tests and Cypress E2E tests for OGRRE.
+---
+
+# Testing
+
+The frontend test framework has two layers:
+
+- React unit and component tests, run through Create React App.
+- Cypress E2E tests, run against a real frontend and backend stack.
+
+## Unit tests
+
+Run the frontend test suite from the repository root:
+
+```console
+npm test -- --watchAll=false --runInBand
+```
+
+Use the same command before merging frontend changes that alter React behavior, API calls, permissions, table state, or routing.
+
+## E2E prerequisites
+
+The Cypress suite expects:
+
+- The frontend app to be reachable at `CYPRESS_BASE_URL`.
+- The backend API to be reachable at `CYPRESS_BACKEND_URL`.
+- MongoDB to contain the sample seed data described in [E2E Test Contract](/docs/development/e2e-test-contract).
+- Authentication to match `CYPRESS_AUTH_MODE`.
+
+For local E2E runs, use the isolated Docker E2E stack:
+
+```console
+npm run docker:e2e
+```
+
+The command uses `deployment/.env.e2e` if it exists. Otherwise, it creates one from `deployment/.env.e2e.example`. The default E2E stack uses:
+
+```dotenv
+COMPOSE_PROJECT_NAME=orphaned-wells-e2e
+FRONTEND_HOST_PORT=3001
+BACKEND_HOST_PORT=8002
+MONGODB_HOST_PORT=27019
+REACT_APP_BACKEND_URL=http://localhost:8002
+DB_NAME=isgs_e2e
+REACT_APP_COLLABORATOR=isgs
+REQUIRE_AUTH=false
+```
+
+This keeps E2E database mutations separate from the normal local development stack.
+
+## Cypress commands
+
+Open Cypress interactively:
+
+```console
+npm run e2e:open
+```
+
+Run all Cypress specs:
+
+```console
+npm run e2e:run
+```
+
+Run the lightweight smoke and auth-gate checks:
+
+```console
+npm run e2e:smoke
+```
+
+Run the full E2E suite:
+
+```console
+npm run e2e:full
+```
+
+Run the CI browser configuration:
+
+```console
+npm run e2e:ci
+```
+
+The local `e2e:open`, `e2e:run`, `e2e:smoke`, `e2e:full`, and `e2e:ci` scripts derive Cypress defaults from the E2E Docker environment:
+
+| Cypress value | Local default |
+| --- | --- |
+| `CYPRESS_BASE_URL` | `http://localhost:<FRONTEND_HOST_PORT>` from `deployment/.env.e2e`, default `http://localhost:3001` |
+| `CYPRESS_BACKEND_URL` | `http://localhost:<BACKEND_HOST_PORT>` from `deployment/.env.e2e`, default `http://localhost:8002` |
+| `CYPRESS_AUTH_MODE` | `mock` |
+| `CYPRESS_COLLABORATOR` | `REACT_APP_COLLABORATOR` or `COLLABORATOR`, default `isgs` |
+| `CYPRESS_RESET_DB` | `true` |
+| `CYPRESS_DB_SEED_COMMAND` | `node deployment/scripts/docker-e2e-stack.cjs seed` |
+
+Shell environment variables still override these local defaults. With `CYPRESS_AUTH_MODE=mock`, Cypress stubs `/check_auth` but leaves the rest of the app pointed at the real backend.
+
+For manual Cypress runs outside the npm scripts, `cypress.config.ts` loads `.env`, then `.env.cypress`, then `.env.cypress.local`. The Cypress-specific files are ignored by git and can be used for local overrides without changing the shared E2E stack defaults.
+
+## Local E2E run
+
+Start the isolated app:
+
+```console
+npm run docker:e2e
+```
+
+Run a quick pass:
+
+```console
+npm run e2e:smoke
+```
+
+Run the full suite:
+
+```console
+npm run e2e:full
+```
+
+Use `npm run e2e:full` when changing project navigation, record group workflows, record review, notes, table filters, uploads, exports, schema management, or permission-driven UI.
+
+## Reset seed data
+
+Local E2E scripts set `CYPRESS_RESET_DB=true` by default. Before specs that call `cy.resetSeedData`, Cypress runs:
+
+```console
+node deployment/scripts/docker-e2e-stack.cjs seed
+```
+
+That command restores the sample dump into `DB_NAME` from `deployment/.env.e2e`, defaulting to `isgs_e2e`.
+
+You can manually restore the isolated E2E database with:
+
+```console
+npm run docker:e2e:seed
+```
+
+Override `CYPRESS_DB_SEED_COMMAND` when the backend or database is provided by a different environment.
+
+## Stop or reset the E2E stack
+
+Stop E2E containers without deleting volumes:
+
+```console
+npm run docker:e2e:down
+```
+
+Delete the isolated E2E database and uploaded-file volumes:
+
+```console
+npm run docker:e2e:clean
+```
+
+## Selectors
+
+Prefer user-facing selectors from Testing Library commands, such as `cy.findByRole`, when labels and roles are stable. Use `data-cy` selectors for repeated table rows, icon-only controls, MUI-generated markup, or controls whose accessible text changes with state.
+
+Test selectors are part of the E2E contract. Avoid changing or removing `data-cy` values without updating the Cypress specs in the same change.

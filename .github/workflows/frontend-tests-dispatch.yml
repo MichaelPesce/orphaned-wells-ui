@@ -1,4 +1,4 @@
-name: App Tests Dispatch
+name: App E2E Tests Dispatch
 
 on:
   workflow_call:
@@ -13,6 +13,31 @@ on:
         required: false
         type: string
         default: main
+      backend_mode:
+        description: Backend runtime mode for E2E tests. Use source when testing backend changes.
+        required: false
+        type: string
+        default: image
+      backend_image:
+        description: Backend image to use when backend_mode is image.
+        required: false
+        type: string
+        default: michaelpescelbl/orphaned-wells-ui-server:latest
+      backend_repository:
+        description: Backend repository to check out when backend_mode is source.
+        required: false
+        type: string
+        default: CATALOG-Historic-Records/orphaned-wells-ui-server
+      backend_ref:
+        description: Backend branch, tag, or SHA to check out when backend_mode is source.
+        required: false
+        type: string
+        default: main
+      backend_source_path:
+        description: Workspace path for the backend source checkout.
+        required: false
+        type: string
+        default: backend-under-test
       install_python_package:
         description: Install an additional Python package into the backend container before E2E tests. Use this when calling the workflow from OGRRE_data_cleaning.
         required: false
@@ -43,8 +68,8 @@ defaults:
     shell: bash -l {0}
 
 jobs:
-  frontend-tests:
-    name: Frontend testing (${{ matrix.os }})
+  e2e-tests:
+    name: E2E testing (${{ matrix.os }})
     runs-on: ${{ matrix.os-version }}
     strategy:
       fail-fast: false
@@ -71,15 +96,25 @@ jobs:
           path: ${{ inputs.python_package_path }}
           token: ${{ secrets.checkout_token || github.token }}
 
+      - name: Check out backend source under test
+        if: ${{ inputs.backend_mode == 'source' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.backend_repository }}
+          ref: ${{ inputs.backend_ref }}
+          path: ${{ inputs.backend_source_path }}
+          token: ${{ secrets.checkout_token || github.token }}
+
       - name: Install JS dependencies
         run: npm clean-install
 
-      - name: Run component tests
-        run: npm test
-
       - name: Configure test environment
+        env:
+          BACKEND_IMAGE: ${{ inputs.backend_image }}
+          BACKEND_MODE: ${{ inputs.backend_mode }}
+          BACKEND_SOURCE_PATH: ${{ inputs.backend_source_path }}
         run: |
-          cp deployment/.env.example deployment/.env
+          cp deployment/.env.e2e.example deployment/.env.e2e
 
           set_env() {
             file="$1"
@@ -92,28 +127,27 @@ jobs:
             fi
           }
 
-          touch .env
-          set_env .env REACT_APP_BACKEND_URL http://localhost:8001
-          set_env .env BYPASS_AUTH true
-          set_env .env REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
-
-          set_env deployment/.env REACT_APP_BACKEND_URL http://localhost:8001
-          set_env deployment/.env REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
-          set_env deployment/.env REQUIRE_AUTH false
-          set_env deployment/.env ALLOWED_ORIGINS http://localhost:3000
-          set_env deployment/.env SESSION_COOKIE_DOMAIN ""
-          set_env deployment/.env SESSION_COOKIE_SECURE false
-          set_env deployment/.env SESSION_COOKIE_SAMESITE lax
+          set_env deployment/.env.e2e BACKEND_MODE "$BACKEND_MODE"
+          set_env deployment/.env.e2e BACKEND_IMAGE "$BACKEND_IMAGE"
+          set_env deployment/.env.e2e BACKEND_DIR "../${BACKEND_SOURCE_PATH}"
+          set_env deployment/.env.e2e REACT_APP_BACKEND_URL http://localhost:8002
+          set_env deployment/.env.e2e REACT_APP_COLLABORATOR isgs
+          set_env deployment/.env.e2e REACT_APP_GOOGLE_CLIENTID cypress-test-client-id.apps.googleusercontent.com
+          set_env deployment/.env.e2e REQUIRE_AUTH false
+          set_env deployment/.env.e2e ALLOWED_ORIGINS http://localhost:3001
+          set_env deployment/.env.e2e SESSION_COOKIE_DOMAIN ""
+          set_env deployment/.env.e2e SESSION_COOKIE_SECURE false
+          set_env deployment/.env.e2e SESSION_COOKIE_SAMESITE lax
 
       - name: Start docker containers
-        run: npm run docker:start
+        run: npm run docker:e2e
 
       - name: Install Python package under test in backend container
         if: ${{ inputs.install_python_package }}
         env:
           PYTHON_PACKAGE_PATH: ${{ inputs.python_package_path }}
         run: |
-          compose=(docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml)
+          compose=(docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml)
 
           for i in {1..180}; do
             if [ -n "$("${compose[@]}" ps --status running -q backend)" ]; then
@@ -136,22 +170,25 @@ jobs:
       - name: Wait for docker app health
         run: |
           for i in {1..180}; do
-            if curl -fsS http://localhost:8001/docs >/dev/null && curl -fsS http://localhost:3000 >/dev/null; then
+            if curl -fsS http://localhost:8002/docs >/dev/null && curl -fsS http://localhost:3001 >/dev/null; then
               exit 0
             fi
-            docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml ps
+            docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml ps
             sleep 2
           done
 
-          docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml logs --no-color --tail=200
+          docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml logs --no-color --tail=200
           exit 1
 
+      - name: Seed E2E database
+        run: npm run docker:e2e:seed
+
       - name: Run E2E tests
-        run: npx cypress run
+        run: npm run e2e:ci
 
       - name: Shut down docker containers
         if: always()
-        run: npm run docker:clean
+        run: npm run docker:e2e:clean
 
       - name: Upload artifact for screenshots & videos
         uses: actions/upload-artifact@v4

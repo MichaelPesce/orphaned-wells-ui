@@ -212,10 +212,12 @@ const SchemaSheet = ({
     value: string,
     onChange: (event: SelectChangeEvent<string>) => void,
     options: string[],
-    allowEmpty = false
+    allowEmpty = false,
+    testId?: string
   ) => (
     <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
       <Select
+        data-cy={testId}
         value={value}
         displayEmpty={allowEmpty}
         onChange={onChange}
@@ -266,7 +268,7 @@ const SchemaSheet = ({
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <span>Actions</span>
                 <Tooltip title="Add field">
-                  <IconButton size="small" onClick={handleOpenAddDialog}>
+                  <IconButton data-cy="schema-add-field-button" size="small" onClick={handleOpenAddDialog}>
                     <AddIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
@@ -283,6 +285,8 @@ const SchemaSheet = ({
             return (
               <TableRow
                 key={idx}
+                data-cy="schema-field-row"
+                data-field-name={row.name}
                 hover
                 sx={{
                   cursor: "pointer",
@@ -306,6 +310,7 @@ const SchemaSheet = ({
                   >
                     {isEditing && (col.key === "name" || col.key === "alias") ? (
                       <TextField
+                        data-cy={`schema-edit-${col.key}`}
                         size="small"
                         fullWidth
                         value={draft[col.key as EditableKey]}
@@ -319,22 +324,28 @@ const SchemaSheet = ({
                         draft.cleaning_function,
                         handleSelectChange("cleaning_function"),
                         cleaningFunctions,
-                        true
+                        true,
+                        "schema-edit-cleaning_function"
                       )
                     ) : isEditing && col.key === "data_type" ? (
                       renderSelect(
                         draft.data_type,
                         handleSelectChange("data_type"),
-                        DATA_TYPE_OPTIONS
+                        DATA_TYPE_OPTIONS,
+                        false,
+                        "schema-edit-data_type"
                       )
                     ) : isEditing && col.key === "database_data_type" ? (
                       renderSelect(
                         draft.database_data_type,
                         handleSelectChange("database_data_type"),
-                        getDatabaseOptions(draft.data_type)
+                        getDatabaseOptions(draft.data_type),
+                        false,
+                        "schema-edit-database_data_type"
                       )
                     ) : isEditing && col.key === "page_order_sort" ? (
                       <TextField
+                        data-cy="schema-edit-page_order_sort"
                         size="small"
                         type="number"
                         value={draft.page_order_sort}
@@ -360,6 +371,7 @@ const SchemaSheet = ({
                   {editingRowKey === getRowKey(row, idx) ? (
                     <Stack direction="row" spacing={0.5}>
                       <Button
+                        data-cy="schema-save-field-button"
                         size="small"
                         variant="contained"
                         disabled={pageOrderSortInvalid}
@@ -369,6 +381,7 @@ const SchemaSheet = ({
                         Save
                       </Button>
                       <Button
+                        data-cy="schema-cancel-field-button"
                         size="small"
                         onClick={stopEditingRow}
                         sx={{ minWidth: 56, px: 1 }}
@@ -379,6 +392,7 @@ const SchemaSheet = ({
                   ) : (
                     <Stack direction="row" spacing={0.5}>
                       <Button
+                        data-cy="schema-edit-field-button"
                         size="small"
                         variant="outlined"
                         onClick={() => startEditingRow(row, idx)}
@@ -387,6 +401,7 @@ const SchemaSheet = ({
                         Edit
                       </Button>
                       <Button
+                        data-cy="schema-remove-field-button"
                         size="small"
                         color="error"
                         variant="outlined"

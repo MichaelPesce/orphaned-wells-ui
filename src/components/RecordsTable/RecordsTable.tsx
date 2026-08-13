@@ -338,11 +338,12 @@ const RecordsTable = (props: RecordsTableProps) => {
     else if (row.review_status === "unreviewed") reviewStatusIconColor = "grey";
     
     if (key === "name") return (
-      <TableCell key={key}>
+      <TableCell key={key} data-cy="record-cell-name">
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
           <span>{row.name}</span>
           <Tooltip title={copiedId === row._id ? "Copied!" : "Copy name"}>
             <IconButton
+              data-cy="copy-record-name"
               size="small"
               onClick={(e) => handleCopyName(e, row._id, row.name)}
               sx={{
@@ -364,19 +365,24 @@ const RecordsTable = (props: RecordsTableProps) => {
         </Box>
       </TableCell>
     );
-    else if (key === "dateCreated") return <TableCell key={key} align="right">{formatDate(row.dateCreated)}</TableCell>;
-    else if (key === "api_number") return <TableCell key={key} align="right">{row.api_number}</TableCell>;
-    else if (key === "confidence_median") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateAverageConfidence(row.attributesList)}</TableCell>;
-    else if (key === "confidence_lowest") return <TableCell key={key} align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateLowestConfidence(row.attributesList)}</TableCell>;
+    else if (key === "dateCreated") return <TableCell key={key} data-cy="record-cell-dateCreated" align="right">{formatDate(row.dateCreated)}</TableCell>;
+    else if (key === "api_number") return <TableCell key={key} data-cy="record-cell-api_number" align="right">{row.api_number}</TableCell>;
+    else if (key === "confidence_median") return <TableCell key={key} data-cy="record-cell-confidence_median" align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateAverageConfidence(row.attributesList)}</TableCell>;
+    else if (key === "confidence_lowest") return <TableCell key={key} data-cy="record-cell-confidence_lowest" align="right">{(row.status === "digitized" || row.status === "redigitized") && calculateLowestConfidence(row.attributesList)}</TableCell>;
     else if (key === "notes") return (
-      <TableCell key={key} align="right">
-        <IconButton sx={(!row.record_notes || row.record_notes?.length === 0) ? {} : { color: "#F2DB6F" }} onClick={(e) => handleClickNotes(e, row)}>
+      <TableCell key={key} data-cy="record-cell-notes" align="right">
+        <IconButton
+          data-cy="record-notes-button"
+          data-has-notes={!!row.record_notes?.length}
+          sx={(!row.record_notes || row.record_notes?.length === 0) ? {} : { color: "#F2DB6F" }}
+          onClick={(e) => handleClickNotes(e, row)}
+        >
           <StickyNote2Icon />
         </IconButton>
       </TableCell>
     );
     else if (key === "status") return (
-      <TableCell key={key} align="right">
+      <TableCell key={key} data-cy="record-cell-status" align="right">
         <Typography variant='inherit' noWrap>
           <IconButton sx={{ color: digitizationStatusIconColor }}>
             {
@@ -401,7 +407,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     );
 
     else if (key === "review_status") return (
-      <TableCell key={key} align="right">
+      <TableCell key={key} data-cy="record-cell-review_status" align="right">
         <Typography variant='inherit' noWrap>
           <IconButton sx={{ color: reviewStatusIconColor }}>
             {
@@ -432,15 +438,15 @@ const RecordsTable = (props: RecordsTableProps) => {
       </TableCell>
     );
     else if (key === "record_group") return (
-      <TableCell key={key} align='right'>
+      <TableCell key={key} data-cy="record-cell-record_group" align='right'>
         <Typography variant='inherit' noWrap>
           {getRecordGroupName(row.record_group_id)}
         </Typography>
         
       </TableCell>
     );
-    else if (key === "documentType") return <TableCell key={key} align='right'>{getDocumentType(row.record_group_id)}</TableCell>;
-    else return <TableCell key={key} align='right'>{row[key]}</TableCell>;
+    else if (key === "documentType") return <TableCell key={key} data-cy="record-cell-documentType" align='right'>{getDocumentType(row.record_group_id)}</TableCell>;
+    else return <TableCell key={key} data-cy={`record-cell-${key}`} align='right'>{row[key]}</TableCell>;
   };
 
   const tableRow = (row: RecordData, idx: number) => {
@@ -451,6 +457,9 @@ const RecordsTable = (props: RecordsTableProps) => {
         key={row._id}
         id={row.name+"_record_row"}
         className="record_row"
+        data-cy="record-row"
+        data-record-id={row._id}
+        data-record-name={row.name}
       >
         <TableCell align="right">{row?.record_number}.</TableCell>
         {table_columns.keyNames.map((v,i) => (
@@ -471,7 +480,7 @@ const RecordsTable = (props: RecordsTableProps) => {
           <Grid container>
             <Grid item sx={styles.topSectionLeft} xs={6}>
               <TableFilters applyFilters={handleApplyFilters} appliedFilters={filterBy} filter_options={filter_options} />
-              <Button onClick={() => setOpenColumnSelect(true)} startIcon={<IosShareIcon />} disabled={isDownloading || tableDisabled}>
+              <Button data-cy="records-export-button" onClick={() => setOpenColumnSelect(true)} startIcon={<IosShareIcon />} disabled={isDownloading || tableDisabled}>
                 Export
               </Button>
             </Grid>
@@ -480,7 +489,7 @@ const RecordsTable = (props: RecordsTableProps) => {
               {
                 hasPermission("delete") ? (
                   <>
-                    <IconButton onClick={handleClickShowActions} disabled={tableDisabled}>
+                    <IconButton data-cy="records-actions-button" onClick={handleClickShowActions} disabled={tableDisabled}>
                       <MoreVertIcon/>
                     </IconButton>
                     <Menu
@@ -491,6 +500,7 @@ const RecordsTable = (props: RecordsTableProps) => {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <MenuItem
+                        data-cy="records-action-delete"
                         onClick={() => {
                           setOpenDeleteRecordsModal(true);
                           setShowActions(false);
@@ -514,7 +524,7 @@ const RecordsTable = (props: RecordsTableProps) => {
               {
                 table_columns.displayNames.map((attribute, idx) => (
                   <TableCell sx={styles.headerCell} key={idx} align={idx > 0 ? "right" : "left"}>
-                    <p style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx] as SortableColumnKey)}>
+                    <p data-cy={`records-sort-${table_columns.keyNames[idx]}`} style={getParagraphStyle(table_columns.keyNames[idx])} onClick={() => handleSort(table_columns.keyNames[idx] as SortableColumnKey)}>
                       {sorted[0].includes(table_columns.keyNames[idx]) &&
                         <IconButton>
                           {

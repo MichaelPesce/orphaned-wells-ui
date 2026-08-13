@@ -203,6 +203,7 @@ const RecordNotesDialog = ({ record_id, open, onClose }: RecordNotesDialogProps)
     <Dialog
       open={open}
       onClose={() => onClose(record_id, recordNotes)}
+      data-cy="record-notes-dialog"
       scroll={"paper"}
       aria-labelledby="new-dg-dialog"
       aria-describedby="new-dg-dialog-description"
@@ -257,8 +258,8 @@ const RecordNotesDialog = ({ record_id, open, onClose }: RecordNotesDialogProps)
                               <Typography sx={styles.resolvedCommentsText}>
                                         Resolved comments
                               </Typography>
-                              <Tooltip title='show resolved comment'>
-                                <IconButton onClick={() => setShowResolved((showResolved) => !showResolved)}>
+                              <Tooltip title='show resolved comment' placement="left">
+                                <IconButton data-cy="show-resolved-comments" onClick={() => setShowResolved((showResolved) => !showResolved)}>
                                   {showResolved ? 
                                     <KeyboardArrowUpIcon sx={styles.icon}/>
                                     :
@@ -313,6 +314,7 @@ const RecordNotesDialog = ({ record_id, open, onClose }: RecordNotesDialogProps)
         {/* Bottom section */}
         <Box sx={styles.boxBottom}>
           <TextField
+            data-cy="new-note-input"
             id='new-note-textfield'
             fullWidth
             required
@@ -328,7 +330,7 @@ const RecordNotesDialog = ({ record_id, open, onClose }: RecordNotesDialogProps)
           <Box display="flex" justifyContent='space-between' mt={1}>
             <Typography noWrap paragraph sx={styles.replyToText}>
             </Typography>
-            <Button variant="contained" onClick={handleAddNote} disabled={newNoteText==="" || disableButton}>
+            <Button data-cy="add-note-button" variant="contained" onClick={handleAddNote} disabled={newNoteText==="" || disableButton}>
                             Add new note
             </Button>
           </Box>
@@ -441,7 +443,7 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
     else setDisableSaveEdit(false);
   };
   return (
-    <div style={styles.outerDiv}>
+    <div data-cy="record-note" data-note-index={idx} data-note-resolved={!!note.resolved} data-note-reply={!!note.isReply} style={styles.outerDiv}>
       <div style={note?.isReply ? styles.indentedDivider : undefined}>
         <Divider />
       </div>
@@ -451,6 +453,7 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
             <div style={{ maxWidth: "70%"}}>
               {editMode ? 
                 <TextField
+                  data-cy="edit-note-input"
                   fullWidth
                   variant='standard'
                   defaultValue={note.text}
@@ -470,7 +473,7 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
                 note.resolved ? 
                   <div>
                     <Tooltip title='reopen'>
-                      <IconButton onClick={(e) => handleClickAction(idx, "resolve", undefined, e)}>
+                      <IconButton data-cy="reopen-note-button" onClick={(e) => handleClickAction(idx, "resolve", undefined, e)}>
                         <AutorenewIcon sx={styles.icon}/>
                       </IconButton> 
                     </Tooltip>
@@ -481,28 +484,29 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
                             <div>
                               {note.creator === userEmail &&
                                     <Tooltip title='edit'>
-                                      <IconButton disabled={disableSaveEdit} onClick={() => handleClickAction(idx, "edit", newText)}>
+                                      <IconButton data-cy="edit-note-button" disabled={disableSaveEdit} onClick={() => handleClickAction(idx, "edit", newText)}>
                                         {editMode ? <DoneAllIcon sx={styles.icon}/> : <EditIcon sx={styles.icon}/>}
                                       </IconButton>
                                     </Tooltip>
                               }
                               {!note.isReply && 
                                     <Tooltip title='resolve'>
-                                      <IconButton disabled={editMode} onClick={() => handleClickAction(idx, "resolve")}>
+                                      <IconButton data-cy="resolve-note-button" disabled={editMode} onClick={() => handleClickAction(idx, "resolve")}>
                                         <CheckIcon sx={styles.icon}/>
                                       </IconButton>
                                     </Tooltip>
                               }
                               {!note.isReply && 
                                     <Tooltip title='reply'>
-                                      <IconButton disabled={editMode} onClick={() => handleClickAction(idx, "reply")}>
+                                      <IconButton data-cy="reply-note-button" disabled={editMode} onClick={() => handleClickAction(idx, "reply")}>
                                         <ReplyIcon sx={styles.icon}/>
                                       </IconButton>
                                     </Tooltip>
                               }
                               {note.creator === userEmail &&
                                     <Tooltip title='delete'>
-                                      <IconButton disabled={editMode} onClick={() => handleClickAction(idx, "delete")}>
+                                      <IconButton
+                                        data-cy={note.isReply ? "delete-reply-button" : "delete-note-button"} disabled={editMode} onClick={() => handleClickAction(idx, "delete")}>
                                         <DeleteIcon sx={styles.icon}/>
                                       </IconButton>
                                     </Tooltip>
@@ -512,11 +516,13 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
                             
             </Stack>
           </Stack>
-          <Tooltip title={`last updated on ${formatDateTime(note.lastUpdated || -1)}`} enterDelay={1000}>
+          
             <Typography sx={styles.metadata}>
-                            - <i>{note.creator || "unknown"}</i>, {formatDateTime(note.timestamp || -1)}
+                <Tooltip title={`last updated on ${formatDateTime(note.lastUpdated || -1)}`} enterDelay={1000}>
+              <span>- <i>{note.creator || "unknown"}</i>, {formatDateTime(note.timestamp || -1)}
+              </span></Tooltip>
+                            
             </Typography>
-          </Tooltip>
                     
         </div>
                 
@@ -552,6 +558,7 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
         replyToIdx === idx && 
                 <div style={styles.replyDiv}>
                   <TextField
+                    data-cy="reply-note-input"
                     id='reply-textfield'
                     fullWidth
                     required
@@ -564,8 +571,9 @@ const IndividualNote = ({ recordNotes, note, idx, editMode, handleClickAction, u
                   <Stack direction={"row"} justifyContent={"space-between"}>
                     <div></div>
                     <div style={{padding: "8px"}}>
-                      <Button onClick={clickCancel}>Cancel</Button>
+                      <Button data-cy="cancel-reply-button" onClick={clickCancel}>Cancel</Button>
                       <Button 
+                        data-cy="submit-reply-button"
                         variant='contained'
                         onClick={clickSubmit}
                         disabled={replyText === ""}

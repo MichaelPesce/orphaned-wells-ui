@@ -113,7 +113,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
 
   const fileUploaderContainer = () => {
     return (
-      <Box sx={styles.fileUploaderBox}>
+      <Box data-cy="processor-upload-dropzone" sx={styles.fileUploaderBox}>
         <Box sx={styles.uploadContainerBox}>
           <IconButton sx={styles.uploadIcon}>
             <UploadFileIcon/>
@@ -171,6 +171,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
     <Modal
       open={true}
       onClose={handleClose}
+      data-cy="upload-processor-dialog"
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
     >
@@ -200,6 +201,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
             <Stack direction={"row"}>
               <TextField
                 disabled={disableTextBoxes}
+                data-cy="processor-name-input"
                 sx={styles.textbox}
                 fullWidth
                 label="Processor Name"
@@ -210,6 +212,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
               />
               <TextField
                 disabled={disableTextBoxes}
+                data-cy="processor-display-name-input"
                 sx={styles.textbox}
                 fullWidth
                 label="Processor Display Name"
@@ -222,6 +225,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
             <Stack direction={"row"}>
               <TextField
                 disabled={disableTextBoxes}
+                data-cy="processor-id-input"
                 sx={styles.textbox}
                 fullWidth
                 label="Google Processor ID"
@@ -232,6 +236,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
               />
               <TextField
                 disabled={disableTextBoxes}
+                data-cy="processor-model-id-input"
                 sx={styles.textbox}
                 fullWidth
                 label="Primary Model ID"
@@ -244,6 +249,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
             <Stack direction={"row"}>
               <TextField
                 disabled={disableTextBoxes}
+                data-cy="processor-document-type-input"
                 sx={styles.textbox}
                 fullWidth
                 label="Document Type"
@@ -270,7 +276,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
         </Grid>
         <Grid item xs={12}>
           <Box sx={{display: "flex", justifyContent: "space-around"}}>
-            <Button variant="contained" style={styles.button} onClick={handleClickUpload} disabled={disableButton}>
+            <Button data-cy="processor-upload-submit" variant="contained" style={styles.button} onClick={handleClickUpload} disabled={disableButton}>
                                 Submit
             </Button>
           </Box>
@@ -284,4 +290,3 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
 };
 
 export default UploadProcessorDialog;
-

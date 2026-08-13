@@ -35,6 +35,16 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: "category",
+      label: "Development",
+      link: {type: "doc", id: "development/index"},
+      items: [
+        "development/testing",
+        "development/e2e-test-contract",
+        "development/e2e-ci",
+      ],
+    },
+    {
+      type: "category",
       label: "Deploy to GCP",
       link: {type: "doc", id: "deploy-gcp/index"},
       items: [

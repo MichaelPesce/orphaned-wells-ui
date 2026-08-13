@@ -122,11 +122,12 @@ const AddSchemaFieldDialog = ({
     getPageOrderSortInvalid(draft.page_order_sort);
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog data-cy="add-schema-field-dialog" open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Add Field</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           <TextField
+            data-cy="add-schema-field-name"
             label="Field Name"
             value={draft.name}
             onChange={(event) => handleDraftValueChange("name", event.target.value)}
@@ -134,6 +135,7 @@ const AddSchemaFieldDialog = ({
             fullWidth
           />
           <TextField
+            data-cy="add-schema-field-display-name"
             label="Display Name"
             value={draft.alias}
             onChange={(event) => handleDraftValueChange("alias", event.target.value)}
@@ -141,6 +143,7 @@ const AddSchemaFieldDialog = ({
           />
           <FormControl fullWidth>
             <Select
+              data-cy="add-schema-cleaning-function"
               value={draft.cleaning_function}
               displayEmpty
               onChange={handleSelectChange("cleaning_function")}
@@ -157,6 +160,7 @@ const AddSchemaFieldDialog = ({
           </FormControl>
           <FormControl fullWidth>
             <Select
+              data-cy="add-schema-data-type"
               value={draft.data_type}
               displayEmpty
               onChange={handleSelectChange("data_type")}
@@ -170,6 +174,7 @@ const AddSchemaFieldDialog = ({
           </FormControl>
           <FormControl fullWidth>
             <Select
+              data-cy="add-schema-database-data-type"
               value={draft.database_data_type}
               displayEmpty
               onChange={handleSelectChange("database_data_type")}
@@ -182,6 +187,7 @@ const AddSchemaFieldDialog = ({
             </Select>
           </FormControl>
           <TextField
+            data-cy="add-schema-page-order"
             label="Page Order"
             value={draft.page_order_sort}
             onChange={(event) =>
@@ -201,8 +207,8 @@ const AddSchemaFieldDialog = ({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={addFieldDisabled}>
+        <Button data-cy="add-schema-cancel" onClick={onClose}>Cancel</Button>
+        <Button data-cy="add-schema-submit" variant="contained" onClick={handleSubmit} disabled={addFieldDisabled}>
           Add Field
         </Button>
       </DialogActions>

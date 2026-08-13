@@ -7,6 +7,12 @@
 
 # testing
 /coverage
+/cypress/downloads/
+/cypress/screenshots/
+/cypress/videos/
+/deployment/.env.e2e
+.env.cypress
+.env.cypress.local
 
 # production
 /build
@@ -23,7 +29,3 @@ yarn-debug.log*
 yarn-error.log*
 
 .env
-
-cypress/screenshots/*
-videos
-cypress/downloads/*

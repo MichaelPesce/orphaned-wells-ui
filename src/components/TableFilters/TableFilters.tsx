@@ -5,7 +5,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import Draggable from "react-draggable";
+// import Draggable from "react-draggable";
 import ApprovalIcon from "@mui/icons-material/Approval";
 import { DEFAULT_FILTER_OPTIONS } from "../../util";
 import { FilterOption, TableFiltersProps } from "../../types";
@@ -77,6 +77,7 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
     <div>
       <Button
         id="filter-button"
+        data-cy="filters-button"
         aria-controls={openFilterMenu ? "filter-menu" : undefined}
         aria-haspopup="true"
         aria-expanded={openFilterMenu ? "true" : undefined}
@@ -90,7 +91,7 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
                 Filters
       </Button>
       {
-        <Draggable handle="#filter-menu">
+        // <Draggable handle="#filter-menu">
           <Menu
             id="filter-menu"
             anchorEl={anchorFilterMenu}
@@ -104,17 +105,17 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
               aria-label="close"
               onClick={() => handleClose()}
               sx={styles.closeIcon}
-              id="close-filters-button"
+              data-cy="close-filters-button"
             >
               <CloseIcon />
             </IconButton>
             <Box p={2} sx={styles.box}>
-              <Button onClick={addNewFilter} startIcon={<AddIcon />}>New Filter</Button>
-              <Button onClick={removeAllFilters} startIcon={<RefreshIcon />}>Reset Filters</Button>
+              <Button data-cy="add-filter-button" onClick={addNewFilter} startIcon={<AddIcon />}>New Filter</Button>
+              <Button data-cy="reset-filters-button" onClick={removeAllFilters} startIcon={<RefreshIcon />}>Reset Filters</Button>
             </Box>
             {
               currentFilters.map((filter, idx) => (
-                <Box key={idx} sx={styles.tableFilter}>
+                <Box key={idx} sx={styles.tableFilter} data-cy="table-filter" data-filter-index={idx}>
                   <TableFilter
                     thisFilter={currentFilters[idx]}
                     updateCurrentFilters={updateCurrentFilters}
@@ -131,13 +132,14 @@ const TableFilters = ({ applyFilters, appliedFilters, filter_options }: TableFil
               <Button
                 onClick={handleApplyFilters}
                 variant='contained'
+                data-cy="apply-filters-button"
                 startIcon={<ApprovalIcon />}
               >
                                 Apply Filters
               </Button>
             </Box>
           </Menu>
-        </Draggable>
+        // </Draggable>
       }
     </div>
   );
@@ -181,12 +183,13 @@ const TableFilter = (props: TableFilterProps) => {
   return (
     <Grid sx={styles.menuContainer} container px={2} spacing={2}>
       <Grid item xs={4} sx={{ display: "flex", justifyContent: "flex-start" }}>
-        <IconButton sx={{ mr: 1 }} onClick={() => removeFilter(idx)}>
+        <IconButton data-cy="remove-filter-button" sx={{ mr: 1 }} onClick={() => removeFilter(idx)}>
           <CloseIcon />
         </IconButton>
         <FormControl variant="standard" fullWidth>
           <InputLabel id="column-select-label">Column</InputLabel>
           <Select
+            data-cy="filter-column-select"
             labelId="column-select-label"
             id="column-select"
             value={thisFilter.key}
@@ -194,7 +197,7 @@ const TableFilter = (props: TableFilterProps) => {
             onChange={(e) => handleSelectChange(e, "filter")}
           >
             {Object.entries(availableFilters).map(([key, filter]) => (
-              <MenuItem key={key} value={key}>{filter.displayName}</MenuItem>
+              <MenuItem data-cy="filter-column-option" key={key} value={key}>{filter.displayName}</MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -204,6 +207,7 @@ const TableFilter = (props: TableFilterProps) => {
         <FormControl variant="standard" fullWidth>
           <InputLabel id="operator-select-label">Operator</InputLabel>
           <Select
+            data-cy="filter-operator-select"
             labelId="operator-select-label"
             id="operator-select"
             value={operator}
@@ -213,20 +217,20 @@ const TableFilter = (props: TableFilterProps) => {
             {
               thisFilter.type === "checkbox" ?
                 [
-                  <MenuItem key={"checkbox1"} value={"equals"}>Equals</MenuItem>
+                  <MenuItem data-cy="filter-operator-option" key={"checkbox1"} value={"equals"}>Equals</MenuItem>
                 ]
                 :
                 thisFilter.type === "string" ?
                   [
-                    <MenuItem key={"string1"} value={"equals"}>Equals</MenuItem>,
-                    <MenuItem key={"string2"} value={"contains"}>Contains</MenuItem>
+                    <MenuItem data-cy="filter-operator-option" key={"string1"} value={"equals"}>Equals</MenuItem>,
+                    <MenuItem data-cy="filter-operator-option" key={"string2"} value={"contains"}>Contains</MenuItem>
                   ]
                   :
                   thisFilter.type === "date" &&
                                     [
-                                      <MenuItem key={"date1"} value={"is"}>Is</MenuItem>,
-                                      <MenuItem key={"date2"} value={"before"}>Is Before</MenuItem>,
-                                      <MenuItem key={"date3"} value={"after"}>Is After</MenuItem>
+                                      <MenuItem data-cy="filter-operator-option" key={"date1"} value={"is"}>Is</MenuItem>,
+                                      <MenuItem data-cy="filter-operator-option" key={"date2"} value={"before"}>Is Before</MenuItem>,
+                                      <MenuItem data-cy="filter-operator-option" key={"date3"} value={"after"}>Is After</MenuItem>
                                     ]
             }
           </Select>
@@ -239,6 +243,7 @@ const TableFilter = (props: TableFilterProps) => {
             <FormControl variant="standard" fullWidth>
               <InputLabel id="values-checkbox-label">Values</InputLabel>
               <Select
+                data-cy="filter-values-select"
                 labelId="values-checkbox-label"
                 id="values-checkbox"
                 multiple
@@ -248,6 +253,7 @@ const TableFilter = (props: TableFilterProps) => {
               >
                 {thisFilter.options!.map((option) => (
                   <MenuItem
+                    data-cy="filter-value-option"
                     key={option.name}
                     value={option.name}
                     onClick={() => handleUpdateCheckbox(option.name)}
@@ -267,6 +273,7 @@ const TableFilter = (props: TableFilterProps) => {
                 <TextField
                   inputProps={{
                     "className": "string-filter-input",
+                    "data-cy": "string-filter-input",
                     "step": 1,
                   }}
                   id="string-value"
@@ -280,6 +287,7 @@ const TableFilter = (props: TableFilterProps) => {
                             <TextField
                               inputProps={{
                                 "className": "date-filter-input",
+                                "data-cy": "date-filter-input",
                                 "step": 1,
                               }}
                               InputLabelProps={{ shrink: true }}

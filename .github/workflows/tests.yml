@@ -7,8 +7,21 @@ on:
     branches: [main]
 
 jobs:
-  frontend-tests:
-    name: Frontend testing
+  component-tests:
+    name: Component testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install JS dependencies
+        run: npm clean-install
+
+      - name: Run component tests
+        run: npm test -- --watchAll=false --runInBand
+
+  e2e-tests:
+    name: E2E testing
+    needs: component-tests
     uses: ./.github/workflows/frontend-tests-dispatch.yml
     with:
       checkout_repository: ${{ github.repository }}

@@ -40,7 +40,7 @@ const Subheader = (props: SubheaderProps) => {
       <Grid container sx={styles.gridContainer}>
         <Grid item xs={9} >
           <div style={styles.directoryDisplay}>
-            <IconButton sx={styles.iconButton} onClick={() => handleNavigate("/")}><HomeIcon sx={styles.icon} /></IconButton>
+            <IconButton data-cy="subheader-home" sx={styles.iconButton} onClick={() => handleNavigate("/")}><HomeIcon sx={styles.icon} /></IconButton>
                         /
             {
               previousPages &&
@@ -48,6 +48,7 @@ const Subheader = (props: SubheaderProps) => {
                               if (page && page !== "undefined") return (
                                 <Fragment key={page}>
                                   <Button 
+                                    data-cy="breadcrumb-link"
                                     sx={styles.iconButton} 
                                     size="small" 
                                     onClick={pageAction}
@@ -61,7 +62,7 @@ const Subheader = (props: SubheaderProps) => {
                             })
             }
 
-            <Button sx={styles.iconButton} size="small">
+            <Button data-cy="breadcrumb-current" sx={styles.iconButton} size="small">
               <Typography noWrap component="span" sx={{fontSize: "13px"}}>
                 {currentPage!== undefined ? formatPageName(currentPage) : ""}
               </Typography>
@@ -70,13 +71,16 @@ const Subheader = (props: SubheaderProps) => {
           <div style={styles.pageName}>
             <Tooltip title={currentPage?.length > 50 ? currentPage : ""}>
               <Typography noWrap>
-                {formatPageName(currentPage, 100)}&nbsp;
+                <span data-cy="subheader-title">
+                  {formatPageName(currentPage, 100)}&nbsp;
+                </span>
               </Typography>
             </Tooltip>
             {actions && Object.keys(actions)?.length > 0 &&
                 <>
                   <IconButton 
                     id="options-button"
+                    data-cy="subheader-actions"
                     onClick={handleShowActions} 
                     disabled={locked}
                   >
@@ -89,7 +93,14 @@ const Subheader = (props: SubheaderProps) => {
                     onClose={() => setShowActions(false)}
                   >
                     {Object.entries(actions).map(([action_text, action_func]) => (
-                      <MenuItem key={action_text} onClick={() => handleSelectAction(action_func)}>{action_text}</MenuItem>
+                      <MenuItem
+                        key={action_text}
+                        data-cy="subheader-action-item"
+                        data-action={action_text}
+                        onClick={() => handleSelectAction(action_func)}
+                      >
+                        {action_text}
+                      </MenuItem>
                     ))}
                   </Menu>
                 </>
@@ -103,12 +114,13 @@ const Subheader = (props: SubheaderProps) => {
         <Grid item xs={3}>
           <Box sx={styles.newProjectColumn}>
             {buttonName &&
-                            <Button variant="contained" onClick={handleClickButton} disabled={disableButton}>
+                            <Button data-cy="subheader-primary-action" variant="contained" onClick={handleClickButton} disabled={disableButton}>
                               {buttonName}
                             </Button>
             }
             {!buttonName && status &&
                             <Chip
+                              data-cy="review-status-chip"
                               sx={{
                                 fontSize: "16px",
                                 textTransform: "capitalize",

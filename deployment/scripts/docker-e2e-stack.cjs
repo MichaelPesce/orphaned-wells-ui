@@ -5,32 +5,40 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const scriptDir = __dirname;
-const envFile = path.join(scriptDir, ".env");
-const envExampleFile = path.join(scriptDir, ".env.example");
+const deploymentDir = path.resolve(scriptDir, "..");
+const repoRoot = path.resolve(deploymentDir, "..");
+const envFile = path.join(deploymentDir, ".env.e2e");
+const envExampleFile = path.join(deploymentDir, ".env.e2e.example");
 
 const actions = {
   start: {
-    description: "Start the development Docker stack",
+    description: "Start the isolated E2E Docker stack",
     composeArgs: ["up", "-d", "--build"],
     createEnvFile: true,
     validateBackendMode: true,
   },
   stop: {
-    description: "Stop development Docker stack containers",
+    description: "Stop isolated E2E Docker stack containers",
     composeArgs: ["stop"],
     createEnvFile: false,
     validateBackendMode: false,
   },
   down: {
-    description: "Stop and remove development Docker stack containers",
+    description: "Stop and remove isolated E2E Docker stack containers",
     composeArgs: ["down"],
     createEnvFile: false,
     validateBackendMode: false,
   },
   clean: {
-    description: "Stop and remove development Docker stack containers and volumes",
+    description: "Stop and remove isolated E2E Docker stack containers and volumes",
     composeArgs: ["down", "-v", "--remove-orphans"],
     createEnvFile: false,
+    validateBackendMode: false,
+  },
+  seed: {
+    description: "Restore the isolated E2E MongoDB seed data",
+    composeArgs: ["--profile", "seed", "run", "--rm", "mongo-restore"],
+    createEnvFile: true,
     validateBackendMode: false,
   },
 };
@@ -39,7 +47,7 @@ const [actionName, ...extraArgs] = process.argv.slice(2);
 const action = actions[actionName];
 
 if (!action) {
-  console.error("Usage: node deployment/docker-dev-stack.cjs <start|stop|down|clean> [docker compose args]");
+  console.error("Usage: node deployment/scripts/docker-e2e-stack.cjs <start|stop|down|clean|seed> [docker compose args]");
   process.exit(1);
 }
 
@@ -57,7 +65,7 @@ const backendGitUrl =
 const backendAutoClone = childEnv.BACKEND_AUTO_CLONE || "false";
 const backendPath = path.isAbsolute(backendDir)
   ? backendDir
-  : path.resolve(scriptDir, backendDir);
+  : path.resolve(deploymentDir, backendDir);
 
 if (backendAutoClone === "true" && !hasBackendSource(backendPath)) {
   console.log(`Cloning backend repository into ${backendPath}...`);
@@ -65,7 +73,7 @@ if (backendAutoClone === "true" && !hasBackendSource(backendPath)) {
   runCommand("git", ["clone", backendGitUrl, backendPath], childEnv);
 }
 
-const composeFiles = [path.join(scriptDir, "docker-compose.dev.yml")];
+const composeFiles = [path.join(deploymentDir, "docker-compose.dev.yml")];
 
 switch (backendMode) {
   case "source":
@@ -73,7 +81,7 @@ switch (backendMode) {
       console.error(`BACKEND_MODE=source requires backend source at ${backendPath}`);
       process.exit(1);
     }
-    composeFiles.push(path.join(scriptDir, "docker-compose.source.yml"));
+    composeFiles.push(path.join(deploymentDir, "docker-compose.source.yml"));
     console.log(`Using local backend source at ${backendPath}`);
     break;
   case "image":
@@ -81,7 +89,7 @@ switch (backendMode) {
     break;
   case "auto":
     if (hasBackendSource(backendPath)) {
-      composeFiles.push(path.join(scriptDir, "docker-compose.source.yml"));
+      composeFiles.push(path.join(deploymentDir, "docker-compose.source.yml"));
       console.log(`Using local backend source at ${backendPath}`);
     } else {
       console.log("Using backend image from BACKEND_IMAGE");
@@ -110,7 +118,7 @@ function prepareEnvFile(shouldCreate) {
 
   if (shouldCreate) {
     fs.copyFileSync(envExampleFile, envFile);
-    console.log(`Created ${envFile} from .env.example`);
+    console.log(`Created ${envFile} from .env.e2e.example`);
     return envFile;
   }
 
@@ -164,7 +172,7 @@ function hasBackendSource(directory) {
 function runCommand(command, args, env) {
   console.log(`Running: ${command} ${args.map(formatArg).join(" ")}`);
   const result = spawnSync(command, args, {
-    cwd: path.resolve(scriptDir, ".."),
+    cwd: repoRoot,
     env,
     stdio: "inherit",
   });
