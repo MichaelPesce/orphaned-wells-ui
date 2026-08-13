@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, FormLabel, FormControl, IconButton, FormGroup, FormControlLabel, Grid, Tooltip } from "@mui/material";
-import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox, Stack } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox, Stack, Divider } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import { callAPI, convertFiltersToMongoFormat } from "../../util";
@@ -204,6 +204,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             disabled={loadingFileSize || isDownloading}
             location={location}
           />
+          <Divider sx={{ my: 2 }} />
           <CheckboxesGroup
             columns={columns}
             selected={selectedColumns}
@@ -310,19 +311,14 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
     }
     return null;
   };
-
+//sx={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', mb: 2 }}
+        
   return (
     <Box >
       <FormControl sx={{ m: 3 }} component="fieldset" variant="standard" required disabled={disabled}>
-        <FormLabel component="legend">Select attributes to export</FormLabel>
-        <FormGroup row>
-          <FormControlLabel
-            control={
-              <Checkbox checked={selectedAttributes.length === attributeColumns.length} indeterminate={selectedAttributes.length < attributeColumns.length && selectedAttributes.length > 0} onChange={selectAll}/>
-            }
-            label={<b>Select All Fields</b>}
-          />
-          {columns.some(col => col.toLowerCase() === "record_notes") && (
+        <FormLabel component="legend">Select attributes to export</FormLabel> 
+        {columns.some(col => col.toLowerCase() === "record_notes") && (
+          <FormGroup row sx={{ mb: 1 }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -346,11 +342,22 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                 />
               }
               label={<b>record_notes</b>}
-              sx={{ ml: 3 }}
             />
-          )}
+          </FormGroup>
+        )}
+
+        <Divider sx={{ my: 1.5 }} />
+
+        <FormGroup row sx={{ mb: 1.5 }}>
+          <FormControlLabel
+            control={
+              <Checkbox checked={selectedAttributes.length === attributeColumns.length} indeterminate={selectedAttributes.length < attributeColumns.length && selectedAttributes.length > 0} onChange={selectAll}/>
+            }
+            label={<b>Select All Fields in the Records</b>}
+          />
         </FormGroup>
-        <FormGroup row>
+
+        <Box sx={{ border: '1px solid #e0e0e0', borderRadius: '4px', p: 2, maxHeight: '300px', overflowY: 'auto' }}>
           <Grid container columnSpacing={3}>
             {columns.filter(col => col.toLowerCase() !== "record_notes").map((column: string, colIdx: number) => (
               <Grid
@@ -372,7 +379,7 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
               </Grid>
             ))}
           </Grid>
-        </FormGroup>
+        </Box>
       </FormControl>
     </Box>
   );
