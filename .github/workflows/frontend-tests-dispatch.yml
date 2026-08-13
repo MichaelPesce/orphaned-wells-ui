@@ -76,9 +76,12 @@ jobs:
       matrix:
         os:
           - linux
+          - windows
         include:
           - os: linux
             os-version: ubuntu-latest
+          - os: windows
+            os-version: windows-latest
 
     steps:
       - uses: actions/checkout@v4
