@@ -319,7 +319,6 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
     }
     return null;
   };
-//sx={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', mb: 2 }}
         
   return (
     <Box >
