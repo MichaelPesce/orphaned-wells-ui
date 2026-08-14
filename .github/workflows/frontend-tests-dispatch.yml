@@ -186,6 +186,24 @@ jobs:
       - name: Run E2E tests
         run: npm run e2e:ci
 
+      - name: Collect backend logs
+        if: always()
+        run: |
+          mkdir -p e2e-artifacts/backend
+
+          compose=(docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml)
+          if [ "${{ inputs.backend_mode }}" = "source" ]; then
+            compose+=(-f deployment/docker-compose.source.yml)
+          fi
+
+          "${compose[@]}" ps > e2e-artifacts/backend/docker-compose-ps.txt 2>&1 || true
+          "${compose[@]}" logs --no-color --timestamps backend > e2e-artifacts/backend/backend-docker.log 2>&1 || true
+
+          backend_container="$("${compose[@]}" ps -q backend 2>/dev/null || true)"
+          if [ -n "$backend_container" ]; then
+            docker cp "${backend_container}:/logs" e2e-artifacts/backend/backend-file-logs 2>/dev/null || true
+          fi
+
       - name: Shut down docker containers
         if: always()
         run: npm run docker:e2e:clean
@@ -198,3 +216,11 @@ jobs:
           path: |
             cypress/screenshots/
             cypress/videos/
+
+      - name: Upload artifact for backend logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend_logs-${{ matrix.os }}
+          path: e2e-artifacts/backend/
+          if-no-files-found: ignore
