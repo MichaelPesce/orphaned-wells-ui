@@ -1,0 +1,4 @@
+interface:
+  display_name: "OGRRE Frontend Development"
+  short_description: "Guide frontend UI changes in OGRRE"
+  default_prompt: "Use $ogrre-frontend-development before making a frontend code change in OGRRE."
