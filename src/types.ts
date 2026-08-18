@@ -43,19 +43,34 @@ export interface ProjectData {
 
 export interface RecordGroup {
     _id: string;
-    attributes: any[];
+    attributes?: any[];
     name: string;
-    processor_id: string;
-    processorId: string;
+    processor_id?: string | null;
+    processorId?: string | null;
     settings?: any;
     description?: string;
     documentType?: string;
+    source_type?: string;
     state?: string;
     creator?: User;
     dateCreated?: number;
     reviewed_amt?: number;
     total_amt?: number;
     error_amt?: number;
+}
+
+export interface JsonImportResponse {
+    record_group_id: string;
+    created_record_ids: string[];
+    created_count: number;
+    skipped_duplicates: string[];
+    skipped_duplicate_count: number;
+}
+
+export interface RecordImageUploadResponse {
+    record_id: string;
+    image_files: string[];
+    img_urls: string[];
 }
 
 export interface SchemaMeta {

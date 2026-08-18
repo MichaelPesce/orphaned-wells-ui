@@ -1,6 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, TextField, IconButton, Grid, Button, Tooltip } from "@mui/material";
+import {
+  Box,
+  TextField,
+  IconButton,
+  Grid,
+  Button,
+  Tooltip,
+} from "@mui/material";
 import { Dialog, DialogTitle, DialogContent, DialogContentText } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { addRecordGroup, getProcessors } from "../../services/app.service";
@@ -37,12 +44,9 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
   }, [open]);
 
   useEffect(() => {
-    if (recordGroupName !== "" && selectedProcessor["processorId"] && disableCreateButton) {
-      setDisableCreateButton(false);
-    } else if ((recordGroupName === "" || !selectedProcessor["processorId"]) && !disableCreateButton) {
-      setDisableCreateButton(true);
-    }
-  }, [recordGroupName, selectedProcessor]);
+    const canCreate = recordGroupName.trim() !== "";
+    setDisableCreateButton(!canCreate);
+  }, [recordGroupName]);
 
   useEffect(() => {
     if (open) {
@@ -111,14 +115,22 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
   };
 
   const handleCreateRecordGroup = () => {
-    let body = {
+    let body: any = {
       name: recordGroupName,
       description: recordGroupDescription,
       history: [],
-      documentType: selectedProcessor.documentType || selectedProcessor["name"],
-      processorId: selectedProcessor["processorId"],
       project_id: project_id,
     };
+    if (selectedProcessor["processorId"]) {
+      body.documentType = selectedProcessor.documentType || selectedProcessor["name"];
+      body.processorId = selectedProcessor["processorId"];
+    } else {
+      body.documentType = "Unspecified";
+      body.processorId = null;
+      body.processor_id = null;
+      body.source_type = "processorless";
+      body.attributes = [];
+    }
     callAPI(
       addRecordGroup,
       [body],
@@ -195,11 +207,10 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
 
             <Grid item xs={12}>
               <h4>
-                                Select document type
+                                Select document type processor
               </h4>
               <p>
-                                Select from following document types of well completion records.
-                                Data extraction will work best with one of the following document types.
+                                Select from following document types of well completion records, or create the record group without selecting a processor.
               </p>
             </Grid>
             <Grid item xs={12}>
@@ -216,9 +227,10 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
                             <img 
                               data-cy="processor-option"
                               data-processor-name={processorData.name}
+                              alt={processorData.name}
                               id={`processor_${idx}`}
                               src={`${process.env.PUBLIC_URL}/img/${processorData["name"]}.png`}
-                              style={getImageStyle(processorData["processorId"])}
+                              style={getImageStyle(processorData["processorId"] || "")}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.src = defaultProcessorPath;
@@ -228,6 +240,7 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
                         </Box>
                       </Grid>
                     );
+                  return null;
                 })}
               </Grid>
             </Grid>
