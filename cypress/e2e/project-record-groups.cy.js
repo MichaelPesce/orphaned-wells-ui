@@ -1,5 +1,9 @@
 const uniqueName = (base) => `${base} ${Date.now()}`;
 
+const parseRequestBody = (body) => {
+  return typeof body === "string" ? JSON.parse(body) : body;
+};
+
 describe("project and record group management", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
@@ -79,6 +83,45 @@ describe("project and record group management", () => {
 
       cy.cleanupRecordGroupByName(project._id, recordGroupName);
       cy.cleanupRecordGroupByName(project._id, renamedRecordGroupName);
+    });
+  });
+
+  it("creates and deletes a record group without selecting a processor", () => {
+    const recordGroupName = uniqueName("Cypress Processorless Record Group");
+
+    cy.fixture("seeded-data").then((seed) => cy.findProjectByName(seed.projectName)).then((project) => {
+      cy.cleanupRecordGroupByName(project._id, recordGroupName);
+
+      cy.visitApp(`/project/${project._id}`);
+      cy.getByCy("subheader-primary-action").click();
+      cy.getByCy("new-record-group-dialog").should("be.visible");
+      cy.contains("Create without processor").should("not.exist");
+      cy.getByCy("record-group-name-input").find("input").type(recordGroupName);
+      cy.getByCy("record-group-description-input").find("textarea").first().type("Created without a processor by Cypress E2E.");
+
+      cy.intercept("POST", `${Cypress.env("backendURL")}/add_record_group`).as("createRecordGroup");
+      cy.getByCy("create-record-group-button").click();
+      cy.wait("@createRecordGroup").then(({ request, response }) => {
+        const body = parseRequestBody(request.body);
+        expect(response.statusCode).to.eq(200);
+        expect(body.name).to.eq(recordGroupName);
+        expect(body.processorId).to.eq(null);
+        expect(body.processor_id).to.eq(null);
+        expect(body.source_type).to.eq("processorless");
+      });
+
+      cy.getByCy("subheader-title", { timeout: 10000 }).should("contain", recordGroupName);
+      cy.location("pathname").then((pathname) => {
+        const recordGroupId = pathname.split("/").pop();
+        cy.api("GET", `/get_record_group/${recordGroupId}`).then(({ body }) => {
+          expect(body.rg_data.name).to.eq(recordGroupName);
+          expect(body.rg_data.processorId).to.eq(null);
+          expect(body.rg_data.processor_id).to.eq(null);
+          expect(body.rg_data.source_type).to.eq("processorless");
+        });
+      });
+
+      cy.cleanupRecordGroupByName(project._id, recordGroupName);
     });
   });
 });

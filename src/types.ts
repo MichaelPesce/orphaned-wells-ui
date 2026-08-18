@@ -9,6 +9,7 @@ export interface RecordData {
     project_name: string;
     record_group_id: string;
     attributesList: Array<any>;
+    image_files?: Array<string>;
     img_urls: Array<string>;
     dateCreated: number;
     status: string;
