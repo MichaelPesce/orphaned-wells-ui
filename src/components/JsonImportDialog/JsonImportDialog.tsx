@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -18,9 +18,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import {
   importRecordFileRecords,
   importRecordGroupFile,
+  previewRecordFileRecords,
+  previewRecordGroupFile,
 } from "../../services/app.service";
 import { callAPI } from "../../util";
-import { JsonImportResponse } from "../../types";
+import { JsonImportPreviewResponse, JsonImportResponse } from "../../types";
 import FileDropzone from "../FileDropzone/FileDropzone";
 
 interface JsonImportDialogProps {
@@ -83,9 +85,12 @@ const JsonImportDialog = ({
   const [recordCount, setRecordCount] = useState(0);
   const [schemaFieldCount, setSchemaFieldCount] = useState(0);
   const [fileFormat, setFileFormat] = useState("");
+  const [preview, setPreview] = useState<JsonImportPreviewResponse | null>(null);
+  const [previewing, setPreviewing] = useState(false);
   const [localError, setLocalError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [preventDuplicates, setPreventDuplicates] = useState(true);
+  const previewRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (!open) {
@@ -96,6 +101,8 @@ const JsonImportDialog = ({
       setRecordCount(0);
       setSchemaFieldCount(0);
       setFileFormat("");
+      setPreview(null);
+      setPreviewing(false);
       setLocalError("");
       setSubmitting(false);
       setPreventDuplicates(true);
@@ -106,9 +113,46 @@ const JsonImportDialog = ({
   const file = files[0];
   const disableImport =
     submitting ||
+    previewing ||
     !file ||
     recordCount <= 0 ||
     (isCreateMode && recordGroupName.trim() === "");
+
+  const requestImportPreview = (
+    previewFile: File,
+    nextPreventDuplicates: boolean
+  ) => {
+    const targetId = isCreateMode ? projectId : recordGroupId;
+    if (!targetId) return;
+
+    const requestId = previewRequestIdRef.current + 1;
+    previewRequestIdRef.current = requestId;
+
+    const formData = new FormData();
+    formData.append("file", previewFile);
+    formData.append("preventDuplicates", String(nextPreventDuplicates));
+
+    setPreview(null);
+    setPreviewing(true);
+    callAPI(
+      isCreateMode ? previewRecordGroupFile : previewRecordFileRecords,
+      [targetId, formData],
+      (data: JsonImportPreviewResponse) => {
+        if (requestId !== previewRequestIdRef.current) return;
+        setPreviewing(false);
+        setPreview(data);
+        setRecordCount(data.record_count || data.requested_count || 0);
+      },
+      (error: string) => {
+        if (requestId !== previewRequestIdRef.current) return;
+        setPreviewing(false);
+        setPreview(null);
+        const message =
+          typeof error === "string" ? error : "Unable to preview import file.";
+        setLocalError(message);
+      }
+    );
+  };
 
   const handleFilesSelected = async (nextFiles: File[]) => {
     const nextFile = nextFiles[0];
@@ -118,6 +162,9 @@ const JsonImportDialog = ({
     setRecordCount(0);
     setSchemaFieldCount(0);
     setFileFormat("");
+    setPreview(null);
+    setPreviewing(false);
+    previewRequestIdRef.current += 1;
     setLocalError("");
 
     const extension = nextFile.name.split(".").pop()?.toLowerCase();
@@ -151,8 +198,19 @@ const JsonImportDialog = ({
       if (isCreateMode && !recordGroupName.trim()) {
         setRecordGroupName(getDefaultRecordGroupName(nextFile.name));
       }
+      requestImportPreview(nextFile, preventDuplicates);
     } catch (e) {
       setLocalError(`Unable to parse ${extension?.toUpperCase()} file.`);
+    }
+  };
+
+  const handlePreventDuplicatesChange = (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const checked = event.target.checked;
+    setPreventDuplicates(checked);
+    if (file && recordCount > 0) {
+      requestImportPreview(file, checked);
     }
   };
 
@@ -283,14 +341,23 @@ const JsonImportDialog = ({
             control={
               <Checkbox
                 checked={preventDuplicates}
-                onChange={(event) => setPreventDuplicates(event.target.checked)}
+                onChange={handlePreventDuplicatesChange}
                 disabled={submitting}
               />
             }
             label="Prevent Duplicates"
           />
           {file && recordCount > 0 && (
-            <Alert severity="info" data-cy="json-import-preview">
+            <Alert
+              severity={
+                preventDuplicates &&
+                preview &&
+                preview.skipped_duplicate_count > 0
+                  ? "warning"
+                  : "info"
+              }
+              data-cy="json-import-preview"
+            >
               <Typography component="span" sx={{ fontWeight: 600 }}>
                 {recordCount} record{recordCount === 1 ? "" : "s"} found
               </Typography>
@@ -300,6 +367,32 @@ const JsonImportDialog = ({
                   schemaFieldCount === 1 ? "" : "s"
                 } found.`
                 : ""}
+              {previewing ? " Checking duplicates..." : ""}
+              {!previewing && preview && preventDuplicates && (
+                preview.skipped_duplicate_count > 0
+                  ? ` ${preview.skipped_duplicate_count} duplicate${
+                    preview.skipped_duplicate_count === 1 ? "" : "s"
+                  } will be skipped. ${preview.importable_count} record${
+                    preview.importable_count === 1 ? "" : "s"
+                  } will be imported.`
+                  : " No duplicates found."
+              )}
+              {!previewing &&
+                preview &&
+                !preventDuplicates &&
+                preview.existing_duplicate_count +
+                  preview.internal_duplicate_count >
+                  0 &&
+                ` ${
+                  preview.existing_duplicate_count +
+                  preview.internal_duplicate_count
+                } duplicate${
+                  preview.existing_duplicate_count +
+                    preview.internal_duplicate_count ===
+                  1
+                    ? ""
+                    : "s"
+                } found, but duplicate prevention is off.`}
             </Alert>
           )}
         </Stack>

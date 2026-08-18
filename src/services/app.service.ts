@@ -116,6 +116,22 @@ export const importRecordFileRecords = (record_group_id: string, data: FormData)
   });
 };
 
+export const previewRecordGroupFile = (project_id: string, data: FormData) => {
+  return fetch(BACKEND_URL + "/preview_record_file_record_group/" + project_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: data,
+  });
+};
+
+export const previewRecordFileRecords = (record_group_id: string, data: FormData) => {
+  return fetch(BACKEND_URL + "/preview_record_file_records/" + record_group_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: data,
+  });
+};
+
 export const connectRecordGroupProcessor = (record_group_id: string, data: any) => {
   return fetch(BACKEND_URL + "/connect_record_group_processor/" + record_group_id, {
     method: "POST",
