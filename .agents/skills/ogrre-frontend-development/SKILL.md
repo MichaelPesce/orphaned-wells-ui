@@ -35,9 +35,9 @@ Before editing, inspect the relevant local patterns:
   user workflows, auth, data contracts, deployment, or validation expectations
   change.
 - For API wiring work, also read
-  `.codex/skills/ogrre-frontend-api-connection/SKILL.md`.
+  `.agents/skills/ogrre-frontend-api-connection/SKILL.md`.
 - For JSON/CSV record import work, also read
-  `.codex/skills/ogrre-json-record-import/SKILL.md`.
+  `.agents/skills/ogrre-json-record-import/SKILL.md`.
 
 Prefer existing OGRRE components, MUI patterns, service helpers, and data
 shapes over new abstractions. Keep new logic close to the owning view,
