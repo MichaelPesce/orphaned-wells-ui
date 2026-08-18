@@ -187,8 +187,8 @@ describe("processorless record import workflows", () => {
           cy.visitApp(`/record/${record._id}`);
           cy.contains('[data-cy="attribute-row"]', "operator_name", { timeout: 30000 })
             .should("contain", IMPORTED_RECORDS[0].operatorName);
-          cy.getByCy("subheader-actions").click();
-          cy.contains('[data-cy="subheader-action-item"]', "Upload record image(s)").click();
+          cy.getByCy("record-image-empty-state").should("be.visible");
+          cy.getByCy("record-image-empty-upload").click();
           cy.getByCy("record-image-upload-dialog").should("be.visible");
           cy.getByCy("record-image-dropzone").selectFile(
             {

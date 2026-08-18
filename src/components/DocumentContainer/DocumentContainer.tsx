@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Grid, Box, IconButton, Alert, Tooltip } from "@mui/material";
+import { Grid, Box, IconButton, Alert, Tooltip, Button, Typography } from "@mui/material";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import Rotate90DegreesCcwIcon from '@mui/icons-material/Rotate90DegreesCcw';
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import HistoryIcon from '@mui/icons-material/History';
 import KeyboardIcon from "@mui/icons-material/Keyboard";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { ImageCropper } from "../ImageCropper/ImageCropper";
 import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI, deriveAttribute, getAttributeRowId } from "../../util";
 import AttributesTable from "../RecordAttributesTable/RecordAttributesTable";
@@ -52,6 +53,9 @@ const DocumentContainer = ({
   record_group_id,
   setImageFiles,
   attributesTableUpdating = false,
+  hasRecordImages = true,
+  canUploadRecordImages = false,
+  onUploadRecordImages,
   ...attributeTableProps
 }: DocumentContainerProps) => {
 
@@ -354,6 +358,7 @@ const DocumentContainer = ({
 
   const showErrorState = !loading && !attributesList && recordStatus === "error";
   const resolvedErrorMessage = errorMessage || "Unknown error.";
+  const showNoImageState = !loading && !hasRecordImages;
 
   return (
     <Box style={styles.outerBox}>
@@ -446,18 +451,20 @@ const DocumentContainer = ({
         {fullscreen !== "table" && 
                     <Grid item xs={gridWidths[0]}>
                       <Box sx={styles.gridContainer}>
-                        <Box sx={styles.containerActions.right}>
-                          <Tooltip title="Rotate Image(s)" placement="left">
-                            <IconButton id="rotate-image-button" onClick={() => setOpenRotationDialog(true)}>
-                              <Rotate90DegreesCcwIcon/>
+                        {hasRecordImages && (
+                          <Box sx={styles.containerActions.right}>
+                            <Tooltip title="Rotate Image(s)" placement="left">
+                              <IconButton id="rotate-image-button" onClick={() => setOpenRotationDialog(true)}>
+                                <Rotate90DegreesCcwIcon/>
+                              </IconButton>
+                            </Tooltip>
+                            <IconButton id='fullscreen-image-button' onClick={() => handleSetFullscreen("image")}>
+                              { 
+                                fullscreen === "image" ? <FullscreenExitIcon/> : <FullscreenIcon/> 
+                              }
                             </IconButton>
-                          </Tooltip>
-                          <IconButton id='fullscreen-image-button' onClick={() => handleSetFullscreen("image")}>
-                            { 
-                              fullscreen === "image" ? <FullscreenExitIcon/> : <FullscreenIcon/> 
-                            }
-                          </IconButton>
-                        </Box>
+                          </Box>
+                        )}
                         <Box
                           id="image-box"
                           sx={{
@@ -465,44 +472,71 @@ const DocumentContainer = ({
                             position: "relative",
                           }}
                         >
-                          <Box
-                            sx={{
-                              opacity: rotationLoading ? 0.45 : 1,
-                              transition: "opacity 180ms ease",
-                            }}
-                          >
-                            {imageFiles &&
-                              imageFiles.map((imageFile, idx) => {
-                                let display_image = true;
-                                if (
-                                  HIDE_BLANK_PAGES &&
-                                  image_whitespace?.[idx] &&
-                                  image_whitespace?.[idx].is_mostly_whitespace
-                                ) {
-                                  display_image = false;
-                                }
+                          {showNoImageState ? (
+                            <Box
+                              data-cy="record-image-empty-state"
+                              sx={styles.noImageState}
+                            >
+                              <Box sx={styles.noImageIconBox}>
+                                <UploadFileIcon color="primary" fontSize="large" />
+                              </Box>
+                              <Typography variant="h6" sx={styles.noImageTitle}>
+                                No document image
+                              </Typography>
+                              <Typography color="text.secondary" sx={styles.noImageText}>
+                                Attach an image or PDF to review this record alongside its extracted fields.
+                              </Typography>
+                              {canUploadRecordImages && (
+                                <Button
+                                  data-cy="record-image-empty-upload"
+                                  variant="contained"
+                                  startIcon={<UploadFileIcon />}
+                                  onClick={onUploadRecordImages}
+                                >
+                                  Upload record image(s)
+                                </Button>
+                              )}
+                            </Box>
+                          ) : (
+                            <Box
+                              sx={{
+                                opacity: rotationLoading ? 0.45 : 1,
+                                transition: "opacity 180ms ease",
+                              }}
+                            >
+                              {imageFiles &&
+                                imageFiles.map((imageFile, idx) => {
+                                  let display_image = true;
+                                  if (
+                                    HIDE_BLANK_PAGES &&
+                                    image_whitespace?.[idx] &&
+                                    image_whitespace?.[idx].is_mostly_whitespace
+                                  ) {
+                                    display_image = false;
+                                  }
 
-                                if (display_image)
-                                  return (
-                                    <div key={imageFile} style={imageDivStyle} id="image-div">
-                                      <ImageCropper
-                                        image={imageFile}
-                                        imageIdx={idx}
-                                        highlightedImageIdxIndex={imgIndex}
-                                        displayPoints={displayPoints}
-                                        disabled
-                                        fullscreen={fullscreen}
-                                        zoomOnToken={false}
-                                        updateFieldLocationID={updateFieldLocationID}
-                                        setUpdateFieldLocationID={setUpdateFieldLocationID}
-                                        handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
-                                      />
-                                    </div>
-                                  );
+                                  if (display_image)
+                                    return (
+                                      <div key={imageFile} style={imageDivStyle} id="image-div">
+                                        <ImageCropper
+                                          image={imageFile}
+                                          imageIdx={idx}
+                                          highlightedImageIdxIndex={imgIndex}
+                                          displayPoints={displayPoints}
+                                          disabled
+                                          fullscreen={fullscreen}
+                                          zoomOnToken={false}
+                                          updateFieldLocationID={updateFieldLocationID}
+                                          setUpdateFieldLocationID={setUpdateFieldLocationID}
+                                          handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
+                                        />
+                                      </div>
+                                    );
 
-                                return null;
-                              })}
-                          </Box>
+                                  return null;
+                                })}
+                            </Box>
+                          )}
 
                           {rotationLoading && (
                             <Box

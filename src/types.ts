@@ -462,6 +462,9 @@ export interface DocumentContainerProps {
     record_group_id?: string;
     setImageFiles: (imageFiles: any[]) => void;
     attributesTableUpdating?: boolean;
+    hasRecordImages?: boolean;
+    canUploadRecordImages?: boolean;
+    onUploadRecordImages?: () => void;
 }
 
 export interface ColumnSelectDialogProps {

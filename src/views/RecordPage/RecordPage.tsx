@@ -525,6 +525,9 @@ const Record = () => {
       });
   }
 
+  const hasRecordImages = (recordData.image_files || []).length > 0;
+  const canUploadRecordImages = hasPermission("upload_document") && !hasRecordImages;
+
   return (
     <Box sx={styles.outerBox}>
       <Subheader
@@ -556,6 +559,9 @@ const Record = () => {
           record_group_id={recordData.record_group_id}
           setImageFiles={setImageFiles}
           attributesTableUpdating={attributesTableUpdating}
+          hasRecordImages={hasRecordImages}
+          canUploadRecordImages={canUploadRecordImages}
+          onUploadRecordImages={() => setOpenImageUploadDialog(true)}
         />
         <RecordImageUploadDialog
           open={openImageUploadDialog}
