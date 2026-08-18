@@ -175,7 +175,7 @@ describe("upload and export workflows", () => {
       cy.intercept("GET", `${Cypress.env("backendURL")}/get_column_data/documentType/**`, {
         statusCode: 200,
         body: {
-          columns: ["Oil"],
+          columns: ['record_notes', "Oil"],
           obj: {
             name: seed.projectName,
             settings: {},
