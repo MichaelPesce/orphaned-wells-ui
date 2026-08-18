@@ -130,15 +130,15 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     handleExport(totalBytes);
   };
 
-  const handleExport = (totalBytes?: number) => {
+  const handleExport = async (totalBytes?: number) => {
     const body = {
       columns: selectedColumns,
       sort: [sortBy, sortAscending],
       filter: convertFiltersToMongoFormat(appliedFilters),
       document_types: documentTypes || [],
     };
-    downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
-
+    await downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
+    handleClose();
   };
 
   const handleFailedExport = (e: string) => {
@@ -188,12 +188,12 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       >
         <CloseIcon />
       </IconButton>
-      <DialogContent dividers={true}>
+      <DialogContent dividers={true} sx={{ overflowY: 'hidden', pb: '70px' }}>
         {
           (loadingFileSize || !columns?.length) &&
-                    <CircularProgress 
-                      sx={styles.loader}
-                    />
+                     <CircularProgress 
+                       sx={styles.loader}
+                     />
                     
         }
                 
@@ -321,9 +321,9 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   };
         
   return (
-    <Box >
-      <FormControl sx={{ m: 3 }} component="fieldset" variant="standard" required disabled={disabled}>
-        <FormLabel component="legend">Select attributes to export</FormLabel> 
+    <Box>
+      <Box sx={{ mx: 3, mt: 2, mb: 1 }}>
+        <FormLabel component="legend" sx={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', mb: 2 }}>Select attributes to export</FormLabel> 
         {columns.some(col => col.toLowerCase() === "record_notes") && (
           <FormGroup row sx={{ mb: 1 }}>
             <FormControlLabel
@@ -348,48 +348,52 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                   }}
                 />
               }
-              label={<b>record_notes</b>}
+              label={<b>User Notes</b>}
             />
           </FormGroup>
         )}
+      </Box>
 
-        <Divider sx={{ my: 1.5 }} />
+      <Divider />
 
-        <FormGroup row sx={{ mb: 1.5 }}>
-          <FormControlLabel
-            control={
-              <Checkbox data-cy="export-select-all-columns" checked={selectedAttributes.length === attributeColumns.length} indeterminate={selectedAttributes.length < attributeColumns.length && selectedAttributes.length > 0} onChange={selectAll}/>
-            }
-            label={<b>Select All Fields in the Records</b>}
-          />
-        </FormGroup>
+      <Box sx={{ mx: 3, mt: 2 }}>
+        <FormControl sx={{ width: '100%' }} component="fieldset" variant="standard" required disabled={disabled}>
+          <FormGroup row sx={{ mb: 1.5 }}>
+            <FormControlLabel
+              control={
+                <Checkbox data-cy="export-select-all-columns" checked={selectedAttributes.length === attributeColumns.length} indeterminate={selectedAttributes.length < attributeColumns.length && selectedAttributes.length > 0} onChange={selectAll}/>
+              }
+              label={<b>Select All Fields in the Records</b>}
+            />
+          </FormGroup>
 
-        <Box sx={{ border: '1px solid #e0e0e0', borderRadius: '4px', p: 2, maxHeight: '300px', overflowY: 'auto' }}>
-          <Grid container columnSpacing={3}>
-            {columns.filter(col => col.toLowerCase() !== "record_notes").map((column: string, colIdx: number) => (
-              <Grid
-                key={`${colIdx}_${column}`}
-                item
-                xs={6}
-                sx={{overflowX: "hidden"}}
-              >
-                <FormControlLabel
-                  data-cy="export-column-label"
-                  data-column={column}
-                  control={
-                    <Checkbox data-cy="export-column-option" checked={selected.includes(column)} onChange={handleChange} name={column} />
-                  }
-                  label={
-                    <Tooltip title={column?.includes("::") ? getSubfieldTooltipText(column) : null}>
-                      <span>{column}</span>
-                    </Tooltip>
-                  }
-                />
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      </FormControl>
+          <Box sx={{ border: '1px solid #e0e0e0', borderRadius: '4px', p: 2, maxHeight: '200px', overflowY: 'auto', mb: 2 }}>
+            <Grid container columnSpacing={3}>
+              {columns.filter(col => col.toLowerCase() !== "record_notes").map((column: string, colIdx: number) => (
+                <Grid
+                  key={`${colIdx}_${column}`}
+                  item
+                  xs={6}
+                  sx={{overflowX: "hidden"}}
+                >
+                  <FormControlLabel
+                    data-cy="export-column-label"
+                    data-column={column}
+                    control={
+                      <Checkbox data-cy="export-column-option" checked={selected.includes(column)} onChange={handleChange} name={column} />
+                    }
+                    label={
+                      <Tooltip title={column?.includes("::") ? getSubfieldTooltipText(column) : null}>
+                        <span>{column}</span>
+                      </Tooltip>
+                    }
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </FormControl>
+      </Box>
     </Box>
   );
 };
