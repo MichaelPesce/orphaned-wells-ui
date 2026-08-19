@@ -4,6 +4,7 @@ import { Box } from "@mui/material";
 import Subheader from "../../components/Subheader/Subheader";
 import RecordGroupsTable from "../../components/RecordGroupsTable/RecordGroupsTable";
 import NewRecordGroupDialog from "../../components/NewRecordGroupDialog/NewRecordGroupDialog";
+import JsonImportDialog from "../../components/JsonImportDialog/JsonImportDialog";
 import PopupModal from "../../components/PopupModal/PopupModal";
 import ProjectTabs from "../../components/ProjectTabs/ProjectTabs";
 import RecordsTable from "../../components/RecordsTable/RecordsTable";
@@ -11,7 +12,7 @@ import ErrorBar from "../../components/ErrorBar/ErrorBar";
 import { useUserContext } from "../../usercontext";
 import { getRecordGroups, updateProject, deleteProject } from "../../services/app.service";
 import { callAPI, DEFAULT_FILTER_OPTIONS } from "../../util";
-import { ProjectData } from "../../types";
+import { JsonImportResponse, ProjectData, SubheaderActions } from "../../types";
 
 const Project = () => {
   let params = useParams();
@@ -22,6 +23,7 @@ const Project = () => {
   const [record_groups, setRecordGroups] = useState<any[]>([]);
   const [unableToConnect, setUnableToConnect] = useState(false);
   const [showNewRecordGroupDialog, setShowNewRecordGroupDialog] = useState(false);
+  const [showJsonImportDialog, setShowJsonImportDialog] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openUpdateNameModal, setOpenUpdateNameModal] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
@@ -86,6 +88,11 @@ const Project = () => {
 
   const handleClickNewRecordGroup = () => {
     setShowNewRecordGroupDialog(true);
+  };
+
+  const handleSuccessfulJsonImport = (response: JsonImportResponse) => {
+    setShowJsonImportDialog(false);
+    navigate("/record_group/" + response.record_group_id);
   };
 
   const handleDeleteProject = () => {
@@ -166,6 +173,15 @@ const Project = () => {
         
   };
 
+  const projectActions = {} as SubheaderActions;
+  if (hasPermission("create_record_group") && hasPermission("upload_document")) {
+    projectActions["Import JSON/CSV record group"] = () => setShowJsonImportDialog(true);
+  }
+  if (hasPermission("manage_project")) {
+    projectActions["Change project name"] = () => setOpenUpdateNameModal(true);
+    projectActions["Delete project"] = () => setOpenDeleteModal(true);
+  }
+
   return (
     <Box sx={styles.outerBox}>
       <Subheader
@@ -177,14 +193,7 @@ const Project = () => {
             "Projects": () => navigate("/projects", { replace: true }),
           }
         }
-        actions={(hasPermission("manage_project")) ?
-          {
-            "Change project name": () => setOpenUpdateNameModal(true), 
-            "Delete project": () => setOpenDeleteModal(true),
-          }
-          :
-          null
-        }
+        actions={Object.keys(projectActions).length ? projectActions : null}
       />
       <Box sx={styles.innerBox}>
         {!unableToConnect ? 
@@ -220,6 +229,14 @@ const Project = () => {
           open={showNewRecordGroupDialog} 
           onClose={() => setShowNewRecordGroupDialog(false)} 
           project_id={params.id || ""}
+        />
+        <JsonImportDialog
+          open={showJsonImportDialog}
+          mode="create_record_group"
+          projectId={params.id || ""}
+          onClose={() => setShowJsonImportDialog(false)}
+          onImported={handleSuccessfulJsonImport}
+          setErrorMsg={setErrorMsg}
         />
       </Box>
       <PopupModal

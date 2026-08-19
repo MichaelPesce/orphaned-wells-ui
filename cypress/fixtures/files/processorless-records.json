@@ -1,0 +1,125 @@
+[
+  {
+    "name": "CYPRESS_JSON_IMPORT_ALPHA",
+    "filename": "cypress-json-import-alpha.pdf",
+    "api_number": "99001000100",
+    "operator_name": {
+      "key": "operator_name",
+      "value": "Acadiana Oil & Environmental",
+      "normalized_vertices": [
+        [0.27474403381347656, 0.16087912023067474],
+        [0.4408418536186218, 0.16087912023067474],
+        [0.4408418536186218, 0.1683516502380371],
+        [0.27474403381347656, 0.1683516502380371]
+      ],
+      "subattributes": [],
+      "page": 0
+    },
+    "operator_month_year": {
+      "key": "operator_month_year",
+      "value": "08/06/2024",
+      "normalized_vertices": [
+        [0.7810011506080627, 0.16175824403762817],
+        [0.829351544380188, 0.16175824403762817],
+        [0.829351544380188, 0.1679120808839798],
+        [0.7810011506080627, 0.1679120808839798]
+      ],
+      "subattributes": [],
+      "page": 0
+    },
+    "operator_address_street": {
+      "key": "operator_address_street",
+      "value": "PO Box 12033",
+      "normalized_vertices": [
+        [0.31569966673851013, 0.1762637346982956],
+        [0.39590445160865784, 0.1762637346982956],
+        [0.39590445160865784, 0.18329671025276184],
+        [0.31569966673851013, 0.18329671025276184]
+      ],
+      "subattributes": [],
+      "page": 0
+    }
+  },
+  {
+    "name": "CYPRESS_JSON_IMPORT_BRAVO",
+    "filename": "cypress-json-import-bravo.pdf",
+    "api_number": "99001000200",
+    "operator_name": {
+      "key": "operator_name",
+      "value": "Bayou State Disposal",
+      "normalized_vertices": [
+        [0.221, 0.141],
+        [0.402, 0.141],
+        [0.402, 0.153],
+        [0.221, 0.153]
+      ],
+      "subattributes": [],
+      "page": 0
+    },
+    "operator_month_year": {
+      "key": "operator_month_year",
+      "value": "09/12/2024",
+      "normalized_vertices": [
+        [0.702, 0.149],
+        [0.812, 0.149],
+        [0.812, 0.161],
+        [0.702, 0.161]
+      ],
+      "subattributes": [],
+      "page": 0
+    },
+    "operator_registration_no": {
+      "key": "operator_registration_no",
+      "value": "02-1140",
+      "normalized_vertices": [
+        [0.721, 0.174],
+        [0.812, 0.174],
+        [0.812, 0.187],
+        [0.721, 0.187]
+      ],
+      "subattributes": [],
+      "page": 0
+    }
+  },
+  {
+    "name": "CYPRESS_JSON_IMPORT_CHARLIE",
+    "filename": "cypress-json-import-charlie.pdf",
+    "api_number": "99001000300",
+    "operator_name": {
+      "key": "operator_name",
+      "value": "Coastal Remediation Services",
+      "normalized_vertices": [
+        [0.184, 0.203],
+        [0.391, 0.203],
+        [0.391, 0.217],
+        [0.184, 0.217]
+      ],
+      "subattributes": [],
+      "page": 0
+    },
+    "operator_month_year": {
+      "key": "operator_month_year",
+      "value": "10/01/2024",
+      "normalized_vertices": [
+        [0.683, 0.196],
+        [0.781, 0.196],
+        [0.781, 0.209],
+        [0.683, 0.209]
+      ],
+      "subattributes": [],
+      "page": 0
+    },
+    "operator_address_city": {
+      "key": "operator_address_city",
+      "value": "Lafayette",
+      "normalized_vertices": [
+        [0.306, 0.229],
+        [0.383, 0.229],
+        [0.383, 0.242],
+        [0.306, 0.242]
+      ],
+      "subattributes": [],
+      "page": 0
+    }
+  }
+]

@@ -37,7 +37,7 @@ const Header = (props: any) => {
   const { user, userName, userPhoto, hasPermission, handleSuccessfulAuthentication } = useUserContext();
   const [anchorAr, setAnchorAr] = useState<null | HTMLElement>(null);
   const [profileActions, setProfileActions] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState("projects");
   const [teams, setTeams] = useState<string[]>([]);
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [teamChangeLoading, setTeamChangeLoading] = useState(false);
@@ -52,15 +52,15 @@ const Header = (props: any) => {
 
   useEffect(() => {
     if (window.location.href.includes("project")) {
-      setTabValue(0);
+      setTabValue("projects");
     } else if (window.location.href.includes("records")) {
-      setTabValue(1);
+      setTabValue("records");
     } else if (window.location.href.includes("users")) {
-      setTabValue(2);
+      setTabValue("users");
     } else if (window.location.href.includes("schema")) {
-      setTabValue(3);
+      setTabValue("schema");
     } else {
-      setTabValue(0);
+      setTabValue("projects");
     }
     if (hasPermission("manage_system")) callAPI(fetchTeams, [], fetchedTeams, failedFetchTeams);
   }, [props, hasPermission, location]);
@@ -74,17 +74,11 @@ const Header = (props: any) => {
     setAnchorAr(event.currentTarget);
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-    if (newValue !== tabValue) {
-      let newLocation: string;
-      if (newValue === 0) newLocation = "projects";
-      else if (newValue === 1) newLocation = "records";
-      else if (newValue === 2) newLocation = "users";
-      else if (newValue === 3) newLocation = "schema";
-      else newLocation = "/";
+  const handleTabChange = (event: React.SyntheticEvent, newLocation: string) => {
+    setTabValue(newLocation);
+    if (newLocation !== tabValue) {
       navigate(newLocation, { replace: true });
-    }
+    } else navigate("/", { replace: true });
   };
 
   const handleOpenTeamDialog = () => {
@@ -202,13 +196,13 @@ const Header = (props: any) => {
             textColor='inherit'
             TabIndicatorProps={{ style: { background: "#727272" } }}
           >
-            <Tab data-cy="header-tab-projects" label="Projects" {...a11yProps(0)} />
-            <Tab data-cy="header-tab-records" label="Records" {...a11yProps(1)} />
+            <Tab data-cy="header-tab-projects" label="Projects" value="projects" {...a11yProps(0)} />
+            <Tab data-cy="header-tab-records" label="Records" value="records" {...a11yProps(1)} />
             {hasPermission("manage_team") &&
-              <Tab data-cy="header-tab-users" label="Users" {...a11yProps(2)} />
+              <Tab data-cy="header-tab-users" label="Users" value="users" {...a11yProps(2)} />
             }
             {hasPermission("manage_schema") &&
-              <Tab data-cy="header-tab-schema" label="Schema" {...a11yProps(3)} />
+              <Tab data-cy="header-tab-schema" label="Schema" value="schema" {...a11yProps(3)} />
             }
           </Tabs>
         </div>

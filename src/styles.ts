@@ -365,6 +365,33 @@ export const DocumentContainerStyles = {
     color: "#5C1A13",
     whiteSpace: "pre-wrap",
   },
+  noImageState: {
+    height: "100%",
+    minHeight: "52vh",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    textAlign: "center",
+    px: 4,
+  },
+  noImageIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: "50%",
+    backgroundColor: "#EEF6FD",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noImageTitle: {
+    fontWeight: 600,
+  },
+  noImageText: {
+    maxWidth: 420,
+    lineHeight: 1.5,
+  },
   zoomToggleActive: {
     color: "black",
     backgroundColor: "#EBEBEB"

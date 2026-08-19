@@ -5,11 +5,13 @@ import { getRecordGroup, uploadDocument, deleteRecordGroup, deleteRecordGroupRec
 import RecordsTable from "../../components/RecordsTable/RecordsTable";
 import Subheader from "../../components/Subheader/Subheader";
 import UploadDocumentsModal from "../../components/UploadDocumentsModal/UploadDocumentsModal";
+import JsonImportDialog from "../../components/JsonImportDialog/JsonImportDialog";
+import ConnectProcessorDialog from "../../components/ConnectProcessorDialog/ConnectProcessorDialog";
 import PopupModal from "../../components/PopupModal/PopupModal";
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
 import DeleteRecordGroupRecordsDialog from "./DeleteRecordGroupRecordsDialog";
 import { callAPI, convertFiltersToMongoFormat } from "../../util";
-import { RecordGroup, ProjectData, PreviousPages, SubheaderActions, FilterOption } from "../../types";
+import { RecordGroup, ProjectData, PreviousPages, SubheaderActions, FilterOption, JsonImportResponse } from "../../types";
 import { useUserContext } from "../../usercontext";
 
 const RecordGroupPage = () => {
@@ -19,6 +21,8 @@ const RecordGroupPage = () => {
   const [project, setProject] = useState({} as ProjectData);
   const [recordGroup, setRecordGroup] = useState<RecordGroup>({ } as RecordGroup);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [showJsonImportDialog, setShowJsonImportDialog] = useState(false);
+  const [showConnectProcessorDialog, setShowConnectProcessorDialog] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openDeleteRecordsModal, setOpenDeleteRecordsModal] = useState(false);
   const [openCleanPrompt, setOpenCleanPrompt] = useState(false);
@@ -46,10 +50,18 @@ const RecordGroupPage = () => {
 
   useEffect(() => {
     let tempActions = {} as SubheaderActions;
+    const hasProcessor = Boolean(recordGroup.processorId);
+    const hasSchema = hasProcessor || Boolean(recordGroup.attributes?.length);
     if (hasPermission("manage_project")) {
       tempActions["Change record group name"] = handleClickChangeName;
     }
-    if (hasPermission("clean_record")) {
+    if (hasPermission("create_record_group")) {
+      tempActions["Connect processor"] = () => setShowConnectProcessorDialog(true);
+    }
+    if (hasPermission("upload_document")) {
+      tempActions["Import JSON/CSV records"] = () => setShowJsonImportDialog(true);
+    }
+    if (hasPermission("clean_record") && hasSchema) {
       tempActions["Clean records"] = () => setOpenCleanPrompt(true);
     }
     if (hasPermission("delete")) {
@@ -57,7 +69,7 @@ const RecordGroupPage = () => {
       tempActions["Delete record group"] = () => setOpenDeleteModal(true);
     }
     setSubheaderActions(tempActions);
-  }, [hasPermission]);
+  }, [hasPermission, recordGroup.processorId, recordGroup.attributes]);
 
   const styles = {
     outerBox: {
@@ -103,6 +115,16 @@ const RecordGroupPage = () => {
       }, 500);
     } else console.log("finished upload");
         
+  };
+
+  const handleSuccessfulJsonImport = (response: JsonImportResponse) => {
+    setShowJsonImportDialog(false);
+    window.location.reload();
+  };
+
+  const handleSuccessfulProcessorConnection = (updatedRecordGroup: RecordGroup) => {
+    setRecordGroup(updatedRecordGroup);
+    setShowConnectProcessorDialog(false);
   };
 
   const handleClickChangeName = () => {
@@ -183,12 +205,24 @@ const RecordGroupPage = () => {
     window.location.reload();
   };
 
+  const hasProcessor = Boolean(recordGroup.processorId);
+  const canUploadRecords = hasPermission("upload_document") && Boolean(recordGroup._id);
+  const primaryButtonName = canUploadRecords
+    ? hasProcessor
+      ? "Upload new record(s)"
+      : "Import JSON/CSV records"
+    : undefined;
+  const handlePrimaryButtonClick = () => {
+    if (hasProcessor) setShowDocumentModal(true);
+    else setShowJsonImportDialog(true);
+  };
+
   return (
     <Box sx={styles.outerBox}>
       <Subheader
         currentPage={recordGroup.name}
-        buttonName={(hasPermission("upload_document")) ? "Upload new record(s)" : undefined}
-        handleClickButton={() => setShowDocumentModal(true)}
+        buttonName={primaryButtonName}
+        handleClickButton={handlePrimaryButtonClick}
         actions={subheaderActions}
         previousPages={navigation}
       />
@@ -208,6 +242,21 @@ const RecordGroupPage = () => {
                   handleUploadDocument={handleUploadDocument}
                 />
       }
+      <JsonImportDialog
+        open={showJsonImportDialog}
+        mode="append_records"
+        recordGroupId={recordGroup._id || params.id}
+        onClose={() => setShowJsonImportDialog(false)}
+        onImported={handleSuccessfulJsonImport}
+        setErrorMsg={setErrorMsg}
+      />
+      <ConnectProcessorDialog
+        open={showConnectProcessorDialog}
+        recordGroup={recordGroup}
+        onClose={() => setShowConnectProcessorDialog(false)}
+        onConnected={handleSuccessfulProcessorConnection}
+        setErrorMsg={setErrorMsg}
+      />
       <PopupModal
         open={openDeleteModal}
         handleClose={() => setOpenDeleteModal(false)}

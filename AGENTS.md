@@ -4,6 +4,7 @@ This repo is the React, TypeScript, and MUI frontend for OGRRE. The paired backe
 
 ## Practices
 
+- Before making frontend code updates, use `$ogrre-frontend-development` from `.agents/skills/ogrre-frontend-development`.
 - Read the surrounding component, service, type, and utility code before editing.
 - Keep changes scoped to the requested workflow and avoid unrelated refactors.
 - Preserve existing worktree changes; do not reset or revert unrelated files.
@@ -53,4 +54,5 @@ This repo is the React, TypeScript, and MUI frontend for OGRRE. The paired backe
 
 ## Repo-Local Skills
 
-- Use `$ogrre-frontend-api-connection` from `.codex/skills/ogrre-frontend-api-connection` for frontend API wiring work.
+- Use `$ogrre-frontend-development` from `.agents/skills/ogrre-frontend-development` before frontend code updates, including views, components, styling, theme, routing, auth UI, tables, filters, tests, docs, deployment, dependencies, or cleanup.
+- Use `$ogrre-frontend-api-connection` from `.agents/skills/ogrre-frontend-api-connection` for frontend API wiring work.
