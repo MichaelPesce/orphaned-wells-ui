@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, FormLabel, FormControl, IconButton, FormGroup, FormControlLabel, Grid, Tooltip } from "@mui/material";
-import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox, Stack } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox, Stack, Divider } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import { callAPI, convertFiltersToMongoFormat } from "../../util";
@@ -130,15 +130,15 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     handleExport(totalBytes);
   };
 
-  const handleExport = (totalBytes?: number) => {
+  const handleExport = async (totalBytes?: number) => {
     const body = {
       columns: selectedColumns,
       sort: [sortBy, sortAscending],
       filter: convertFiltersToMongoFormat(appliedFilters),
       document_types: documentTypes || [],
     };
-    downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
-
+    await downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
+    handleClose();
   };
 
   const handleFailedExport = (e: string) => {
@@ -188,12 +188,12 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       >
         <CloseIcon />
       </IconButton>
-      <DialogContent dividers={true}>
+      <DialogContent dividers={true} sx={{ overflowY: 'hidden', pb: '70px' }}>
         {
           (loadingFileSize || !columns?.length) &&
-                    <CircularProgress 
-                      sx={styles.loader}
-                    />
+                     <CircularProgress 
+                       sx={styles.loader}
+                     />
                     
         }
                 
@@ -209,6 +209,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             disabled={loadingFileSize || isDownloading}
             location={location}
           />
+          <Divider sx={{ my: 2 }} />
           <CheckboxesGroup
             columns={columns}
             selected={selectedColumns}
@@ -281,6 +282,9 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
 const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   const { columns, selected, setSelected, disabled } = props;
 
+  const attributeColumns = columns.filter(col => col.toLowerCase() !== "record_notes");
+  const selectedAttributes = selected.filter(col => col.toLowerCase() !== "record_notes");
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const isSelected = event.target.checked;
     const attr = event.target.name;
@@ -297,8 +301,12 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   };
 
   const selectAll = () => {
-    if (selected.length < columns.length) setSelected([...columns]);
-    else setSelected([]);
+    const notesSelected = selected.filter(col => col.toLowerCase() === "record_notes");
+    if (selectedAttributes.length < attributeColumns.length) {
+      setSelected([...attributeColumns, ...notesSelected]);
+    } else {
+      setSelected([...notesSelected]);
+    }
   };
 
   const getSubfieldTooltipText = (name: string) => {
@@ -311,45 +319,81 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
     }
     return null;
   };
-
+        
   return (
-    <Box >
-      <FormControl sx={{ m: 3 }} component="fieldset" variant="standard" required disabled={disabled}>
-        <FormLabel component="legend">Select attributes to export</FormLabel>
-        <FormGroup row>
-          <FormControlLabel
-            control={
-              <Checkbox data-cy="export-select-all-columns" checked={selected.length === columns.length} indeterminate={selected.length < columns.length && selected.length > 0} onChange={selectAll}/>
-            }
-            label={<b>Select All</b>}
-          />
-        </FormGroup>
-        <FormGroup row>
-          <Grid container columnSpacing={3}>
-            {columns.map((column: string, colIdx: number) => (
-              <Grid
-                key={`${colIdx}_${column}`}
-                item
-                xs={6}
-                sx={{overflowX: "hidden"}}
-              >
-                <FormControlLabel
-                  data-cy="export-column-label"
-                  data-column={column}
-                  control={
-                    <Checkbox data-cy="export-column-option" checked={selected.includes(column)} onChange={handleChange} name={column} />
-                  }
-                  label={
-                    <Tooltip title={column?.includes("::") ? getSubfieldTooltipText(column) : null}>
-                      <span>{column}</span>
-                    </Tooltip>
-                  }
+    <Box>
+      <Box sx={{ mx: 3, mt: 2, mb: 1 }}>
+        <FormLabel component="legend" sx={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', mb: 2 }}>Select attributes to export</FormLabel> 
+        {columns.some(col => col.toLowerCase() === "record_notes") && (
+          <FormGroup row sx={{ mb: 1 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={selected.some(col => col.toLowerCase() === "record_notes")}
+                  onChange={(event) => {
+                    const isChecked = event.target.checked;
+                    const notesKey = columns.find(col => col.toLowerCase() === "record_notes") || "record_notes";
+                    const tempSelected = [...selected];
+                    if (isChecked) {
+                      if (!tempSelected.includes(notesKey)) {
+                        tempSelected.push(notesKey);
+                      }
+                    } else {
+                      const index = tempSelected.indexOf(notesKey);
+                      if (index > -1) {
+                        tempSelected.splice(index, 1);
+                      }
+                    }
+                    setSelected(tempSelected);
+                  }}
                 />
-              </Grid>
-            ))}
-          </Grid>
-        </FormGroup>
-      </FormControl>
+              }
+              label={<b>User Notes</b>}
+            />
+          </FormGroup>
+        )}
+      </Box>
+
+      <Divider />
+
+      <Box sx={{ mx: 3, mt: 2 }}>
+        <FormControl sx={{ width: '100%' }} component="fieldset" variant="standard" required disabled={disabled}>
+          <FormGroup row sx={{ mb: 1.5 }}>
+            <FormControlLabel
+              control={
+                <Checkbox data-cy="export-select-all-columns" checked={selectedAttributes.length === attributeColumns.length} indeterminate={selectedAttributes.length < attributeColumns.length && selectedAttributes.length > 0} onChange={selectAll}/>
+              }
+              label={<b>Select All Fields in the Records</b>}
+            />
+          </FormGroup>
+
+          <Box sx={{ border: '1px solid #e0e0e0', borderRadius: '4px', p: 2, maxHeight: '200px', overflowY: 'auto', mb: 2 }}>
+            <Grid container columnSpacing={3}>
+              {columns.filter(col => col.toLowerCase() !== "record_notes").map((column: string, colIdx: number) => (
+                <Grid
+                  key={`${colIdx}_${column}`}
+                  item
+                  xs={6}
+                  sx={{overflowX: "hidden"}}
+                >
+                  <FormControlLabel
+                    data-cy="export-column-label"
+                    data-column={column}
+                    control={
+                      <Checkbox data-cy="export-column-option" checked={selected.includes(column)} onChange={handleChange} name={column} />
+                    }
+                    label={
+                      <Tooltip title={column?.includes("::") ? getSubfieldTooltipText(column) : null}>
+                        <span>{column}</span>
+                      </Tooltip>
+                    }
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </FormControl>
+      </Box>
     </Box>
   );
 };
