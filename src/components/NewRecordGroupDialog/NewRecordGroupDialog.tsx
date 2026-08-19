@@ -127,7 +127,6 @@ const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialo
     } else {
       body.documentType = "Unspecified";
       body.processorId = null;
-      body.processor_id = null;
       body.source_type = "processorless";
       body.attributes = [];
     }

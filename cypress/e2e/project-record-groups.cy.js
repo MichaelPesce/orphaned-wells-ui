@@ -106,7 +106,6 @@ describe("project and record group management", () => {
         expect(response.statusCode).to.eq(200);
         expect(body.name).to.eq(recordGroupName);
         expect(body.processorId).to.eq(null);
-        expect(body.processor_id).to.eq(null);
         expect(body.source_type).to.eq("processorless");
       });
 
@@ -116,7 +115,6 @@ describe("project and record group management", () => {
         cy.api("GET", `/get_record_group/${recordGroupId}`).then(({ body }) => {
           expect(body.rg_data.name).to.eq(recordGroupName);
           expect(body.rg_data.processorId).to.eq(null);
-          expect(body.rg_data.processor_id).to.eq(null);
           expect(body.rg_data.source_type).to.eq("processorless");
         });
       });

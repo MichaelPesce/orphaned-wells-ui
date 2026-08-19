@@ -18,7 +18,6 @@
         "attributes": [
             "attribute 1"
         ],
-        "processor_id": "test_id",
         "processorId": "test_id",
         "record_groups": []
     },
@@ -42,7 +41,6 @@
             "attribute 1",
             "attribute 2"
         ],
-        "processor_id": "test_id",
         "processorId": "test_id",
         "record_groups": []
     }

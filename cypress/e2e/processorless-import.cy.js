@@ -36,7 +36,6 @@ const createProcessorlessRecordGroup = (projectId, name) => {
     project_id: projectId,
     documentType: "Unspecified",
     processorId: null,
-    processor_id: null,
     source_type: "processorless",
     attributes: [],
   }).its("body");

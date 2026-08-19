@@ -46,7 +46,6 @@ export interface RecordGroup {
     _id: string;
     attributes?: any[];
     name: string;
-    processor_id?: string | null;
     processorId?: string | null;
     settings?: any;
     description?: string;
