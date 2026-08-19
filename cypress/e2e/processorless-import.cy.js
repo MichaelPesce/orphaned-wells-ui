@@ -28,6 +28,102 @@ const parseRequestBody = (body) => {
   return typeof body === "string" ? JSON.parse(body) : body;
 };
 
+const buildImportRecords = (prefix, count) => {
+  const slug = prefix.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  return Array.from({ length: count }, (_, index) => {
+    const recordNumber = index + 1;
+    const name = `${prefix} ${recordNumber}`;
+    const operatorName = `${prefix} Operator ${recordNumber}`;
+
+    return {
+      name,
+      filename: `${slug}-${recordNumber}.json`,
+      api_number: `99002${String(recordNumber).padStart(6, "0")}`,
+      record_number: 9999,
+      attributesList: [
+        {
+          key: "operator_name",
+          value: operatorName,
+          raw_text: operatorName,
+          normalized_value: operatorName,
+          confidence: null,
+          normalized_vertices: null,
+          page: null,
+          subattributes: [],
+        },
+      ],
+    };
+  });
+};
+
+const selectImportPackage = (records, fileName) => {
+  const importPackage = {
+    format: "ogrre-json-records-v1",
+    records,
+  };
+
+  cy.getByCy("json-import-dropzone").selectFile(
+    {
+      contents: Cypress.Buffer.from(JSON.stringify(importPackage, null, 2), "utf8"),
+      fileName,
+      mimeType: "application/json",
+    },
+    { action: "drag-drop" }
+  );
+};
+
+const parseRecordNumber = (text) => {
+  const value = Number(text.replace(/[^\d-]/g, ""));
+  expect(Number.isFinite(value), `record number from '${text}'`).to.eq(true);
+  expect(value, `record number from '${text}'`).to.not.equal(9999);
+  return value;
+};
+
+const getRecordNumberForRow = (recordName) => {
+  return cy
+    .contains('[data-cy="record-row"]', recordName, { timeout: 30000 })
+    .find("td")
+    .first()
+    .invoke("text")
+    .then(parseRecordNumber);
+};
+
+const getRecordNumbersForRows = (records) => {
+  const recordNumbers = [];
+
+  return cy.wrap(records, { log: false }).each((record, index) => {
+    return getRecordNumberForRow(record.name).then((recordNumber) => {
+      recordNumbers[index] = recordNumber;
+    });
+  }).then(() => recordNumbers);
+};
+
+const expectSequentialRecordNumbers = (recordNumbers) => {
+  expect(recordNumbers).to.have.length.greaterThan(0);
+  const firstRecordNumber = recordNumbers[0];
+  const expectedRecordNumbers = recordNumbers.map((_, index) => firstRecordNumber + index);
+  expect(recordNumbers).to.deep.eq(expectedRecordNumbers);
+};
+
+const filterRecordsByName = (recordName) => {
+  cy.getByCy("filters-button").click();
+  cy.getByCy("add-filter-button").click();
+  cy.getByCy("filter-column-select").last().click();
+  cy.contains("li", "Record Name").click();
+  cy.getByCy("table-filter")
+    .last()
+    .find('[data-cy="string-filter-input"]')
+    .type(recordName, { force: true });
+  cy.getByCy("apply-filters-button").click({ force: true });
+};
+
+const resetRecordFilters = () => {
+  cy.getByCy("filters-button").click();
+  cy.getByCy("reset-filters-button").click();
+  cy.getByCy("close-filters-button").click();
+};
+
 const createProcessorlessRecordGroup = (projectId, name) => {
   return cy.api("POST", "/add_record_group", {
     name,
@@ -213,6 +309,113 @@ describe("processorless record import workflows", () => {
             const updatedRecord = records.find((candidate) => candidate._id === record._id);
             expect(updatedRecord, "record after image upload").to.not.equal(undefined);
             expect(updatedRecord.image_files).to.have.length(1);
+          });
+        });
+      });
+    });
+  });
+
+  it("assigns record numbers on import and does not reuse deleted record numbers", () => {
+    const recordGroupName = uniqueName("Cypress Record Number Import");
+    const firstImportRecords = buildImportRecords(uniqueName("CYPRESS_RECORD_NUMBER_FIRST"), 3);
+    const secondImportRecords = buildImportRecords(uniqueName("CYPRESS_RECORD_NUMBER_SECOND"), 2);
+    recordGroupsToCleanup.push(recordGroupName);
+
+    getSeedProject().then((project) => {
+      cy.cleanupRecordGroupByName(project._id, recordGroupName);
+      cy.visitApp(`/project/${project._id}`);
+      cy.getByCy("subheader-actions").click();
+      cy.contains('[data-cy="subheader-action-item"]', "Import JSON/CSV record group").click();
+      cy.getByCy("json-import-dialog").should("be.visible");
+      cy.getByCy("json-import-record-group-name").find("input").type(recordGroupName);
+      cy.getByCy("json-import-document-type").find("input").clear().type("Cypress Record Number Import");
+
+      cy.intercept("POST", backendRoute(`/preview_record_file_record_group/${project._id}`)).as("previewRecordNumberGroupImport");
+      selectImportPackage(firstImportRecords, "record-number-first-import.json");
+      cy.wait("@previewRecordNumberGroupImport").then(({ response }) => {
+        expect(response.statusCode).to.eq(200);
+        expect(response.body.importable_count).to.eq(firstImportRecords.length);
+      });
+
+      cy.intercept("POST", backendRoute(`/import_record_file_record_group/${project._id}`)).as("recordNumberGroupImport");
+      cy.getByCy("json-import-submit").click();
+      cy.wait("@recordNumberGroupImport").then(({ response }) => {
+        expect(response.statusCode).to.eq(200);
+        expect(response.body.created_count).to.eq(firstImportRecords.length);
+        const recordGroupId = response.body.record_group_id;
+
+        cy.location("pathname", { timeout: 10000 }).should("eq", `/record_group/${recordGroupId}`);
+        firstImportRecords.forEach((record) => {
+          cy.contains('[data-cy="record-row"]', record.name, { timeout: 30000 }).should("be.visible");
+        });
+
+        getRecordNumbersForRows(firstImportRecords).then((firstRecordNumbers) => {
+          expectSequentialRecordNumbers(firstRecordNumbers);
+
+          const deletedRecord = firstImportRecords[firstImportRecords.length - 1];
+          const deletedRecordNumber = firstRecordNumbers[firstRecordNumbers.length - 1];
+
+          cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("filterRecordNumberRows");
+          filterRecordsByName(deletedRecord.name);
+          cy.wait("@filterRecordNumberRows").then(({ request, response }) => {
+            expect(request.body.filter.name).to.eq(deletedRecord.name);
+            expect(response.statusCode).to.eq(200);
+            expect(response.body.record_count).to.eq(1);
+          });
+          cy.getByCy("record-row").should("have.length", 1);
+          cy.contains('[data-cy="record-row"]', deletedRecord.name).should("be.visible");
+
+          cy.intercept("POST", backendRoute(`/delete_record_group_records/${recordGroupId}`)).as("deleteFilteredRecordNumberRows");
+          cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("reloadAfterFilteredDelete");
+          cy.getByCy("subheader-actions").click();
+          cy.contains('[data-cy="subheader-action-item"]', "Delete records").click();
+          cy.findByRole("dialog", { name: /delete records/i }).should("be.visible");
+          cy.contains("button", "Delete Currently Filtered").click();
+          cy.wait("@deleteFilteredRecordNumberRows").then(({ request, response }) => {
+            expect(request.body.filter.name).to.eq(deletedRecord.name);
+            expect(response.statusCode).to.eq(200);
+          });
+          cy.wait("@reloadAfterFilteredDelete").then(({ request, response }) => {
+            expect(request.body.filter.name).to.eq(deletedRecord.name);
+            expect(response.statusCode).to.eq(200);
+            expect(response.body.record_count).to.eq(0);
+          });
+          cy.contains('[data-cy="record-row"]', deletedRecord.name).should("not.exist");
+
+          cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("reloadAfterFilterReset");
+          resetRecordFilters();
+          cy.wait("@reloadAfterFilterReset").then(({ response }) => {
+            expect(response.statusCode).to.eq(200);
+            expect(response.body.record_count).to.eq(firstImportRecords.length - 1);
+          });
+
+          cy.getByCy("subheader-primary-action").should("contain", "Import JSON/CSV records").click();
+          cy.getByCy("json-import-dialog").should("be.visible");
+          cy.intercept("POST", backendRoute(`/preview_record_file_records/${recordGroupId}`)).as("previewSecondRecordNumberImport");
+          selectImportPackage(secondImportRecords, "record-number-second-import.json");
+          cy.wait("@previewSecondRecordNumberImport").then(({ response }) => {
+            expect(response.statusCode).to.eq(200);
+            expect(response.body.importable_count).to.eq(secondImportRecords.length);
+          });
+
+          cy.intercept("POST", backendRoute(`/import_record_file_records/${recordGroupId}`)).as("secondRecordNumberImport");
+          cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("reloadAfterSecondImport");
+          cy.getByCy("json-import-submit").click();
+          cy.wait("@secondRecordNumberImport").then(({ response }) => {
+            expect(response.statusCode).to.eq(200);
+            expect(response.body.created_count).to.eq(secondImportRecords.length);
+          });
+          cy.wait("@reloadAfterSecondImport").then(({ response }) => {
+            expect(response.statusCode).to.eq(200);
+            expect(response.body.record_count).to.eq(firstImportRecords.length - 1 + secondImportRecords.length);
+          });
+
+          cy.contains('[data-cy="record-row"]', deletedRecord.name).should("not.exist");
+          getRecordNumbersForRows(secondImportRecords).then((secondRecordNumbers) => {
+            expect(secondRecordNumbers).to.deep.eq([
+              deletedRecordNumber + 1,
+              deletedRecordNumber + 2,
+            ]);
           });
         });
       });
