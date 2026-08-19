@@ -9,6 +9,7 @@ export interface RecordData {
     project_name: string;
     record_group_id: string;
     attributesList: Array<any>;
+    image_files?: Array<string>;
     img_urls: Array<string>;
     dateCreated: number;
     status: string;
@@ -43,19 +44,62 @@ export interface ProjectData {
 
 export interface RecordGroup {
     _id: string;
-    attributes: any[];
+    attributes?: any[];
     name: string;
-    processor_id: string;
-    processorId: string;
+    processorId?: string | null;
     settings?: any;
     description?: string;
     documentType?: string;
+    source_type?: string;
     state?: string;
     creator?: User;
     dateCreated?: number;
     reviewed_amt?: number;
     total_amt?: number;
     error_amt?: number;
+}
+
+export interface JsonImportResponse {
+    record_group_id: string;
+    created_record_ids: string[];
+    requested_count?: number;
+    created_count: number;
+    skipped_duplicates: string[];
+    skipped_duplicate_count: number;
+    existing_duplicate_count?: number;
+    internal_duplicate_count?: number;
+    duplicate_filename_bases_in_file?: Record<string, number>;
+}
+
+export interface JsonImportPreviewResponse {
+    record_count: number;
+    requested_count: number;
+    importable_count: number;
+    existing_duplicates: Array<{
+        index: number;
+        filename: string;
+        filename_base: string;
+        name: string;
+    }>;
+    existing_duplicate_count: number;
+    internal_duplicates: Array<{
+        index: number;
+        filename: string;
+        filename_base: string;
+        name: string;
+    }>;
+    internal_duplicate_count: number;
+    skipped_duplicates: string[];
+    skipped_duplicate_count: number;
+    duplicate_filename_bases_in_file: Record<string, number>;
+    duplicate_filename_base_count_in_file: number;
+    prevent_duplicates: boolean;
+}
+
+export interface RecordImageUploadResponse {
+    record_id: string;
+    image_files: string[];
+    img_urls: string[];
 }
 
 export interface SchemaMeta {
@@ -417,6 +461,9 @@ export interface DocumentContainerProps {
     record_group_id?: string;
     setImageFiles: (imageFiles: any[]) => void;
     attributesTableUpdating?: boolean;
+    hasRecordImages?: boolean;
+    canUploadRecordImages?: boolean;
+    onUploadRecordImages?: () => void;
 }
 
 export interface ColumnSelectDialogProps {

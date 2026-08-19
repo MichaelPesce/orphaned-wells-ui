@@ -1,0 +1,4 @@
+interface:
+  display_name: "OGRRE JSON Record Import"
+  short_description: "Generate and validate OGRRE JSON record import packages."
+  default_prompt: "Create an OGRRE JSON import package for the provided records."

@@ -5,6 +5,10 @@ const getAttributeRow = (fieldName) => (
     .first()
 );
 
+const parseRequestBody = (body) => {
+  return typeof body === "string" ? JSON.parse(body) : body;
+};
+
 const openAttributeEditor = (fieldName) => {
   getAttributeRow(fieldName).then(($row) => {
     if ($row.find('[data-cy="edit-field-button"]').length) {
@@ -49,9 +53,24 @@ const expectCleanedHoleSize = (attribute) => {
 };
 
 describe("record review workflow", () => {
+  let recordNameRestore = null;
+
   beforeEach(() => {
     cy.resetSeedData();
     cy.clearLocalStorage();
+  });
+
+  afterEach(() => {
+    if (!recordNameRestore) return;
+
+    const { recordId, recordName } = recordNameRestore;
+    recordNameRestore = null;
+    cy.api(
+      "POST",
+      `/update_record/${recordId}`,
+      { data: { name: recordName }, type: "name" },
+      { failOnStatusCode: false }
+    );
   });
 
   it("applies a cleaning function when saving an edited field", () => {
@@ -78,6 +97,48 @@ describe("record review workflow", () => {
       cy.api("POST", `/get_record/${record._id}`, {}, { failOnStatusCode: false }).then(({ status, body }) => {
         expect(status).to.be.oneOf([200, 303]);
         expectCleanedHoleSize(findAttribute(body.recordData.attributesList, fieldName));
+      });
+    });
+  });
+
+  it("renames a record through the page action menu", () => {
+    cy.findSeededEntities().then(({ seed, record }) => {
+      const renamedRecordName = `${seed.recordName}_CYPRESS_RENAMED`;
+      recordNameRestore = { recordId: record._id, recordName: seed.recordName };
+
+      cy.intercept("POST", `${Cypress.env("backendURL")}/get_record/${record._id}`).as("getSeedRecord");
+      cy.visitApp(`/record/${record._id}`);
+      waitForRecordFetch("@getSeedRecord", seed.recordName);
+      cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
+
+      cy.getByCy("subheader-actions").click();
+      cy.contains('[data-cy="subheader-action-item"]', "Change record name").click();
+      cy.getByCy("popup-modal").should("be.visible");
+      cy.getByCy("popup-input").find("input").should("have.value", seed.recordName).clear().type(renamedRecordName);
+
+      cy.intercept("POST", `${Cypress.env("backendURL")}/update_record/${record._id}`).as("updateRecordName");
+      cy.getByCy("popup-primary-button").click();
+      cy.wait("@updateRecordName").then(({ request, response }) => {
+        expect(parseRequestBody(request.body)).to.deep.eq({
+          data: { name: renamedRecordName },
+          type: "name",
+        });
+        expect(response?.statusCode).to.eq(200);
+      });
+
+      cy.waitForAppAuth();
+      waitForRecordFetch("@getSeedRecord", renamedRecordName);
+      cy.getByCy("subheader-title", { timeout: 15000 }).should("contain", renamedRecordName);
+
+      cy.api("POST", `/get_record/${record._id}`, {}, { failOnStatusCode: false }).then(({ status, body }) => {
+        expect(status).to.be.oneOf([200, 303]);
+        expect(body.recordData.name).to.eq(renamedRecordName);
+      });
+
+      cy.api("POST", `/update_record/${record._id}`, { data: { name: seed.recordName }, type: "name" }).then(({ status, body }) => {
+        expect(status).to.eq(200);
+        expect(body.name).to.eq(seed.recordName);
+        recordNameRestore = null;
       });
     });
   });

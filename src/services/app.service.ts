@@ -82,6 +82,73 @@ export const addRecordGroup = (data: any) => {
   });
 };
 
+export const importJsonRecordGroup = (project_id: string, data: any) => {
+  return fetch(BACKEND_URL + "/import_json_record_group/" + project_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: JSON.stringify(data),
+    headers: JSON_HEADERS,
+  });
+};
+
+export const importJsonRecords = (record_group_id: string, data: any) => {
+  return fetch(BACKEND_URL + "/import_json_records/" + record_group_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: JSON.stringify(data),
+    headers: JSON_HEADERS,
+  });
+};
+
+export const importRecordGroupFile = (project_id: string, data: FormData) => {
+  return fetch(BACKEND_URL + "/import_record_file_record_group/" + project_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: data,
+  });
+};
+
+export const importRecordFileRecords = (record_group_id: string, data: FormData) => {
+  return fetch(BACKEND_URL + "/import_record_file_records/" + record_group_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: data,
+  });
+};
+
+export const previewRecordGroupFile = (project_id: string, data: FormData) => {
+  return fetch(BACKEND_URL + "/preview_record_file_record_group/" + project_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: data,
+  });
+};
+
+export const previewRecordFileRecords = (record_group_id: string, data: FormData) => {
+  return fetch(BACKEND_URL + "/preview_record_file_records/" + record_group_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: data,
+  });
+};
+
+export const connectRecordGroupProcessor = (record_group_id: string, data: any) => {
+  return fetch(BACKEND_URL + "/connect_record_group_processor/" + record_group_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: JSON.stringify(data),
+    headers: JSON_HEADERS,
+  });
+};
+
+export const uploadRecordImages = (record_id: string, data: FormData) => {
+  return fetch(BACKEND_URL + "/upload_record_images/" + record_id, {
+    method: "POST",
+    mode: CORS_MODE,
+    body: data,
+  });
+};
+
 export const uploadDocument = (data: FormData, project_id: string, user_email: any, reprocessed?: boolean, preventDuplicates?: boolean, run_cleaning_functions: boolean = false)  => {
   if (!reprocessed) reprocessed = false;
   if (!preventDuplicates) preventDuplicates = false;

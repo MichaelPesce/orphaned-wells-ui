@@ -194,12 +194,11 @@ const RecordGroupsTable = ({ record_groups, sortRecordGroups, projectId, handleU
                 data-record-group-id={row._id}
                 data-record-group-name={row.name}
               >
-                <TableCell padding="checkbox">
+                <TableCell padding="checkbox" onClick={(event) => event.stopPropagation()}>
                   <Checkbox
                     data-cy="record-group-select"
                     checked={selectedRecordGroupIds.includes(row._id)}
                     onChange={(event) => handleToggleRecordGroup(event, row._id)}
-                    onClick={(event) => event.stopPropagation()}
                   />
                 </TableCell>
                 <TableCell component="th" scope="row">

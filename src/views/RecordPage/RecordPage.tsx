@@ -6,6 +6,7 @@ import { callAPI, useKeyDown, DEFAULT_RECORDS_TABLE_PAGE_SIZE } from "../../util
 import Subheader from "../../components/Subheader/Subheader";
 import Bottombar from "../../components/BottomBar/BottomBar";
 import DocumentContainer from "../../components/DocumentContainer/DocumentContainer";
+import RecordImageUploadDialog from "../../components/RecordImageUploadDialog/RecordImageUploadDialog";
 import PopupModal from "../../components/PopupModal/PopupModal";
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
 import { 
@@ -87,6 +88,7 @@ const Record = () => {
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openCleanPrompt, setOpenCleanPrompt] = useState(false);
   const [openUpdateNameModal, setOpenUpdateNameModal] = useState(false);
+  const [openImageUploadDialog, setOpenImageUploadDialog] = useState(false);
   const [recordName, setRecordName] = useState("");
   const [previousPages, setPreviousPages] = useState<PreviousPages>({ "Projects": () => navigate("/projects") });
   const [errorMsg, setErrorMsg] = useState<string | null>("");
@@ -146,6 +148,9 @@ const Record = () => {
     let tempActions = {
       "Change record name": () => setOpenUpdateNameModal(true)
     } as SubheaderActions;
+    if (hasPermission("upload_document") && (recordData.image_files || []).length === 0) {
+      tempActions["Upload record image(s)"] = () => setOpenImageUploadDialog(true);
+    }
     if (hasPermission("clean_record")) {
       tempActions["Clean record"] = () => setOpenCleanPrompt(true);
       tempActions["Reset record"] = () => setShowResetPrompt(true);
@@ -154,7 +159,7 @@ const Record = () => {
       tempActions["Delete record"] = () => setOpenDeleteModal(true);
     }
     setSubheaderActions(tempActions);
-  }, [hasPermission]);
+  }, [hasPermission, recordData.image_files]);
 
   // Process successful record fetch: set record data, schema, and breadcrumb navigation
   const handleSuccessfulFetchRecord = React.useCallback((data: any, lock_record?: boolean) => {
@@ -520,6 +525,9 @@ const Record = () => {
       });
   }
 
+  const hasRecordImages = (recordData.image_files || []).length > 0;
+  const canUploadRecordImages = hasPermission("upload_document") && !hasRecordImages;
+
   return (
     <Box sx={styles.outerBox}>
       <Subheader
@@ -551,6 +559,23 @@ const Record = () => {
           record_group_id={recordData.record_group_id}
           setImageFiles={setImageFiles}
           attributesTableUpdating={attributesTableUpdating}
+          hasRecordImages={hasRecordImages}
+          canUploadRecordImages={canUploadRecordImages}
+          onUploadRecordImages={() => setOpenImageUploadDialog(true)}
+        />
+        <RecordImageUploadDialog
+          open={openImageUploadDialog}
+          recordId={params.id}
+          onClose={() => setOpenImageUploadDialog(false)}
+          onUploaded={(response) => {
+            setOpenImageUploadDialog(false);
+            setRecordData((currentRecordData) => ({
+              ...currentRecordData,
+              image_files: [...response.image_files],
+              img_urls: [...response.img_urls],
+            }));
+          }}
+          setErrorMsg={setErrorMsg}
         />
       </Box>
       <Bottombar

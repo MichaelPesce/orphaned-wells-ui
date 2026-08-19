@@ -12,7 +12,7 @@ import {
   InputAdornment,
   Typography,
 } from "@mui/material";
-import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox, Stack } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox, Stack, Divider } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import SearchIcon from "@mui/icons-material/Search";
@@ -98,17 +98,27 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     setDocTypeColumns(docTypesMap);
 
     const initialKeys: string[] = [];
+
+    // Retain record_notes if present in columns
+    const hasNotes = temp_columns.some((col) => col.toLowerCase() === "record_notes");
+    if (hasNotes) {
+      const notesKey = temp_columns.find((col) => col.toLowerCase() === "record_notes") || "record_notes";
+      initialKeys.push(notesKey);
+    }
+
     if (Object.keys(docTypesMap).length > 0) {
       Object.entries(docTypesMap).forEach(([docType, cols]) => {
-        const nodes = buildFieldTree(cols, docType);
+        const attributeCols = cols.filter((c) => c.toLowerCase() !== "record_notes");
+        const nodes = buildFieldTree(attributeCols, docType);
         nodes.forEach((n) => initialKeys.push(...getAllNodeKeys(n)));
       });
     } else {
-      const nodes = buildFieldTree(temp_columns);
+      const attributeCols = temp_columns.filter((c) => c.toLowerCase() !== "record_notes");
+      const nodes = buildFieldTree(attributeCols);
       nodes.forEach((n) => initialKeys.push(...getAllNodeKeys(n)));
     }
-    setSelectedColumns(initialKeys);
 
+    setSelectedColumns(initialKeys);
     setObjSettings(data.obj?.settings);
     setName(data.obj?.name || "");
   };
@@ -118,15 +128,23 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
   };
 
   const getExportColumnsList = (): string[] => {
+    const notesSelected = selectedColumns.filter((col) => col.toLowerCase() === "record_notes");
+    let attributeRawCols: string[] = [];
+
     if (Object.keys(docTypeColumns).length > 0) {
       const allTreeNodes: FieldNode[] = [];
       Object.entries(docTypeColumns).forEach(([docType, cols]) => {
-        allTreeNodes.push(...buildFieldTree(cols, docType));
+        const attributeCols = cols.filter((c) => c.toLowerCase() !== "record_notes");
+        allTreeNodes.push(...buildFieldTree(attributeCols, docType));
       });
-      return getRawColumnsFromKeys(allTreeNodes, selectedColumns);
+      attributeRawCols = getRawColumnsFromKeys(allTreeNodes, selectedColumns);
+    } else {
+      const attributeCols = columns.filter((c) => c.toLowerCase() !== "record_notes");
+      const nodes = buildFieldTree(attributeCols);
+      attributeRawCols = getRawColumnsFromKeys(nodes, selectedColumns);
     }
-    const nodes = buildFieldTree(columns);
-    return getRawColumnsFromKeys(nodes, selectedColumns);
+
+    return Array.from(new Set([...attributeRawCols, ...notesSelected]));
   };
 
   const handleGetTotalBytes = () => {
@@ -155,7 +173,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     handleExport(totalBytes);
   };
 
-  const handleExport = (totalBytes?: number) => {
+  const handleExport = async (totalBytes?: number) => {
     const exportCols = getExportColumnsList();
     const body = {
       columns: exportCols,
@@ -163,7 +181,8 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       filter: convertFiltersToMongoFormat(appliedFilters),
       document_types: documentTypes || [],
     };
-    downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
+    await downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
+    handleClose();
   };
 
   const handleFailedExport = (e: string) => {
@@ -211,7 +230,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       <IconButton aria-label="close" onClick={handleClose} sx={styles.closeIcon}>
         <CloseIcon />
       </IconButton>
-      <DialogContent dividers={true}>
+      <DialogContent dividers={true} sx={{ overflowY: "hidden", pb: "50px" }}>
         {(loadingFileSize || !columns?.length) && <CircularProgress sx={styles.loader} />}
 
         <DialogContentText
@@ -233,6 +252,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             disabled={loadingFileSize || isDownloading}
             location={location}
           />
+          <Divider sx={{ my: 2 }} />
           <CheckboxesGroup
             columns={columns}
             docTypeColumns={docTypeColumns}
@@ -301,30 +321,59 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   const { columns, docTypeColumns, selected, setSelected, disabled, location } = props;
   const [searchQuery, setSearchQuery] = useState("");
 
+  const hasRecordNotes = columns.some((col) => col.toLowerCase() === "record_notes");
+  const notesKey = columns.find((col) => col.toLowerCase() === "record_notes") || "record_notes";
+  const isNotesSelected = selected.some((col) => col.toLowerCase() === "record_notes");
+
   const selectAllText =
-    location === "documentType" ? "Select All Fields from all Document Types" : "Select All";
+    location === "documentType"
+      ? "Select All Fields from all Document Types"
+      : "Select All Fields in the Records";
 
   const isDocTypeGrouping = Boolean(docTypeColumns && Object.keys(docTypeColumns).length > 0);
 
-  const getAllSelectableKeys = (): string[] => {
+  const getAllSelectableAttributeKeys = (): string[] => {
     const allKeys: string[] = [];
     if (isDocTypeGrouping) {
       Object.entries(docTypeColumns!).forEach(([docType, cols]) => {
-        const nodes = buildFieldTree(cols, docType);
+        const attributeCols = cols.filter((c) => c.toLowerCase() !== "record_notes");
+        const nodes = buildFieldTree(attributeCols, docType);
         nodes.forEach((n) => allKeys.push(...getAllNodeKeys(n)));
       });
     } else {
-      const nodes = buildFieldTree(columns);
+      const attributeCols = columns.filter((c) => c.toLowerCase() !== "record_notes");
+      const nodes = buildFieldTree(attributeCols);
       nodes.forEach((n) => allKeys.push(...getAllNodeKeys(n)));
     }
     return Array.from(new Set(allKeys));
   };
 
-  const allSelectableKeys = getAllSelectableKeys();
+  const allAttributeKeys = getAllSelectableAttributeKeys();
+  const selectedAttributeKeys = selected.filter((k) => k.toLowerCase() !== "record_notes");
 
-  const selectAll = () => {
-    if (selected.length < allSelectableKeys.length) setSelected([...allSelectableKeys]);
-    else setSelected([]);
+  const selectAllAttributes = () => {
+    const notesSelected = selected.filter((k) => k.toLowerCase() === "record_notes");
+    if (selectedAttributeKeys.length < allAttributeKeys.length) {
+      setSelected([...allAttributeKeys, ...notesSelected]);
+    } else {
+      setSelected([...notesSelected]);
+    }
+  };
+
+  const handleToggleNotes = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = event.target.checked;
+    const tempSelected = [...selected];
+    if (isChecked) {
+      if (!tempSelected.includes(notesKey)) {
+        tempSelected.push(notesKey);
+      }
+    } else {
+      const index = tempSelected.indexOf(notesKey);
+      if (index > -1) {
+        tempSelected.splice(index, 1);
+      }
+    }
+    setSelected(tempSelected);
   };
 
   const getSubfieldTooltipText = (name: string) => {
@@ -395,94 +444,112 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   };
 
   return (
-    <Box sx={{ m: 3 }}>
-      <FormControl component="fieldset" variant="standard" required disabled={disabled} sx={{ width: "100%" }}>
-        <FormLabel component="legend" sx={{ mb: 1 }}>
+    <Box>
+      {/* Top Section: User Notes Checkbox (if present) */}
+      <Box sx={{ mx: 3, mt: 1, mb: 1 }}>
+        <FormLabel component="legend" sx={{ textTransform: "uppercase", fontSize: "0.75rem", fontWeight: "bold", mb: 1 }}>
           Select attributes to export
         </FormLabel>
-
-        {/* Control bar: Select All + Search Bar */}
-        <Grid container alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={7}>
+        {hasRecordNotes && (
+          <FormGroup row sx={{ mb: 1 }}>
             <FormControlLabel
-              control={
-                <Checkbox
-                  data-cy="export-select-all-columns"
-                  checked={allSelectableKeys.length > 0 && selected.length === allSelectableKeys.length}
-                  indeterminate={selected.length < allSelectableKeys.length && selected.length > 0}
-                  onChange={selectAll}
-                />
-              }
-              label={<b>{selectAllText}</b>}
+              control={<Checkbox checked={isNotesSelected} onChange={handleToggleNotes} />}
+              label={<b>User Notes</b>}
             />
-          </Grid>
-          <Grid item xs={12} sm={5} sx={{ display: "flex", justifyContent: "flex-end" }}>
-            <TextField
-              placeholder="Search Field Name"
-              size="small"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <SearchIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ width: "240px" }}
-            />
-          </Grid>
-        </Grid>
+          </FormGroup>
+        )}
+      </Box>
 
-        {/* Scrollable Container with Border */}
-        <Box
-          sx={{
-            border: "1px solid #e0e0e0",
-            borderRadius: 2,
-            p: 2,
-            maxHeight: "360px",
-            overflowY: "auto",
-            backgroundColor: "#fafafa",
-          }}
-        >
-          {isDocTypeGrouping ? (
-            <Grid container spacing={3}>
-              {Object.entries(docTypeColumns!).map(([docType, docTypeCols]) => {
-                const rawNodes = buildFieldTree(docTypeCols, docType);
-                const filteredNodes = filterFieldNodes(rawNodes, searchQuery);
+      {hasRecordNotes && <Divider />}
 
-                if (searchQuery && filteredNodes.length === 0) return null;
-
-                return (
-                  <Grid item xs={12} sm={6} key={docType}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: "bold", color: "#555", mb: 1, borderBottom: "1px solid #ddd", pb: 0.5 }}
-                    >
-                      {docType}
-                    </Typography>
-                    <Box sx={{ display: "flex", flexDirection: "column" }}>
-                      {filteredNodes.map((node) => renderFieldNode(node))}
-                    </Box>
-                  </Grid>
-                );
-              })}
+      {/* Main Attributes Section with Select All and Search */}
+      <Box sx={{ mx: 3, mt: 2 }}>
+        <FormControl component="fieldset" variant="standard" required disabled={disabled} sx={{ width: "100%" }}>
+          <Grid container alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={7}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    data-cy="export-select-all-columns"
+                    checked={allAttributeKeys.length > 0 && selectedAttributeKeys.length === allAttributeKeys.length}
+                    indeterminate={selectedAttributeKeys.length < allAttributeKeys.length && selectedAttributeKeys.length > 0}
+                    onChange={selectAllAttributes}
+                  />
+                }
+                label={<b>{selectAllText}</b>}
+              />
             </Grid>
-          ) : (
-            <Grid container spacing={2}>
-              {(() => {
-                const rawNodes = buildFieldTree(columns);
-                const filteredNodes = filterFieldNodes(rawNodes, searchQuery);
-                return filteredNodes.map((node) => (
-                  <Grid item xs={12} sm={6} key={node.key}>
-                    {renderFieldNode(node)}
-                  </Grid>
-                ));
-              })()}
+            <Grid item xs={12} sm={5} sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <TextField
+                placeholder="Search Field Name"
+                size="small"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <SearchIcon color="action" fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ width: "240px" }}
+              />
             </Grid>
-          )}
-        </Box>
-      </FormControl>
+          </Grid>
+
+          {/* Scrollable Container with Border */}
+          <Box
+            sx={{
+              border: "1px solid #e0e0e0",
+              borderRadius: "4px",
+              p: 2,
+              maxHeight: "180px",
+              overflowY: "auto",
+              mb: 1,
+              backgroundColor: "#fafafa",
+            }}
+          >
+            {isDocTypeGrouping ? (
+              <Grid container spacing={3}>
+                {Object.entries(docTypeColumns!).map(([docType, docTypeCols]) => {
+                  const attributeCols = docTypeCols.filter((c) => c.toLowerCase() !== "record_notes");
+                  const rawNodes = buildFieldTree(attributeCols, docType);
+                  const filteredNodes = filterFieldNodes(rawNodes, searchQuery);
+
+                  if (searchQuery && filteredNodes.length === 0) return null;
+
+                  return (
+                    <Grid item xs={12} sm={6} key={docType}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: "bold", color: "#555", mb: 1, borderBottom: "1px solid #ddd", pb: 0.5 }}
+                      >
+                        {docType}
+                      </Typography>
+                      <Box sx={{ display: "flex", flexDirection: "column" }}>
+                        {filteredNodes.map((node) => renderFieldNode(node))}
+                      </Box>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            ) : (
+              <Grid container spacing={2}>
+                {(() => {
+                  const attributeCols = columns.filter((c) => c.toLowerCase() !== "record_notes");
+                  const rawNodes = buildFieldTree(attributeCols);
+                  const filteredNodes = filterFieldNodes(rawNodes, searchQuery);
+                  return filteredNodes.map((node) => (
+                    <Grid item xs={12} sm={6} key={node.key}>
+                      {renderFieldNode(node)}
+                    </Grid>
+                  ));
+                })()}
+              </Grid>
+            )}
+          </Box>
+        </FormControl>
+      </Box>
     </Box>
   );
 };
