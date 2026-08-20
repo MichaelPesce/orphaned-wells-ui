@@ -91,11 +91,18 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     },
   };
 
-  const setDefaultColumns = (data: { columns: string[]; doc_type_columns?: { [key: string]: string[] }; obj: any }) => {
-    const temp_columns = data?.columns || [];
-    setColumns(temp_columns);
+  const setDefaultColumns = (data: { columns?: string[]; doc_type_columns?: { [key: string]: string[] }; obj: any }) => {
     const docTypesMap = data?.doc_type_columns || {};
     setDocTypeColumns(docTypesMap);
+
+    let temp_columns: string[] = [];
+    if (Object.keys(docTypesMap).length > 0) {
+      const rawCols = Object.values(docTypesMap).flat();
+      temp_columns = Array.from(new Set([...rawCols, "record_notes"]));
+    } else {
+      temp_columns = data?.columns || [];
+    }
+    setColumns(temp_columns);
 
     const initialKeys: string[] = [];
 
