@@ -12,7 +12,7 @@ import {
   InputAdornment,
   Typography,
 } from "@mui/material";
-import { Dialog, DialogTitle, DialogContent, DialogContentText, Button, Checkbox, Stack, Divider } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Checkbox, Stack, Divider } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import SearchIcon from "@mui/icons-material/Search";
@@ -71,13 +71,18 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       maxHeight: dialogHeight,
       minWidth: dialogWidth,
       maxWidth: dialogWidth,
+      display: "flex",
+      flexDirection: "column",
     },
     dialogContent: {
       position: "relative",
-      paddingBottom: "70px",
-    },
-    dialogButtons: {
-      paddingTop: "70px",
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+      overflowY: "auto",
+      px: 3,
+      pt: 2,
+      pb: 1,
     },
     loader: {
       position: "absolute",
@@ -237,17 +242,24 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       <IconButton aria-label="close" onClick={handleClose} sx={styles.closeIcon}>
         <CloseIcon />
       </IconButton>
-      <DialogContent dividers={true} sx={{ overflowY: "hidden", pb: "50px" }}>
+      <DialogContent dividers={true} sx={styles.dialogContent}>
         {(loadingFileSize || !columns?.length) && <CircularProgress sx={styles.loader} />}
 
         <DialogContentText
           id="scroll-dialog-description"
           tabIndex={-1}
           aria-labelledby="export-dialog-content-text"
-          component={"span"}
+          component={"div"}
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            color: "inherit",
+          }}
         >
           {location === "documentType" && (
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2, px: 3 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 1.5 }}>
               Records from selected Record Groups will be exported into files based on{" "}
               <b>{numDocTypesIdentified} Document Types identified.</b>
             </Typography>
@@ -259,7 +271,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             disabled={loadingFileSize || isDownloading}
             location={location}
           />
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 1.5 }} />
           <CheckboxesGroup
             columns={columns}
             docTypeColumns={docTypeColumns}
@@ -270,14 +282,9 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
           />
         </DialogContentText>
       </DialogContent>
-      <div style={styles.dialogButtons}>
+      <DialogActions sx={{ px: 3, py: 1.5 }}>
         <Button
           variant="contained"
-          sx={{
-            position: "absolute",
-            right: 10,
-            bottom: 10,
-          }}
           startIcon={<DownloadIcon />}
           onClick={handleGetTotalBytes}
           id="download-button"
@@ -286,7 +293,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
         >
           Export Data
         </Button>
-      </div>
+      </DialogActions>
       <ErrorBar errorMessage={errorMsg} setErrorMessage={setErrorMsg} />
     </Dialog>
   );
@@ -302,7 +309,7 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
 
   return (
     <Box>
-      <FormControl sx={{ mx: 3 }} component="fieldset" variant="standard" required disabled={disabled}>
+      <FormControl component="fieldset" variant="standard" required disabled={disabled}>
         <FormLabel component="legend" id="export-type-label">
           Export Format
         </FormLabel>
@@ -451,9 +458,9 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   };
 
   return (
-    <Box>
+    <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       {/* Top Section: User Notes Checkbox (if present) */}
-      <Box sx={{ mx: 3, mt: 1, mb: 1 }}>
+      <Box sx={{ mb: 1 }}>
         <FormLabel component="legend" sx={{ textTransform: "uppercase", fontSize: "0.75rem", fontWeight: "bold", mb: 1 }}>
           Select attributes to export
         </FormLabel>
@@ -467,12 +474,12 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
         )}
       </Box>
 
-      {hasRecordNotes && <Divider />}
+      {hasRecordNotes && <Divider sx={{ mb: 1 }} />}
 
       {/* Main Attributes Section with Select All and Search */}
-      <Box sx={{ mx: 3, mt: 2 }}>
-        <FormControl component="fieldset" variant="standard" required disabled={disabled} sx={{ width: "100%" }}>
-          <Grid container alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <FormControl component="fieldset" variant="standard" required disabled={disabled} sx={{ width: "100%", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <Grid container alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
             <Grid item xs={12} sm={7}>
               <FormControlLabel
                 control={
@@ -504,15 +511,15 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
             </Grid>
           </Grid>
 
-          {/* Scrollable Container with Border */}
+          {/* Scrollable Container with Border - Dynamically Fills Space */}
           <Box
             sx={{
               border: "1px solid #e0e0e0",
               borderRadius: "4px",
               p: 2,
-              maxHeight: "180px",
+              flex: 1,
+              minHeight: "180px",
               overflowY: "auto",
-              mb: 1,
               backgroundColor: "#fafafa",
             }}
           >

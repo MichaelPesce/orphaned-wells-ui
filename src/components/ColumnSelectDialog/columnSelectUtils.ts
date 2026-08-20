@@ -191,13 +191,13 @@ export const filterFieldNodes = (
   nodes.forEach((node) => {
     const parentMatches =
       node.displayName.toLowerCase().includes(q) ||
-      node.rawColumn.toLowerCase().includes(q);
+      Boolean(node.rawColumn?.toLowerCase().includes(q));
 
     if (node.isParent) {
       const matchingSubfields = node.subfields.filter(
         (sub) =>
           sub.displayName.toLowerCase().includes(q) ||
-          sub.rawColumn.toLowerCase().includes(q)
+          Boolean(sub.rawColumn?.toLowerCase().includes(q))
       );
 
       if (parentMatches || matchingSubfields.length > 0) {
