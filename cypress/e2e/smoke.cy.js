@@ -15,8 +15,8 @@ const waitForRecordFetch = (alias, expectedRecordName) => {
 };
 
 const expectRecordsTableShell = () => {
-  cy.findByRole("columnheader", { name: /record name/i }).should("be.visible");
-  cy.findByRole("columnheader", { name: /record group/i }).should("be.visible");
+  cy.getByCy("records-sort-name").should("contain", "Record Name");
+  cy.getByCy("records-sort-dateCreated").should("contain", "Date Uploaded");
   cy.getByCy("filters-button").should("be.visible");
   cy.getByCy("records-export-button").should("be.visible");
 };
