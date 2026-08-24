@@ -14,6 +14,13 @@ const waitForRecordFetch = (alias, expectedRecordName) => {
   });
 };
 
+const expectRecordsTableShell = () => {
+  cy.findByRole("columnheader", { name: /record name/i }).should("be.visible");
+  cy.findByRole("columnheader", { name: /record group/i }).should("be.visible");
+  cy.getByCy("filters-button").should("be.visible");
+  cy.getByCy("records-export-button").should("be.visible");
+};
+
 describe("core navigation smoke", () => {
   before(() => {
     cy.resetSeedData();
@@ -46,16 +53,18 @@ describe("core navigation smoke", () => {
   });
 
   it("opens project and team all-records tables", () => {
-    cy.findSeededEntities().then(({ project }) => {
-      cy.visitApp(`/project/${project._id}`);
-      cy.contains('[data-cy="project-tab"]', "All Records").click();
-      cy.findByRole("columnheader", { name: /record name/i }).should("be.visible");
-      cy.getByCy("record-row").should("exist");
+    cy.fixture("seeded-data").then((seed) => {
+      cy.findProjectByName(seed.projectName).then((project) => {
+        cy.visitApp(`/project/${project._id}`);
+        cy.contains('[data-cy="project-tab"]', "All Records").click();
+        cy.contains('[data-cy="project-tab"]', "All Records").should("have.attr", "aria-selected", "true");
+        expectRecordsTableShell();
 
-      cy.getByCy("header-tab-records").click();
-      cy.location("pathname").should("eq", "/records");
-      cy.getByCy("subheader-title").should("contain", "All Records");
-      cy.findByRole("columnheader", { name: /record name/i }).should("be.visible");
+        cy.getByCy("header-tab-records").click();
+        cy.location("pathname").should("eq", "/records");
+        cy.getByCy("subheader-title").should("contain", "All Records");
+        expectRecordsTableShell();
+      });
     });
   });
 });
