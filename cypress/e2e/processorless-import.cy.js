@@ -106,6 +106,15 @@ const expectSequentialRecordNumbers = (recordNumbers) => {
   expect(recordNumbers).to.deep.eq(expectedRecordNumbers);
 };
 
+const waitForImportedRecordFetch = (alias, expectedRecord) => {
+  return cy.wait(alias, { timeout: 30000 }).then(({ response }) => {
+    expect(response?.statusCode).to.be.oneOf([200, 303]);
+    expect(response?.body.recordData.name).to.eq(expectedRecord.name);
+
+    return response.body.recordData;
+  });
+};
+
 const filterRecordsByName = (recordName) => {
   cy.getByCy("filters-button").click();
   cy.getByCy("add-filter-button").click();
@@ -279,9 +288,10 @@ describe("processorless record import workflows", () => {
         cy.contains("button", "Cancel").click();
 
         cy.findRecordByName(recordGroupId, IMPORTED_RECORDS[0].name).then((record) => {
+          cy.intercept("POST", backendRoute(`/get_record/${record._id}`)).as("loadImportedRecord");
           cy.visitApp(`/record/${record._id}`);
-          cy.contains('[data-cy="attribute-row"]', "operator_name", { timeout: 30000 })
-            .should("contain", IMPORTED_RECORDS[0].operatorName);
+          waitForImportedRecordFetch("@loadImportedRecord", IMPORTED_RECORDS[0]);
+          cy.getByCy("subheader-title", { timeout: 10000 }).should("contain", IMPORTED_RECORDS[0].name);
           cy.getByCy("record-image-empty-state").should("be.visible");
           cy.getByCy("record-image-empty-upload").click();
           cy.getByCy("record-image-upload-dialog").should("be.visible");
