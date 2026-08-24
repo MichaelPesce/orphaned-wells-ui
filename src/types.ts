@@ -484,6 +484,8 @@ export interface CheckboxesGroupProps {
     selected: string[];
     setSelected: (selected: string[]) => void;
     disabled?: boolean;
+    docTypeColumns?: { [key: string]: string[] };
+    location?: string;
 }
 
 export interface ExportTypeSelectionProps {
