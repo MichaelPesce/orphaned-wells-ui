@@ -24,7 +24,7 @@ function createStorageCredentialOverrideFile(env, deploymentDir, backendPath) {
     process.exit(1);
   }
 
-  const containerPath = `/code/ogrre/${keyFilename}`;
+  const containerPath = `/tmp/ogrre-storage-key-${keyFilename}`;
   const overrideDir = fs.mkdtempSync(path.join(os.tmpdir(), "ogrre-compose-"));
   const overrideFile = path.join(overrideDir, "storage-credentials.yml");
   fs.writeFileSync(

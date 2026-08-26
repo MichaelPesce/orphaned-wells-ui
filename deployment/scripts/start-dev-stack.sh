@@ -104,7 +104,7 @@ ${backend_path}/ogrre/${STORAGE_SERVICE_KEY}"
     exit 1
   fi
 
-  container_path="/code/ogrre/${key_filename}"
+  container_path="/tmp/ogrre-storage-key-${key_filename}"
   credential_override_file=$(mktemp "${TMPDIR:-/tmp}/ogrre-compose-XXXXXX.yml")
   quote_yaml() {
     printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\"'\"'/g")"
