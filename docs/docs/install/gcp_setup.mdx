@@ -16,13 +16,7 @@ import { GCPOverview, GCPInstructions, GCPEnvironmentVariables } from '@site/src
 
 When `STORAGE_BACKEND=google`, the OGRRE backend needs a Google service-account
 JSON key file so it can read, write, list, move, and delete objects in the
-configured Cloud Storage bucket. Treat this JSON file as a secret. Do not commit
-it to either repository.
-
-Google service-account keys are long-lived credentials. Some Google Cloud
-organizations disable key creation by policy; if the key creation button is
-unavailable, ask your Google Cloud administrator whether the project can be
-exempted or whether a different authentication method should be used.
+configured Cloud Storage bucket.
 
 ### Create the service account
 
@@ -72,7 +66,8 @@ documentation for the current role definitions.
 6. Click **Create**.
 7. Save the downloaded file in a secure local location. Google only downloads
    the private key file once.
-8. Rename the file if helpful, for example `ogrre-storage-service-key.json`.
+8. Rename the file with a `-service-key.json` suffix, for example
+   `ogrre-storage-service-key.json`.
 
 For Docker-based local development, the simplest location is next to
 `orphaned-wells-ui/deployment/.env`:
@@ -92,6 +87,28 @@ STORAGE_SERVICE_KEY=ogrre-storage-service-key.json
 `STORAGE_SERVICE_KEY` can also be an absolute path. The Docker start script
 mounts the key file into the backend container automatically when
 `STORAGE_BACKEND=google`.
+
+:::warning Keep service-account keys out of git
+
+Service-account JSON files are long-lived secrets. Do not commit them to either
+repository. Use the `-service-key.json` naming convention so the frontend and
+backend `.gitignore` rules catch the file before commit.
+
+Before committing setup changes, verify that git is ignoring the key file:
+
+```console
+git check-ignore -v deployment/ogrre-storage-service-key.json
+```
+
+If the command prints no output, the file is not ignored and should not be
+committed.
+
+Some Google Cloud organizations disable service-account key creation by policy.
+If the key creation button is unavailable, ask your Google Cloud administrator
+whether the project can be exempted or whether a different authentication method
+should be used.
+
+:::
 
 ## Environment variables for OGRRE
 

@@ -37,7 +37,7 @@ export function GCPEnvironmentVariables() {
           <b>STORAGE_BUCKET_NAME</b>: The name you chose for your storage bucket.
         </li>
         <li>
-          <b>STORAGE_SERVICE_KEY</b>: The name of the file storing your GCP access credentials. <b>This file should be stored in the same directory as the <code>.env</code> file.</b>
+          <b>STORAGE_SERVICE_KEY</b>: The name of the file storing your GCP access credentials. <b>This file should be stored in the same directory as the <code>.env</code> file and named with a <code>-service-key.json</code> suffix so it is ignored by git.</b>
         </li>
         <li>
           <b>token_uri</b>: The endpoint URL where an application requests and receives access tokens. This is necessary for user authentication. For more information, see the <a target='_blank' href="https://developers.google.com/identity/protocols/oauth2" rel="noreferrer">Google's documentation on OAuth2</a>.
