@@ -3,6 +3,9 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const {
+  createStorageCredentialOverrideFile,
+} = require("./docker-storage-credentials.cjs");
 
 const scriptDir = __dirname;
 const deploymentDir = path.resolve(scriptDir, "..");
@@ -101,6 +104,14 @@ switch (backendMode) {
       process.exit(1);
     }
     console.log(`Ignoring unrecognized BACKEND_MODE='${backendMode}' for ${actionName}`);
+}
+
+const credentialOverrideFile =
+  actionName === "start"
+    ? createStorageCredentialOverrideFile(childEnv, deploymentDir, backendPath)
+    : null;
+if (credentialOverrideFile) {
+  composeFiles.push(credentialOverrideFile);
 }
 
 const composeArgs = ["compose", "--env-file", activeEnvFile];
