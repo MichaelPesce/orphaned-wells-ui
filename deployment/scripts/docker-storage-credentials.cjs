@@ -65,6 +65,8 @@ function resolveStorageServiceKeyHostPath(storageServiceKey, deploymentDir, back
   console.error(
     [
       `Unable to find STORAGE_SERVICE_KEY file '${storageServiceKey}'.`,
+      "Because STORAGE_BACKEND=google, OGRRE must be able to mount a Google storage service-account key into the backend container.",
+      "Provide the key file in one of the checked locations, or set STORAGE_SERVICE_KEY to an absolute path.",
       "Checked:",
       ...candidates.map((candidate) => `  - ${candidate}`),
     ].join("\n")

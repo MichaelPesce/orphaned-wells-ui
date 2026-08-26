@@ -91,6 +91,8 @@ ${backend_path}/ogrre/${STORAGE_SERVICE_KEY}"
 
   if [ -z "${storage_key_host_path}" ]; then
     echo "Unable to find STORAGE_SERVICE_KEY file '${STORAGE_SERVICE_KEY}'." >&2
+    echo "Because STORAGE_BACKEND=google, OGRRE must be able to mount a Google storage service-account key into the backend container." >&2
+    echo "Provide the key file in one of the checked locations, or set STORAGE_SERVICE_KEY to an absolute path." >&2
     echo "Checked:" >&2
     printf "%s\n" "${checked_paths}" | sed "s/^/  - /" >&2
     exit 1
