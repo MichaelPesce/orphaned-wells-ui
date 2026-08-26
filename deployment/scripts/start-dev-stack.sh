@@ -57,6 +57,74 @@ case "${backend_mode}" in
     ;;
 esac
 
+storage_backend=$(printf "%s" "${STORAGE_BACKEND:-local}" | tr "[:upper:]" "[:lower:]")
+if [ "${storage_backend}" = "google" ]; then
+  if [ -z "${STORAGE_SERVICE_KEY:-}" ]; then
+    echo "STORAGE_BACKEND=google requires STORAGE_SERVICE_KEY to be set." >&2
+    exit 1
+  fi
+
+  storage_key_host_path=""
+  case "${STORAGE_SERVICE_KEY}" in
+    /*)
+      if [ -f "${STORAGE_SERVICE_KEY}" ]; then
+        storage_key_host_path="${STORAGE_SERVICE_KEY}"
+      fi
+      checked_paths="${STORAGE_SERVICE_KEY}"
+      ;;
+    *)
+      checked_paths="${deployment_dir}/${STORAGE_SERVICE_KEY}
+${backend_path}/${STORAGE_SERVICE_KEY}
+${backend_path}/ogrre/${STORAGE_SERVICE_KEY}"
+      for candidate in \
+        "${deployment_dir}/${STORAGE_SERVICE_KEY}" \
+        "${backend_path}/${STORAGE_SERVICE_KEY}" \
+        "${backend_path}/ogrre/${STORAGE_SERVICE_KEY}"
+      do
+        if [ -f "${candidate}" ]; then
+          storage_key_host_path="${candidate}"
+          break
+        fi
+      done
+      ;;
+  esac
+
+  if [ -z "${storage_key_host_path}" ]; then
+    echo "Unable to find STORAGE_SERVICE_KEY file '${STORAGE_SERVICE_KEY}'." >&2
+    echo "Because STORAGE_BACKEND=google, OGRRE must be able to mount a Google storage service-account key into the backend container." >&2
+    echo "Provide the key file in one of the checked locations, or set STORAGE_SERVICE_KEY to an absolute path." >&2
+    echo "Checked:" >&2
+    printf "%s\n" "${checked_paths}" | sed "s/^/  - /" >&2
+    exit 1
+  fi
+
+  key_filename=$(basename "${STORAGE_SERVICE_KEY}")
+  if [ -z "${key_filename}" ] || [ "${key_filename}" = "." ] || [ "${key_filename}" = ".." ]; then
+    echo "Invalid STORAGE_SERVICE_KEY path: ${STORAGE_SERVICE_KEY}" >&2
+    exit 1
+  fi
+
+  container_path="/tmp/ogrre-storage-key-${key_filename}"
+  credential_override_file=$(mktemp "${TMPDIR:-/tmp}/ogrre-compose-XXXXXX.yml")
+  quote_yaml() {
+    printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\"'\"'/g")"
+  }
+  {
+    echo "services:"
+    echo "  backend:"
+    echo "    environment:"
+    printf "      STORAGE_SERVICE_KEY: %s\n" "$(quote_yaml "${container_path}")"
+    printf "      GOOGLE_APPLICATION_CREDENTIALS: %s\n" "$(quote_yaml "${container_path}")"
+    echo "    volumes:"
+    echo "      - type: bind"
+    printf "        source: %s\n" "$(quote_yaml "${storage_key_host_path}")"
+    printf "        target: %s\n" "$(quote_yaml "${container_path}")"
+    echo "        read_only: true"
+  } > "${credential_override_file}"
+  compose_files="${compose_files} -f ${credential_override_file}"
+  echo "Mounting Google storage service key into ${container_path}"
+fi
+
 cd "${repo_root}"
 # shellcheck disable=SC2086
 docker compose --env-file "${env_file}" ${compose_files} up -d --build "$@"

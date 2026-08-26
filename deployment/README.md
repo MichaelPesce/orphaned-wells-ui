@@ -74,6 +74,10 @@ Published ports are bound to `127.0.0.1` by default through `DEV_HOST_BIND`, so 
 
 When `STORAGE_BACKEND=local`, uploaded files are stored in the backend `backend_data` volume under `/data/uploads` and served by the backend at `LOCAL_STORAGE_URL_BASE`. If you change `BACKEND_HOST_PORT`, update `LOCAL_STORAGE_URL_BASE` in `deployment/.env` to match.
 
+When `STORAGE_BACKEND=google`, set `STORAGE_BUCKET_NAME` and `STORAGE_SERVICE_KEY` in `deployment/.env`. `STORAGE_SERVICE_KEY` may be an absolute path or a filename next to `deployment/.env`; the `docker:start` scripts mount that file into the backend container automatically. If you run `docker compose` directly, add an equivalent read-only bind mount for the key file and set `STORAGE_SERVICE_KEY` or `GOOGLE_APPLICATION_CREDENTIALS` to the container path.
+
+Service-account JSON files are secrets. Name local key files with a `-service-key.json` suffix, such as `ogrre-storage-service-key.json`, so the repository `.gitignore` rules catch them before commit.
+
 ## Database Settings
 
 The backend receives database settings from `deployment/.env`, with Docker-local defaults:

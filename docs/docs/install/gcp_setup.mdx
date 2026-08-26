@@ -12,7 +12,104 @@ import { GCPOverview, GCPInstructions, GCPEnvironmentVariables } from '@site/src
 
 <GCPInstructions/>
 
+## Create a Google Cloud Storage service-account key
+
+When `STORAGE_BACKEND=google`, the OGRRE backend needs a Google service-account
+JSON key file so it can read, write, list, move, and delete objects in the
+configured Cloud Storage bucket.
+
+### Create the service account
+
+1. Open the [Google Cloud Console](https://console.cloud.google.com).
+2. Select the project that owns the OGRRE storage bucket.
+3. Open **IAM & Admin -> Service Accounts**.
+4. Click **Create service account**.
+5. Enter a clear service account name, such as `ogrre-storage`.
+6. Enter a description, such as `OGRRE backend access to Cloud Storage`.
+7. Click **Create and continue**.
+8. Do not grant broad project-level roles unless you intentionally need them.
+   Bucket-level access is usually the better default for OGRRE storage.
+9. Click **Done**.
+
+### Grant bucket access
+
+1. Open **Cloud Storage -> Buckets**.
+2. Click the bucket used by `STORAGE_BUCKET_NAME`.
+3. Open the **Permissions** tab.
+4. Click **Grant access**.
+5. In **New principals**, enter the service account email address.
+6. In **Select a role**, choose **Cloud Storage -> Storage Object Admin**
+   (`roles/storage.objectAdmin`).
+7. Click **Save**.
+
+`roles/storage.objectAdmin` gives the service account object-level access in
+that bucket, including creating, viewing, listing, updating, moving, and deleting
+objects. It does not grant bucket administration. See Google's
+[Cloud Storage IAM roles](https://cloud.google.com/storage/docs/access-control/iam-roles)
+and [bucket IAM policy](https://cloud.google.com/storage/docs/access-control/using-iam-permissions)
+documentation for the current role definitions and console flow.
+
+If this same key will also be used for Google Document AI processing, grant the
+service account **Document AI API User** (`roles/documentai.apiUser`) on the
+project or on the specific processors it needs to use. That role allows online
+and batch processor calls. See Google's
+[Document AI IAM roles](https://cloud.google.com/document-ai/docs/access-control/iam-roles)
+documentation for the current role definitions.
+
+### Generate the JSON key file
+
+1. Open **IAM & Admin -> Service Accounts**.
+2. Click the email address for the service account.
+3. Open the **Keys** tab.
+4. Click **Add key -> Create new key**.
+5. Select **JSON**.
+6. Click **Create**.
+7. Save the downloaded file in a secure local location. Google only downloads
+   the private key file once.
+8. Rename the file with a `-service-key.json` suffix, for example
+   `ogrre-storage-service-key.json`.
+
+For Docker-based local development, the simplest location is next to
+`orphaned-wells-ui/deployment/.env`:
+
+```text
+orphaned-wells-ui/deployment/ogrre-storage-service-key.json
+```
+
+Then set these values in `orphaned-wells-ui/deployment/.env`:
+
+```dotenv
+STORAGE_BACKEND=google
+STORAGE_BUCKET_NAME=<bucket-name>
+STORAGE_SERVICE_KEY=ogrre-storage-service-key.json
+```
+
+`STORAGE_SERVICE_KEY` can also be an absolute path. The Docker start script
+mounts the key file into the backend container automatically when
+`STORAGE_BACKEND=google`.
+
+:::warning Keep service-account keys out of git
+
+Service-account JSON files are long-lived secrets. Do not commit them to either
+repository. Use the `-service-key.json` naming convention so the frontend and
+backend `.gitignore` rules catch the file before commit.
+
+Before committing setup changes, verify that git is ignoring the key file:
+
+```console
+git check-ignore -v deployment/ogrre-storage-service-key.json
+```
+
+If the command prints no output, the file is not ignored and should not be
+committed.
+
+Some Google Cloud organizations disable service-account key creation by policy.
+If the key creation button is unavailable, ask your Google Cloud administrator
+whether the project can be exempted or whether a different authentication method
+should be used.
+
+:::
+
 ## Environment variables for OGRRE
 
 <GCPEnvironmentVariables/>
-
