@@ -87,8 +87,15 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     },
     loader: {
       position: "absolute",
-      right: "50%",
-      top: "50%",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.7)",
+      zIndex: 10,
     },
     closeIcon: {
       position: "absolute",
@@ -244,7 +251,11 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
         <CloseIcon />
       </IconButton>
       <DialogContent dividers={true} sx={styles.dialogContent}>
-        {(loadingFileSize || !columns?.length) && <CircularProgress sx={styles.loader} />}
+        {(loadingFileSize || !columns?.length) && (
+          <Box sx={styles.loader}>
+            <CircularProgress />
+          </Box>
+        )}
 
         <DialogContentText
           id="scroll-dialog-description"
