@@ -47,6 +47,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     "csv": false,
     "json": true,
     "image_files": false,
+    "embedded_pdf_files": false,
   });
   const [name, setName] = useState("");
   const dialogHeight = "85vh";
@@ -86,8 +87,15 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     },
     loader: {
       position: "absolute",
-      right: "50%",
-      top: "50%",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.7)",
+      zIndex: 10,
     },
     closeIcon: {
       position: "absolute",
@@ -161,7 +169,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
 
   const handleGetTotalBytes = () => {
     const exportCols = getExportColumnsList();
-    if (exportTypes.image_files) {
+    if (exportTypes.image_files || exportTypes.embedded_pdf_files) {
       const body = {
         columns: exportCols,
         sort: [sortBy, sortAscending],
@@ -243,7 +251,11 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
         <CloseIcon />
       </IconButton>
       <DialogContent dividers={true} sx={styles.dialogContent}>
-        {(loadingFileSize || !columns?.length) && <CircularProgress sx={styles.loader} />}
+        {(loadingFileSize || !columns?.length) && (
+          <Box sx={styles.loader}>
+            <CircularProgress />
+          </Box>
+        )}
 
         <DialogContentText
           id="scroll-dialog-description"
@@ -314,16 +326,19 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
           Export Format
         </FormLabel>
         <FormGroup>
-          <Stack direction="row">
-            {Object.entries(exportTypes).map(([export_type, is_selected]) => (
-              <FormControlLabel
-                key={export_type}
-                data-cy="export-type-option"
-                data-export-type={export_type}
-                control={<Checkbox checked={is_selected} onChange={handleChangeExportTypes} name={export_type} />}
-                label={export_type.replace("_", " ")}
-              />
-            ))}
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            {Object.entries(exportTypes).map(([export_type, is_selected]) => {
+              const labelText = export_type === "embedded_pdf_files" ? "Embedded PDF Files" : export_type.replace("_", " ");
+              return (
+                <FormControlLabel
+                  key={export_type}
+                  data-cy="export-type-option"
+                  data-export-type={export_type}
+                  control={<Checkbox checked={is_selected} onChange={handleChangeExportTypes} name={export_type} />}
+                  label={labelText}
+                />
+              );
+            })}
           </Stack>
         </FormGroup>
       </FormControl>
