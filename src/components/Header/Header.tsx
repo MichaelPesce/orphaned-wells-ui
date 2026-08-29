@@ -51,13 +51,13 @@ const Header = (props: any) => {
   const [versionError, setVersionError] = useState("");
 
   useEffect(() => {
-    if (window.location.href.includes("project")) {
+    if (location.pathname.includes("project")) {
       setTabValue("projects");
-    } else if (window.location.href.includes("records")) {
+    } else if (location.pathname.includes("records")) {
       setTabValue("records");
-    } else if (window.location.href.includes("users")) {
-      setTabValue("users");
-    } else if (window.location.href.includes("schema")) {
+    } else if (location.pathname.includes("admin") || location.pathname.includes("users")) {
+      setTabValue("admin");
+    } else if (location.pathname.includes("schema")) {
       setTabValue("schema");
     } else {
       setTabValue("projects");
@@ -199,7 +199,7 @@ const Header = (props: any) => {
             <Tab data-cy="header-tab-projects" label="Projects" value="projects" {...a11yProps(0)} />
             <Tab data-cy="header-tab-records" label="Records" value="records" {...a11yProps(1)} />
             {hasPermission("manage_team") &&
-              <Tab data-cy="header-tab-users" label="Users" value="users" {...a11yProps(2)} />
+              <Tab data-cy="header-tab-admin" label="Admin" value="admin" {...a11yProps(2)} />
             }
             {hasPermission("manage_schema") &&
               <Tab data-cy="header-tab-schema" label="Schema" value="schema" {...a11yProps(3)} />
