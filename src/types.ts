@@ -204,12 +204,39 @@ export interface FilterOption {
     value?: string;
 }
 
+export type RoleCategory = "system" | "team";
+
+export interface RoleDefinition {
+    id: string;
+    name: string;
+    permissions: string[];
+    includes?: string[];
+    category: RoleCategory;
+}
+
+export interface UserRoleAssignments {
+    system?: string[];
+    team?: Record<string, string[]>;
+}
+
+export interface UpdateUserRolesRequest {
+    role_category: RoleCategory;
+    new_roles: string[];
+    email: string;
+}
+
+export interface UpdateRolePermissionsRequest {
+    role_id: string;
+    category: RoleCategory;
+    permissions: string[];
+}
+
 export interface User {
     email: string;
     name: string;
     picture: string;
     hd: string;
-    roles: string[];
+    roles: UserRoleAssignments;
     user_info?: any;
     permissions?: any;
     default_team: string;

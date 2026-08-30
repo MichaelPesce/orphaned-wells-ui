@@ -44,7 +44,7 @@ describe("limited auth gates", () => {
 
     cy.visit("/projects");
     cy.wait("@checkAuth");
-    cy.getByCy("header-tab-users").should("not.exist");
+    cy.getByCy("header-tab-admin").should("not.exist");
     cy.getByCy("header-tab-schema").should("not.exist");
     cy.getByCy("subheader-primary-action").should("not.exist");
   });
@@ -66,7 +66,7 @@ describe("limited auth gates", () => {
 
     cy.visit("/projects");
     cy.wait("@checkAuth");
-    cy.getByCy("header-tab-users").should("be.visible");
+    cy.getByCy("header-tab-admin").should("be.visible").and("contain.text", "Admin");
     cy.getByCy("header-tab-schema").should("be.visible");
     cy.getByCy("subheader-primary-action").should("contain.text", "New Project");
   });

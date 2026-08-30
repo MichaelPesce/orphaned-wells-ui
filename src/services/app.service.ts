@@ -1,4 +1,11 @@
-import { ChangeCollaboratorRequest, ChangeTeamRequest, MongoProcessor } from "../types";
+import {
+  ChangeCollaboratorRequest,
+  ChangeTeamRequest,
+  MongoProcessor,
+  RoleCategory,
+  UpdateRolePermissionsRequest,
+  UpdateUserRolesRequest,
+} from "../types";
 
 let BACKEND_URL = process.env.REACT_APP_BACKEND_URL as string;
 const CORS_MODE: RequestMode = "cors";
@@ -356,7 +363,7 @@ export const addUser = (email: string, team_lead?: boolean, sys_admin?: boolean)
   });
 };
 
-export const updateUserRoles = (data: any) => {
+export const updateUserRoles = (data: UpdateUserRolesRequest) => {
   return fetch(BACKEND_URL + "/update_user_roles", {
     method: "POST",
     mode: CORS_MODE,
@@ -383,11 +390,29 @@ export const changeCollaborator = (data: ChangeCollaboratorRequest) => {
   });
 };
 
-export const fetchRoles = (role_categories: string[]) => {
+export const fetchRoles = (role_categories: RoleCategory[]) => {
   return fetch(BACKEND_URL + "/fetch_roles", {
     method: "POST",
     mode: CORS_MODE,
     body: JSON.stringify(role_categories),
+    headers: JSON_HEADERS,
+  });
+};
+
+export const fetchPermissionCatalog = (role_categories: RoleCategory[]) => {
+  return fetch(BACKEND_URL + "/fetch_permission_catalog", {
+    method: "POST",
+    mode: CORS_MODE,
+    body: JSON.stringify(role_categories),
+    headers: JSON_HEADERS,
+  });
+};
+
+export const updateRolePermissions = (data: UpdateRolePermissionsRequest) => {
+  return fetch(BACKEND_URL + "/update_role_permissions", {
+    method: "POST",
+    mode: CORS_MODE,
+    body: JSON.stringify(data),
     headers: JSON_HEADERS,
   });
 };

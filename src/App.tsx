@@ -89,8 +89,12 @@ function App() {
               element={<ProjectsListPage/>}
             />
             <Route
-              path="users"
+              path="admin"
               element={<AdminPage/>}
+            />
+            <Route
+              path="users"
+              element={<Navigate replace to="/admin" />}
             />
             <Route
               path="schema"

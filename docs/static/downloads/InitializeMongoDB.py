@@ -11,7 +11,8 @@ ROLES = [
         "name": "Project Collaborator",
         "permissions": [
             "view_project",
-            "review_record"
+            "review_record",
+            "update_coordinates",
         ],
         "includes": [],
         "category": "project"
@@ -24,7 +25,8 @@ ROLES = [
             "verify_record",
             "view_project",
             "review_record",
-            "clean_record"
+            "clean_record",
+            "update_coordinates",
         ],
         "includes": [
             "proj_collaborator"
@@ -50,7 +52,8 @@ ROLES = [
             "clean_record",
             "system_administration",
             "developer",
-            "manage_schema"
+            "manage_schema",
+            "update_coordinates",
         ],
         "includes": [
             "team_lead"
@@ -75,6 +78,7 @@ ROLES = [
             "clean_record",
             "manage_schema",
             "developer",
+            "update_coordinates",
         ],
         "includes": [
             "team_lead"
@@ -91,7 +95,8 @@ ROLES = [
             "view_project",
             "review_record",
             "add_user",
-            "clean_record"
+            "clean_record",
+            "update_coordinates",
         ],
         "includes": [
             "team_member",
@@ -104,7 +109,8 @@ ROLES = [
         "name": "Team Member",
         "permissions": [
             "view_project",
-            "review_record"
+            "review_record",
+            "update_coordinates",
         ],
         "includes": [
             "proj_collaborator"

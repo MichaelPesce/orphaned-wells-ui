@@ -1,28 +1,40 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { callAPI } from "../../util";
 import { fetchRoles, updateUserRoles } from "../../services/app.service";
 import { IconButton, Grid, Button, Chip } from "@mui/material";
-import { Dialog, DialogTitle, DialogContent, DialogContentText } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ErrorBar from "../ErrorBar/ErrorBar";
 import CheckIcon from "@mui/icons-material/Check";
+import { RoleCategory, RoleDefinition, UpdateUserRolesRequest, User } from "../../types";
 
 interface ChangeRoleDialogProps {
     open: boolean;
-    selectedUser: any;
+    selectedUser: User | null;
     onClose: () => void;
-    team: string;
+    team?: string;
     hasPermission: (permission: string) => boolean;
+    onSaved?: () => void;
 }
 
-const ChangeRoleDialog = ({ open, selectedUser, onClose, team, hasPermission }: ChangeRoleDialogProps) => {
+const emptyRoles: Record<RoleCategory, string[]> = {
+  system: [],
+  team: [],
+};
+
+const getApiErrorMessage = (error: any, fallback: string) => {
+  if (typeof error === "string") return error;
+  return error?.message || error?.detail || fallback;
+};
+
+const ChangeRoleDialog = ({ open, selectedUser, onClose, team, hasPermission, onSaved }: ChangeRoleDialogProps) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
-  const [newRoles, setNewRoles] = useState<any>({});
+  const [availableRoles, setAvailableRoles] = useState<RoleDefinition[]>([]);
+  const [newRoles, setNewRoles] = useState<Record<RoleCategory, string[]>>(emptyRoles);
   const [loading, setLoading] = useState(false);
   const dialogHeight = "30vh";
   const dialogWidth = "40vw";
-  const is_sys_admin = hasPermission("system_administration");
+  const isSysAdmin = hasPermission("system_administration");
 
   const descriptionElementRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -31,20 +43,20 @@ const ChangeRoleDialog = ({ open, selectedUser, onClose, team, hasPermission }: 
       if (descriptionElement !== null) {
         descriptionElement.focus();
       }
-      const role_categories = ["team"];
-      if (is_sys_admin) role_categories.push("system");
+      setLoading(true);
+      const role_categories: RoleCategory[] = ["team"];
+      if (isSysAdmin) role_categories.push("system");
       callAPI(fetchRoles, [role_categories], handleFetchedAvailableRoles, handleFailedFetchRoles);
     }
-  }, [open]);
+  }, [open, isSysAdmin]);
 
   useEffect(() => {
-    let initialRoles = selectedUser?.roles;
-    if (initialRoles) {
-      const teamRoles = initialRoles.team[team];
-      const sysRoles = initialRoles.system;
-      setNewRoles({system: sysRoles, team: teamRoles});
+    if (selectedUser) {
+      const teamRoles = team ? selectedUser.roles?.team?.[team] || [] : [];
+      const sysRoles = selectedUser.roles?.system || [];
+      setNewRoles({system: [...sysRoles], team: [...teamRoles]});
     }
-  }, [selectedUser]);
+  }, [selectedUser, team]);
 
 
   const styles = {
@@ -75,60 +87,74 @@ const ChangeRoleDialog = ({ open, selectedUser, onClose, team, hasPermission }: 
 
   const handleFailedFetchRoles = (e: any) => {
     setLoading(false);
-    console.error("unable to fetch roles "+e);
+    setErrorMsg(getApiErrorMessage(e, "Unable to fetch roles."));
   };
 
   const handleClose = () => {
+    if (loading) return;
     onClose();
   };
 
-  const handleUpdateRoles = () => {
-    let data;
-    if (is_sys_admin) {
-      data = {
+  const updateUserRolesRequest = (data: UpdateUserRolesRequest) => {
+    return new Promise<void>((resolve, reject) => {
+      callAPI(updateUserRoles, [data], () => resolve(), reject);
+    });
+  };
+
+  const handleUpdateRoles = async () => {
+    if (!selectedUser?.email || !team) return;
+
+    setLoading(true);
+    setErrorMsg(null);
+    const updates: UpdateUserRolesRequest[] = [];
+    if (isSysAdmin) {
+      updates.push({
         role_category: "system",
         new_roles: newRoles.system,
         email: selectedUser?.email
-      };
-      callAPI(updateUserRoles, [data], (data: any) => console.debug("successfully updated system roles"), failedUpdate);
+      });
     }
-    data = {
+    updates.push({
       role_category: "team",
       new_roles: newRoles.team,
       email: selectedUser?.email
-    };
-    callAPI(updateUserRoles, [data], (data: any) => window.location.reload(), failedUpdate);
-  };
+    });
 
-  const handleSelect = (role: any) => {
-    const role_id = role?.id;
-    const role_category = role?.category;
-
-    const tempNewRoles = {...newRoles};
-    if (tempNewRoles[role_category] !== undefined) {
-      // check if this role is already there
-      const role_index = tempNewRoles[role_category].indexOf(role_id);
-      if (role_index > -1) {
-        tempNewRoles[role_category].splice(role_index, 1);
-      } else {
-        tempNewRoles[role_category].push(role_id);
+    try {
+      for (const update of updates) {
+        await updateUserRolesRequest(update);
       }
-    } else {
-      tempNewRoles[role_category] = [role_id];
+      setLoading(false);
+      if (onSaved) onSaved();
+      else onClose();
+    } catch (e: any) {
+      setLoading(false);
+      failedUpdate(e);
     }
-    setNewRoles(tempNewRoles);
   };
 
-  const failedUpdate = (e: string) => {
-    setErrorMsg(e);
-  };
-
-  const hasRole = (role: any) => {
+  const handleSelect = (role: RoleDefinition) => {
     const role_id = role?.id;
     const role_category = role?.category;
-    if (newRoles?.[role_category]?.includes(role_id)) return true;
-    else return false;
+    const currentRoles = newRoles[role_category] || [];
+    const nextRoles = currentRoles.includes(role_id)
+      ? currentRoles.filter((currentRole) => currentRole !== role_id)
+      : [...currentRoles, role_id];
+    setNewRoles({...newRoles, [role_category]: nextRoles});
   };
+
+  const failedUpdate = (e: any) => {
+    setErrorMsg(getApiErrorMessage(e, "Unable to update roles."));
+  };
+
+  const hasRole = (role: RoleDefinition) => {
+    const role_id = role?.id;
+    const role_category = role?.category;
+    return newRoles?.[role_category]?.includes(role_id);
+  };
+
+  const systemRoles = availableRoles.filter((role) => role.category === "system");
+  const teamRoles = availableRoles.filter((role) => role.category === "team");
 
   return (
     <Dialog
@@ -165,33 +191,10 @@ const ChangeRoleDialog = ({ open, selectedUser, onClose, team, hasPermission }: 
             !loading && (
               <Grid container>
                 {
-                  is_sys_admin && (
+                  isSysAdmin && (
                     <Grid item xs={12}>
                       <h6 style={{padding: 0, margin: 0}}>System Roles</h6>
-                      {availableRoles.map((role) => {
-                        if (role.category === "system")
-                          return (
-                            <Chip 
-                              key={role.id}
-                              color={"primary"}
-                              sx={hasRole(role) ? styles.chip.filled : styles.chip.unfilled}
-                              label={role.name}
-                              variant={hasRole(role) ? "filled" : "outlined"}
-                              icon={hasRole(role) ? <CheckIcon /> : undefined}
-                              onClick={() => handleSelect(role)}
-                            />
-                          );
-                      })}
-                    </Grid>
-                  )
-                }
-                                
-
-                <Grid item xs={12}>
-                  <h6 style={{padding: 0, margin: 0}}>Team Roles for {team}</h6>
-                  {availableRoles.map((role) => {
-                    if (role.category === "team")
-                      return (
+                      {systemRoles.map((role) => (
                         <Chip 
                           key={role.id}
                           color={"primary"}
@@ -201,26 +204,41 @@ const ChangeRoleDialog = ({ open, selectedUser, onClose, team, hasPermission }: 
                           icon={hasRole(role) ? <CheckIcon /> : undefined}
                           onClick={() => handleSelect(role)}
                         />
-                      );
-                  })}
+                      ))}
+                    </Grid>
+                  )
+                }
+
+
+                <Grid item xs={12}>
+                  <h6 style={{padding: 0, margin: 0}}>Team Roles for {team}</h6>
+                  {teamRoles.map((role) => (
+                    <Chip
+                      key={role.id}
+                      color={"primary"}
+                      sx={hasRole(role) ? styles.chip.filled : styles.chip.unfilled}
+                      label={role.name}
+                      variant={hasRole(role) ? "filled" : "outlined"}
+                      icon={hasRole(role) ? <CheckIcon /> : undefined}
+                      onClick={() => handleSelect(role)}
+                    />
+                  ))}
                 </Grid>
                                 
               </Grid>
             )
           }
         </DialogContentText>
+      </DialogContent>
+      <DialogActions>
         <Button
           variant="contained"
-          sx={{
-            position: "absolute",
-            right: 10,
-            bottom: 10,
-          }}
+          disabled={loading}
           onClick={handleUpdateRoles}
         >
-                    Update Roles
+          Update Roles
         </Button>
-      </DialogContent>
+      </DialogActions>
       <ErrorBar
         errorMessage={errorMsg}
         setErrorMessage={setErrorMsg}

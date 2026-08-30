@@ -6,7 +6,7 @@ export function AddUser() {
             To add a user, you must have the <code>sys_admin</code> or <code>team_lead</code> role. By default, if using the <code>initializeMongoDB.py</code> script, the first user created will have the <code>sys_admin</code> role. 
       <ol>
         <li>
-                    Navigate to the Users tab on the header:
+                    Navigate to the Admin tab on the header:
           {UsersPage()}
         </li>
         <li>
