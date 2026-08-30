@@ -1,9 +1,10 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Autocomplete,
   Box,
   Button,
   Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -47,58 +48,9 @@ interface RolePermissionsPanelProps {
   onSaved: () => void;
 }
 
-interface PermissionGroup {
-  label: string;
-  permissions: string[];
-}
-
 const roleCategories: { label: string; value: RoleCategory }[] = [
   { label: "System", value: "system" },
   { label: "Team", value: "team" },
-];
-
-const permissionGroups: PermissionGroup[] = [
-  {
-    label: "Administration",
-    permissions: [
-      "system_administration",
-      "manage_system",
-      "manage_team",
-      "add_user",
-      "create_team",
-      "developer",
-    ],
-  },
-  {
-    label: "Projects",
-    permissions: [
-      "create_project",
-      "manage_project",
-      "view_project",
-    ],
-  },
-  {
-    label: "Record Groups",
-    permissions: [
-      "create_record_group",
-      "upload_document",
-    ],
-  },
-  {
-    label: "Records",
-    permissions: [
-      "review_record",
-      "verify_record",
-      "clean_record",
-      "delete",
-    ],
-  },
-  {
-    label: "Schema",
-    permissions: [
-      "manage_schema",
-    ],
-  },
 ];
 
 const roleKey = (role: Pick<RoleDefinition, "category" | "id">) => `${role.category}:${role.id}`;
@@ -184,9 +136,6 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
 
   const allPermissionOptions = useMemo(() => {
     const permissions = new Set<string>();
-    permissionGroups.forEach((group) => {
-      group.permissions.forEach((permission) => permissions.add(permission));
-    });
     permissionCatalog.forEach((permission) => permissions.add(permission));
     Object.values(draftPermissions).forEach((rolePermissions) => {
       rolePermissions.forEach((permission) => permissions.add(permission));
@@ -194,28 +143,14 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
     return sortPermissions(Array.from(permissions));
   }, [permissionCatalog, draftPermissions]);
 
-  const displayedPermissionGroups = useMemo(() => {
-    const activePermissions = new Set(allPermissionOptions);
-    const groupedPermissions = new Set<string>();
-    const displayedGroups = permissionGroups
-      .map((group) => {
-        group.permissions.forEach((permission) => groupedPermissions.add(permission));
-        return {
-          label: group.label,
-          permissions: group.permissions.filter((permission) => activePermissions.has(permission)),
-        };
-      })
-      .filter((group) => group.permissions.length > 0);
-
-    const otherPermissions = allPermissionOptions.filter((permission) => !groupedPermissions.has(permission));
-    if (otherPermissions.length > 0) {
-      displayedGroups.push({
-        label: "Other",
-        permissions: otherPermissions,
-      });
-    }
-    return displayedGroups;
-  }, [allPermissionOptions]);
+  const displayedPermissions = useMemo(() => {
+    const permissions = new Set<string>();
+    categoryRoles.forEach((role) => {
+      (role.permissions || []).forEach((permission) => permissions.add(permission));
+      (draftPermissions[roleKey(role)] || []).forEach((permission) => permissions.add(permission));
+    });
+    return sortPermissions(Array.from(permissions));
+  }, [categoryRoles, draftPermissions]);
 
   const changedRoles = useMemo(() => {
     return roles.filter((role) => {
@@ -302,7 +237,18 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
           flexWrap: "wrap",
         }}
       >
-        <Typography variant="h6">Roles & Permissions</Typography>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Typography variant="h6">Roles & Permissions</Typography>
+          {isDirty && (
+            <Chip
+              data-cy="unsaved-role-permissions"
+              color="warning"
+              label="Unsaved changes"
+              size="small"
+              variant="outlined"
+            />
+          )}
+        </Stack>
         <Stack direction="row" spacing={1} alignItems="center">
           <ToggleButtonGroup
             color="primary"
@@ -336,7 +282,7 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
           message={`No ${selectedCategory} roles are available.`}
         />
       ) : (
-        <TableContainer sx={{ maxHeight: "60vh" }}>
+        <TableContainer sx={{ maxHeight: "55vh" }}>
           <Table stickyHeader sx={{ minWidth: 760 }} size="small" aria-label="role permissions table">
             <TableHead>
               <TableRow>
@@ -364,61 +310,45 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
               </TableRow>
             </TableHead>
             <TableBody>
-              {displayedPermissionGroups.map((group) => (
-                <Fragment key={group.label}>
-                  <TableRow>
-                    <TableCell
-                      colSpan={categoryRoles.length + 1}
-                      sx={{
-                        fontWeight: "bold",
-                        backgroundColor: "#F5F5F6",
-                        borderTop: "1px solid #E0E0E0",
-                      }}
-                    >
-                      {group.label}
+              {displayedPermissions.map((permission) => (
+                <TableRow
+                  key={permission}
+                  hover
+                  data-cy="role-permission-row"
+                  data-permission={permission}
+                >
+                  <TableCell
+                    component="th"
+                    scope="row"
+                    sx={{
+                      backgroundColor: "white",
+                      position: "sticky",
+                      left: 0,
+                      zIndex: 1,
+                    }}
+                  >
+                    <Stack spacing={0.25}>
+                      <Typography variant="body2">{formatPermissionName(permission)}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {permission}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
+                  {categoryRoles.map((role) => (
+                    <TableCell key={`${roleKey(role)}:${permission}`} align="center">
+                      <Tooltip title={`${role.name}: ${permission}`}>
+                        <Checkbox
+                          checked={roleHasPermission(role, permission)}
+                          disabled={saving}
+                          onChange={() => handleTogglePermission(role, permission)}
+                          inputProps={{
+                            "aria-label": `${role.name} ${permission}`,
+                          }}
+                        />
+                      </Tooltip>
                     </TableCell>
-                  </TableRow>
-                  {group.permissions.map((permission) => (
-                    <TableRow
-                      key={permission}
-                      hover
-                      data-cy="role-permission-row"
-                      data-permission={permission}
-                    >
-                      <TableCell
-                        component="th"
-                        scope="row"
-                        sx={{
-                          backgroundColor: "white",
-                          position: "sticky",
-                          left: 0,
-                          zIndex: 1,
-                        }}
-                      >
-                        <Stack spacing={0.25}>
-                          <Typography variant="body2">{formatPermissionName(permission)}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {permission}
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                      {categoryRoles.map((role) => (
-                        <TableCell key={`${roleKey(role)}:${permission}`} align="center">
-                          <Tooltip title={`${role.name}: ${permission}`}>
-                            <Checkbox
-                              checked={roleHasPermission(role, permission)}
-                              disabled={saving}
-                              onChange={() => handleTogglePermission(role, permission)}
-                              inputProps={{
-                                "aria-label": `${role.name} ${permission}`,
-                              }}
-                            />
-                          </Tooltip>
-                        </TableCell>
-                      ))}
-                    </TableRow>
                   ))}
-                </Fragment>
+                </TableRow>
               ))}
             </TableBody>
           </Table>

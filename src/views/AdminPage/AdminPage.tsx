@@ -30,7 +30,7 @@ const AdminPage = () => {
   const styles = {
     outerBox: {
       backgroundColor: "#F5F5F6",
-      minHeight: "100vh"
+      minHeight: "90vh"
     },
     innerBox: {
       paddingY: 5,
