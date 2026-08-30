@@ -336,7 +336,7 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
           message={`No ${selectedCategory} roles are available.`}
         />
       ) : (
-        <TableContainer sx={{ maxHeight: "65vh" }}>
+        <TableContainer sx={{ maxHeight: "60vh" }}>
           <Table stickyHeader sx={{ minWidth: 760 }} size="small" aria-label="role permissions table">
             <TableHead>
               <TableRow>
