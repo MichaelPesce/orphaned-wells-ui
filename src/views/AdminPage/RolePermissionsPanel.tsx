@@ -142,14 +142,7 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
     return sortPermissions(Array.from(permissions));
   }, [permissionCatalog, draftPermissions]);
 
-  const displayedPermissions = useMemo(() => {
-    const permissions = new Set<string>();
-    categoryRoles.forEach((role) => {
-      (role.permissions || []).forEach((permission) => permissions.add(permission));
-      (draftPermissions[roleKey(role)] || []).forEach((permission) => permissions.add(permission));
-    });
-    return sortPermissions(Array.from(permissions));
-  }, [categoryRoles, draftPermissions]);
+  const displayedPermissions = allPermissionOptions;
 
   const changedRoles = useMemo(() => {
     return roles.filter((role) => {
