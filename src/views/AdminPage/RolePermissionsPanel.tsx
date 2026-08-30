@@ -29,7 +29,6 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import SaveIcon from "@mui/icons-material/Save";
-import UndoIcon from "@mui/icons-material/Undo";
 import EmptyTable from "../../components/EmptyTable/EmptyTable";
 import {
   fetchPermissionCatalog,
@@ -200,10 +199,6 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
     setAddPermissionOpen(false);
   };
 
-  const handleDiscardChanges = () => {
-    setDraftPermissions(createDraftPermissions(roles));
-  };
-
   const handleSaveChanges = async () => {
     setSaving(true);
     try {
@@ -272,6 +267,15 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
             onClick={() => setAddPermissionOpen(true)}
           >
             Add permission
+          </Button>
+          <Button
+            data-cy="save-role-permissions"
+            startIcon={<SaveIcon />}
+            variant="contained"
+            disabled={!isDirty || saving}
+            onClick={handleSaveChanges}
+          >
+            Save changes
           </Button>
         </Stack>
       </Box>
@@ -353,34 +357,6 @@ const RolePermissionsPanel = ({ onError, onSaved }: RolePermissionsPanelProps) =
             </TableBody>
           </Table>
         </TableContainer>
-      )}
-      {isDirty && (
-        <Box
-          sx={{
-            p: 2,
-            borderTop: "1px solid #F5F5F6",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 1,
-          }}
-        >
-          <Button
-            startIcon={<UndoIcon />}
-            disabled={saving}
-            onClick={handleDiscardChanges}
-          >
-            Discard
-          </Button>
-          <Button
-            data-cy="save-role-permissions"
-            startIcon={<SaveIcon />}
-            variant="contained"
-            disabled={saving}
-            onClick={handleSaveChanges}
-          >
-            Save changes
-          </Button>
-        </Box>
       )}
       <AddPermissionDialog
         open={addPermissionOpen}
