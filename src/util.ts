@@ -635,7 +635,9 @@ export const useOutsideClick = (callback: () => void): React.RefObject<HTMLTable
 
   useEffect(() => {
     const handleClick = (event: MouseEvent): void => {
-      callback();
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        callback();
+      }
     };
 
     document.addEventListener("click", handleClick);
@@ -643,7 +645,7 @@ export const useOutsideClick = (callback: () => void): React.RefObject<HTMLTable
     return () => {
       document.removeEventListener("click", handleClick);
     };
-  }, []);
+  }, [callback]);
 
   return ref;
 };
