@@ -516,18 +516,17 @@ const DocumentContainer = ({
                                 </IconButton>
                               </span>
                             </Tooltip>
-                            {zoomScale > MIN_ZOOM && (
                               <Tooltip title="Reset Zoom">
                                 <IconButton
                                   id="zoom-reset-button"
                                   data-cy="zoom-reset-button"
                                   data-testid="zoom-reset-button"
                                   onClick={handleResetZoom}
+                                  disabled={zoomScale <= MIN_ZOOM}
                                 >
                                   <RestartAltIcon />
                                 </IconButton>
                               </Tooltip>
-                            )}
                             <Tooltip title="Rotate Image(s)" placement="left">
                               <IconButton id="rotate-image-button" onClick={() => setOpenRotationDialog(true)}>
                                 <Rotate90DegreesCcwIcon/>
