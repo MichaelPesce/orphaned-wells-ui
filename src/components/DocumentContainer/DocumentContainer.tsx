@@ -19,9 +19,15 @@ import { getRecordHistory, rotateRecordImages } from "../../services/app.service
 import RecordHistoryDialog from "../RecordHistoryDialog/RecordHistoryDialog";
 import ImageRotationDialog from "components/ImageRotationDialog/ImageRotationDialog";
 import CircularProgress from '@mui/material/CircularProgress';
+import ZoomInIcon from "@mui/icons-material/ZoomIn";
+import ZoomOutIcon from "@mui/icons-material/ZoomOut";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 
 const HIDE_BLANK_PAGES = true;
 const ROOT_PARENT_INDEXES: number[] = [];
+const MIN_ZOOM = 1.0;
+const MAX_ZOOM = 3.0;
+const ZOOM_STEP = 0.25;
 
 interface FieldTraversalEntry {
   attribute: Attribute;
@@ -72,6 +78,8 @@ const DocumentContainer = ({
   const [ showRawValues, setShowRawValues ] = useState(false);
   const [ hasErrors, setHasErrors ] = useState(false);
   const [ zoomOnToken, setZoomOnToken ] = useState(JSON.parse(localStorage.getItem("zoomOnToken") || "false"));
+  const [zoomScale, setZoomScale] = useState<number>(MIN_ZOOM);
+  const imageBoxRef = React.useRef<HTMLDivElement>(null);
   const [updateFieldLocationID, setUpdateFieldLocationID] = useState<FieldID>();
   const [hotkeysAnchor, setHotkeysAnchor] = useState<HTMLElement>();
   const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
@@ -82,10 +90,29 @@ const DocumentContainer = ({
   const attributesListRef = React.useRef<Attribute[]>([]);
   const displayIndexesRef = React.useRef<number[]>([]);
 
+  const handleZoomIn = () => {
+    setZoomScale((prev) => Math.min(MAX_ZOOM, prev + ZOOM_STEP));
+  };
+
+  const handleZoomOut = () => {
+    setZoomScale((prev) => Math.max(MIN_ZOOM, prev - ZOOM_STEP));
+  };
+
+  const handleResetZoom = () => {
+    setZoomScale(MIN_ZOOM);
+    if (imageBoxRef.current) {
+      imageBoxRef.current.scrollLeft = 0;
+      imageBoxRef.current.scrollTop = 0;
+    }
+  };
+
   const imageDivStyle = {
-    width: width,
+    transform: `scale(${zoomScale})`,
+    transformOrigin: "0 0",
+    width: "100%",
     height: height,
-    borderBottom: "1px solid #9a9c9a"
+    borderBottom: "1px solid #9a9c9a",
+    display: "block",
   };
   const params = useParams(); 
   const checkForErrors = () => {
@@ -155,6 +182,11 @@ const DocumentContainer = ({
     setHotkeysAnchor(undefined);
     setDisplayPoints(null);
     setDisplayIndexes([]);
+    setZoomScale(MIN_ZOOM);
+    if (imageBoxRef.current) {
+      imageBoxRef.current.scrollLeft = 0;
+      imageBoxRef.current.scrollTop = 0;
+    }
   }, [params.id]);
 
   const getVisualPageNumber = React.useCallback((pageNumber: number) => {
@@ -253,6 +285,11 @@ const DocumentContainer = ({
       setDisplayIndexes([]);
     }
     else {
+      setZoomScale(MIN_ZOOM);
+      if (imageBoxRef.current) {
+        imageBoxRef.current.scrollLeft = 0;
+        imageBoxRef.current.scrollTop = 0;
+      }
       setDisplayIndexes([...indexes]);
       let current_attr = deriveAttribute(indexes, attributesListRef.current);
       setDisplayAttribute(current_attr);
@@ -453,6 +490,43 @@ const DocumentContainer = ({
                       <Box sx={styles.gridContainer}>
                         {hasRecordImages && (
                           <Box sx={styles.containerActions.right}>
+                            <Tooltip title="Zoom In">
+                              <span>
+                                <IconButton
+                                  id="zoom-in-button"
+                                  data-cy="zoom-in-button"
+                                  data-testid="zoom-in-button"
+                                  onClick={handleZoomIn}
+                                  disabled={zoomScale >= MAX_ZOOM}
+                                >
+                                  <ZoomInIcon />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip title="Zoom Out">
+                              <span>
+                                <IconButton
+                                  id="zoom-out-button"
+                                  data-cy="zoom-out-button"
+                                  data-testid="zoom-out-button"
+                                  onClick={handleZoomOut}
+                                  disabled={zoomScale <= MIN_ZOOM}
+                                >
+                                  <ZoomOutIcon />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                              <Tooltip title="Reset Zoom">
+                                <IconButton
+                                  id="zoom-reset-button"
+                                  data-cy="zoom-reset-button"
+                                  data-testid="zoom-reset-button"
+                                  onClick={handleResetZoom}
+                                  disabled={zoomScale <= MIN_ZOOM}
+                                >
+                                  <RestartAltIcon />
+                                </IconButton>
+                              </Tooltip>
                             <Tooltip title="Rotate Image(s)" placement="left">
                               <IconButton id="rotate-image-button" onClick={() => setOpenRotationDialog(true)}>
                                 <Rotate90DegreesCcwIcon/>
@@ -467,6 +541,7 @@ const DocumentContainer = ({
                         )}
                         <Box
                           id="image-box"
+                          ref={imageBoxRef}
                           sx={{
                             ...styles.imageBox,
                             position: "relative",
@@ -502,6 +577,11 @@ const DocumentContainer = ({
                               sx={{
                                 opacity: rotationLoading ? 0.45 : 1,
                                 transition: "opacity 180ms ease",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-start",
+                                justifyContent: "flex-start",
+                                width: "100%",
                               }}
                             >
                               {imageFiles &&
@@ -517,19 +597,29 @@ const DocumentContainer = ({
 
                                   if (display_image)
                                     return (
-                                      <div key={imageFile} style={imageDivStyle} id="image-div">
-                                        <ImageCropper
-                                          image={imageFile}
-                                          imageIdx={idx}
-                                          highlightedImageIdxIndex={imgIndex}
-                                          displayPoints={displayPoints}
-                                          disabled
-                                          fullscreen={fullscreen}
-                                          zoomOnToken={false}
-                                          updateFieldLocationID={updateFieldLocationID}
-                                          setUpdateFieldLocationID={setUpdateFieldLocationID}
-                                          handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
-                                        />
+                                      <div
+                                        key={imageFile}
+                                        style={{
+                                          width: `${zoomScale * 100}%`,
+                                          height: height === "auto" ? "auto" : `${zoomScale * 100}%`,
+                                          minWidth: "100%",
+                                          overflow: "visible",
+                                        }}
+                                      >
+                                        <div style={imageDivStyle} id="image-div">
+                                          <ImageCropper
+                                            image={imageFile}
+                                            imageIdx={idx}
+                                            highlightedImageIdxIndex={imgIndex}
+                                            displayPoints={displayPoints}
+                                            disabled
+                                            fullscreen={fullscreen}
+                                            zoomOnToken={false}
+                                            updateFieldLocationID={updateFieldLocationID}
+                                            setUpdateFieldLocationID={setUpdateFieldLocationID}
+                                            handleUpdateFieldCoordinates={handleUpdateFieldCoordinates}
+                                          />
+                                        </div>
                                       </div>
                                     );
 

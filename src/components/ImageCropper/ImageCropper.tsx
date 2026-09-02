@@ -58,6 +58,9 @@ export const ImageCropper = (props: ImageCropperProps) => {
       height: "100%",
     },
     image: {
+      width: "100%",
+      height: "auto",
+      display: "block",
       transition: "transform 0.3s",
       transform: `scale(${transformScale})`,
       transformOrigin: `${transformOrigin[0]}% ${transformOrigin[1]}%`,
