@@ -77,6 +77,28 @@ export const DEFAULT_FILTER_OPTIONS: {
     type: "date",
     operator: "is",
     value: ""
+  },
+  defective_categories: {
+    key: "defective_categories",
+    displayName: "Defective Tag",
+    type: "checkbox",
+    operator: "equals",
+    options: [
+      { name: "Wrong document type", checked: true, value: "Wrong document type" },
+      { name: "Some fields not detected", checked: true, value: "Some fields not detected" },
+      { name: "Fields in wrong position on document", checked: true, value: "Fields in wrong position on document" },
+      { name: "Complex fields not split correctly", checked: true, value: "Complex fields not split correctly" },
+      { name: "Document Illegible", checked: true, value: "Document Illegible" },
+      { name: "Other", checked: true, value: "Other" },
+    ],
+    selectedOptions: [
+      "Wrong document type",
+      "Some fields not detected",
+      "Fields in wrong position on document",
+      "Complex fields not split correctly",
+      "Document Illegible",
+      "Other",
+    ]
   }
 };
 
@@ -746,6 +768,11 @@ export const convertFiltersToMongoFormat = (filters: FilterOption[]): object => 
       filterBy[filter.key] = nextFilter;
     }
   }
+
+  if (filters.some((f) => f.key === "defective_categories")) {
+    filterBy["review_status"] = "defective";
+  }
+
   return filterBy;
 };
 
