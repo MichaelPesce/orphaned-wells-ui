@@ -205,13 +205,17 @@ variable "gke_backends" {
       # Only set this when the bucket cannot use the default "__COLLABORATOR___uploads" name.
       upload_bucket_name   = "existing-bucket-name"
       replicas             = 1
-      memory_request       = "8Gi"
-      memory_limit         = "8Gi"
+      cpu_request          = "1"
+      memory_request       = "6Gi"
+      cpu_limit            = "1"
+      memory_limit         = "6Gi"
       persistent_disk_size = "20Gi"
     }
   }
 }
 `}</CollaboratorCodeBlock>
+
+The default collaborator resource target is 2 replicas with 1850m CPU and 12 GiB memory per pod. Use overrides only when the collaborator needs different sizing, such as a smaller temporary test deployment.
 
 Run Terraform:
 

@@ -79,6 +79,8 @@ gh secret set K8S_DEPLOY_TARGETS \
 
 The `host` field controls the Kubernetes Ingress host and the Google-managed certificate domain. The `storage_bucket_name` field controls the runtime `STORAGE_BUCKET_NAME` written to `Secret/backend-runtime-env`. DNS or bucket changes in Terraform are not enough by themselves; update `K8S_DEPLOY_TARGETS` and redeploy the backend.
 
+Resource target changes work the same way: Terraform updates the desired values in `kubernetes_deploy_targets`, the backend repository secret `K8S_DEPLOY_TARGETS` copies those values into GitHub Actions, and the next backend deployment renders and applies them to Kubernetes.
+
 ## Required backend secrets
 
 The GKE deployment workflows require:
@@ -114,7 +116,7 @@ gh workflow run deploy-k8s-staging.yml \
   --ref main
 ```
 
-Collaborator workflows deploy an existing image tag, defaulting to `latest`:
+Collaborator workflows deploy an existing image tag through `IMAGE_TAG: auto`. On collaborator branch merge commits, `auto` resolves to the second parent commit, which is the main commit that staging built and tested. On fast-forward or non-merge commits, `auto` resolves to the current commit:
 
 ```bash
 gh workflow run deploy-k8s-isgs.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref isgs
@@ -124,6 +126,8 @@ gh workflow run deploy-k8s-ca.yml --repo CATALOG-Historic-Records/orphaned-wells
 ```
 
 The exact set of deployable collaborators is controlled by `.github/workflows/deploy-k8s-dispatch.yml`. Confirm the collaborator is present in `workflow_dispatch.inputs.DEPLOY_ENV.options` and in the runtime-env secret mapping before dispatching it.
+
+Merging source changes into a collaborator branch only changes the live backend when that branch's deployment workflow runs. If automatic deployments are enabled for the branch, the merge can trigger the rollout. Otherwise, manually dispatch the collaborator workflow after the merge.
 
 Automatic deployments are controlled by repository variables:
 
@@ -189,3 +193,4 @@ kubectl top nodes
 - Google-managed certificates require DNS to point at the GKE load balancer before they become active.
 - The rendered manifest in `deployment/kubernetes/rendered/backend.yaml` is an ephemeral artifact. Do not commit it.
 - The Kubernetes Deployment uses pod-local `emptyDir` volumes for `/logs` and `/data`. Production document storage should continue using the Terraform-managed Google Cloud Storage upload bucket.
+- The default collaborator backend resource target is 2 replicas at 1850m CPU and 12 GiB memory per pod. Staging is intentionally smaller at 1 replica with 1 CPU and 6 GiB memory.
