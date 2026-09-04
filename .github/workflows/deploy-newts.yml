@@ -15,4 +15,4 @@ jobs:
     secrets:
       backend_url: ${{ secrets.NEWTS_BACKEND_URL }}
       google_clientid: ${{ secrets.GOOGLE_CLIENTID }}
-      gcloud_service_account_json: ${{ secrets.GCLOUD_SERVICE_ACCOUNT_JSON }}
+      deployment_service_key_json: ${{ secrets.DEPLOYMENT_SERVICE_KEY_JSON }}

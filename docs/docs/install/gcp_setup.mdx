@@ -12,11 +12,15 @@ import { GCPOverview, GCPInstructions, GCPEnvironmentVariables } from '@site/src
 
 <GCPInstructions/>
 
-## Create a Google Cloud Storage service-account key
+## Create Google service-account keys
 
 When `STORAGE_BACKEND=google`, the OGRRE backend needs a Google service-account
 JSON key file so it can read, write, list, move, and delete objects in the
 configured Cloud Storage bucket.
+
+When `DOCUMENT_AI_BACKEND=google`, the backend needs a separate Google
+service-account JSON key file for Document AI processing and processor
+deployment operations.
 
 ### Create the service account
 
@@ -38,23 +42,38 @@ configured Cloud Storage bucket.
 3. Open the **Permissions** tab.
 4. Click **Grant access**.
 5. In **New principals**, enter the service account email address.
-6. In **Select a role**, choose **Cloud Storage -> Storage Object Admin**
-   (`roles/storage.objectAdmin`).
+6. In **Select a role**, choose **Cloud Storage -> Storage Object User**
+   (`roles/storage.objectUser`).
 7. Click **Save**.
 
-`roles/storage.objectAdmin` gives the service account object-level access in
+`roles/storage.objectUser` gives the service account object-level access in
 that bucket, including creating, viewing, listing, updating, moving, and deleting
-objects. It does not grant bucket administration. See Google's
+objects. If an older project policy blocks that role for this workflow,
+`roles/storage.objectAdmin` is the broader fallback. See Google's
 [Cloud Storage IAM roles](https://cloud.google.com/storage/docs/access-control/iam-roles)
 and [bucket IAM policy](https://cloud.google.com/storage/docs/access-control/using-iam-permissions)
 documentation for the current role definitions and console flow.
 
-If this same key will also be used for Google Document AI processing, grant the
-service account **Document AI API User** (`roles/documentai.apiUser`) on the
-project or on the specific processors it needs to use. That role allows online
-and batch processor calls. See Google's
+### Grant Document AI access
+
+Create a second service account, such as `ogrre-document-ai`, for Google
+Document AI. Grant it **Document AI API User** (`roles/documentai.apiUser`) on
+the project or on the specific processors it needs to use. OGRRE also deploys,
+undeploys, and checks processor versions from the backend, so grant a custom
+role containing `documentai.processorVersions.get`,
+`documentai.processorVersions.list`, and `documentai.processorVersions.update`,
+or use **Document AI Editor** (`roles/documentai.editor`) as the broader
+predefined fallback. See Google's
 [Document AI IAM roles](https://cloud.google.com/document-ai/docs/access-control/iam-roles)
 documentation for the current role definitions.
+
+For batch processing, OGRRE sends `gs://...` input and output locations to the
+Document AI Batch API. Grant the Document AI service account **Storage Object
+Viewer** (`roles/storage.objectViewer`) on each batch input bucket and
+**Storage Object Creator** (`roles/storage.objectCreator`) on each batch output
+bucket. If input and output use the same OGRRE bucket and you prefer simpler
+administration, **Storage Object User** (`roles/storage.objectUser`) on that
+bucket is the broader fallback.
 
 ### Generate the JSON key file
 
@@ -67,13 +86,14 @@ documentation for the current role definitions.
 7. Save the downloaded file in a secure local location. Google only downloads
    the private key file once.
 8. Rename the file with a `-service-key.json` suffix, for example
-   `ogrre-storage-service-key.json`.
+   `ogrre-storage-service-key.json` or `ogrre-document-ai-service-key.json`.
 
 For Docker-based local development, the simplest location is next to
 `orphaned-wells-ui/deployment/.env`:
 
 ```text
 orphaned-wells-ui/deployment/ogrre-storage-service-key.json
+orphaned-wells-ui/deployment/ogrre-document-ai-service-key.json
 ```
 
 Then set these values in `orphaned-wells-ui/deployment/.env`:
@@ -82,11 +102,13 @@ Then set these values in `orphaned-wells-ui/deployment/.env`:
 STORAGE_BACKEND=google
 STORAGE_BUCKET_NAME=<bucket-name>
 STORAGE_SERVICE_KEY=ogrre-storage-service-key.json
+DOCUMENT_AI_BACKEND=google
+DOCUMENT_AI_SERVICE_KEY=ogrre-document-ai-service-key.json
 ```
 
-`STORAGE_SERVICE_KEY` can also be an absolute path. The Docker start script
-mounts the key file into the backend container automatically when
-`STORAGE_BACKEND=google`.
+`STORAGE_SERVICE_KEY` and `DOCUMENT_AI_SERVICE_KEY` can also be absolute paths.
+The Docker start script mounts these key files into the backend container
+automatically when the matching Google backend is configured.
 
 :::warning Keep service-account keys out of git
 
@@ -98,6 +120,7 @@ Before committing setup changes, verify that git is ignoring the key file:
 
 ```console
 git check-ignore -v deployment/ogrre-storage-service-key.json
+git check-ignore -v deployment/ogrre-document-ai-service-key.json
 ```
 
 If the command prints no output, the file is not ignored and should not be

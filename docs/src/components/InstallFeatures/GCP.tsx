@@ -17,7 +17,7 @@ export function GCPInstructions() {
       <li>Create a bucket:</li> OGRRE uses cloud storage buckets to store and retrieve well document image files. To create a bucket, see the <a target='_blank' href="https://cloud.google.com/storage/docs/creating-buckets" rel="noreferrer">documentation on creating a storage bucket</a>.
 
       <li>Set up OAuth:</li> OGRRE relies on Google OAuth to authenticate users. To create an OAuth client, see the <a target='_blank' href="https://support.google.com/cloud/answer/15544987?hl=en&ref_topic=15540269&sjid=18121873989066748574-NC" rel="noreferrer">documentation on using Google OAuth</a>.
-      <li>Get access credentials:</li> OGRRE requires a service account with credentials to access Google Cloud APIs. See <a href="#create-a-google-cloud-storage-service-account-key">Create a Google Cloud Storage service-account key</a> for the OGRRE-specific setup steps, or see Google's documentation on <a target='_blank' href="https://cloud.google.com/iam/docs/service-accounts-create" rel="noreferrer">creating a service account</a> and <a target='_blank' href="https://cloud.google.com/iam/docs/keys-create-delete" rel="noreferrer">creating service account keys</a>.
+      <li>Get access credentials:</li> OGRRE requires task-specific service accounts with credentials to access Google Cloud APIs. See <a href="#create-google-service-account-keys">Create Google service-account keys</a> for the OGRRE-specific setup steps, or see Google's documentation on <a target='_blank' href="https://cloud.google.com/iam/docs/service-accounts-create" rel="noreferrer">creating a service account</a> and <a target='_blank' href="https://cloud.google.com/iam/docs/keys-create-delete" rel="noreferrer">creating service account keys</a>.
     </ol>
   );
 }
@@ -37,7 +37,10 @@ export function GCPEnvironmentVariables() {
           <b>STORAGE_BUCKET_NAME</b>: The name you chose for your storage bucket.
         </li>
         <li>
-          <b>STORAGE_SERVICE_KEY</b>: The name of the file storing your GCP access credentials. <b>This file should be stored in the same directory as the <code>.env</code> file and named with a <code>-service-key.json</code> suffix so it is ignored by git.</b>
+          <b>STORAGE_SERVICE_KEY</b>: The name of the file storing your Google Cloud Storage service-account key. <b>This file should be stored in the same directory as the <code>.env</code> file and named with a <code>-service-key.json</code> suffix so it is ignored by git.</b>
+        </li>
+        <li>
+          <b>DOCUMENT_AI_SERVICE_KEY</b>: The name of the file storing your Google Document AI service-account key. <b>This file should be stored in the same directory as the <code>.env</code> file and named with a <code>-service-key.json</code> suffix so it is ignored by git.</b>
         </li>
         <li>
           <b>token_uri</b>: The endpoint URL where an application requests and receives access tokens. This is necessary for user authentication. For more information, see the <a target='_blank' href="https://developers.google.com/identity/protocols/oauth2" rel="noreferrer">Google's documentation on OAuth2</a>.

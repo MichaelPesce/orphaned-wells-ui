@@ -74,7 +74,9 @@ Published ports are bound to `127.0.0.1` by default through `DEV_HOST_BIND`, so 
 
 When `STORAGE_BACKEND=local`, uploaded files are stored in the backend `backend_data` volume under `/data/uploads` and served by the backend at `LOCAL_STORAGE_URL_BASE`. If you change `BACKEND_HOST_PORT`, update `LOCAL_STORAGE_URL_BASE` in `deployment/.env` to match.
 
-When `STORAGE_BACKEND=google`, set `STORAGE_BUCKET_NAME` and `STORAGE_SERVICE_KEY` in `deployment/.env`. `STORAGE_SERVICE_KEY` may be an absolute path or a filename next to `deployment/.env`; the `docker:start` scripts mount that file into the backend container automatically. If you run `docker compose` directly, add an equivalent read-only bind mount for the key file and set `STORAGE_SERVICE_KEY` or `GOOGLE_APPLICATION_CREDENTIALS` to the container path.
+When `STORAGE_BACKEND=google`, set `STORAGE_BUCKET_NAME` and `STORAGE_SERVICE_KEY` in `deployment/.env`. `STORAGE_SERVICE_KEY` may be an absolute path or a filename next to `deployment/.env`; the `docker:start` scripts mount that file into the backend container automatically.
+
+When `DOCUMENT_AI_BACKEND=google` and you want Docker to use a service-account key for Document AI, set `DOCUMENT_AI_SERVICE_KEY` in `deployment/.env`. It may be an absolute path or a filename next to `deployment/.env`; the `docker:start` scripts mount it separately from the storage key. If you run `docker compose` directly, add equivalent read-only bind mounts for both key files and set `STORAGE_SERVICE_KEY` and `DOCUMENT_AI_SERVICE_KEY` to the container paths.
 
 Service-account JSON files are secrets. Name local key files with a `-service-key.json` suffix, such as `ogrre-storage-service-key.json`, so the repository `.gitignore` rules catch them before commit.
 
