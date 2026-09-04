@@ -86,11 +86,19 @@ gh secret set K8S_DEPLOY_TARGETS \
 
 Re-export it any time Terraform changes hostnames, static IP names, namespaces, upload bucket names, resource requests, or cluster metadata.
 
+Keep the backend repository deployment docs and these frontend docs in sync when changing Kubernetes or Terraform behavior. The source of truth lives in `orphaned-wells-ui-server`, but this docs site is the operator-facing deployment guide.
+
 ## Upload buckets
 
 Each GKE backend gets a Cloud Storage upload bucket. The default bucket name is `<collaborator>_uploads`; use `upload_bucket_name` only for existing exceptions or explicit custom names. Staging uses `uploaded_documents_v0`.
 
 Terraform keys bucket resources by bucket name, so collaborators can intentionally share a bucket without creating duplicate resources. Buckets use `force_destroy=false` and `prevent_destroy=true` to protect uploaded files.
+
+## GKE resource sizing
+
+Collaborator backends default to 2 replicas with 1850m CPU and 12 GiB memory per pod. The memory headroom preserves large upload and batch-processing workflows. Staging is intentionally smaller: 1 replica with 1 CPU and 6 GiB memory.
+
+Changing these values in Terraform does not update running Kubernetes pods by itself. Apply Terraform, update `K8S_DEPLOY_TARGETS`, then redeploy the affected backend environments.
 
 ## Legacy Compute Engine VMs
 
@@ -103,6 +111,8 @@ enabled_legacy_backend_vms = ["isgs"]
 ```
 
 To disable it again without deleting the definition, remove the name from `enabled_legacy_backend_vms`. If Terraform state still contains old module resources and you want Terraform to stop managing them rather than destroy them, remove only those bindings from state with `terraform state rm`.
+
+Stopped legacy VMs, detached disks, static IPs, or automatic snapshots that are no longer in Terraform state require explicit Google Cloud cleanup. Confirm rollback is no longer needed before deleting them.
 
 ## Workspaces and state
 
