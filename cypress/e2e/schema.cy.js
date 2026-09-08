@@ -69,6 +69,11 @@ describe("schema UI", () => {
             version: "cypress",
             commit: "abc123",
           },
+          {
+            name: "ogrre_embed",
+            version: "0.2.0",
+            commit: "embed123",
+          },
         ],
       },
     }).as("getVersion");
@@ -79,6 +84,8 @@ describe("schema UI", () => {
     cy.wait("@getVersion").its("response.statusCode").should("eq", 200);
     cy.findByRole("dialog").should("contain.text", "OGRRE Version");
     cy.findByRole("dialog").should("contain.text", "ogrre/backend:cypress");
+    cy.findByRole("dialog").should("contain.text", "ogrre-embed");
+    cy.findByRole("dialog").should("contain.text", "embed123");
   });
 
   it("validates upload processor required fields and file type", () => {
