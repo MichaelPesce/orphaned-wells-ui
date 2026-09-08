@@ -54,6 +54,7 @@ Other required access:
 
 - Ability to edit GitHub Secrets and Actions for the OGRRE GitHub project `CATALOG-HISTORIC-RECORDS`.
 - Permissions to manage GKE, Compute addresses, Cloud DNS, Cloud Storage buckets, OAuth, and project services in Google Cloud.
+- The three [OGRRE service accounts](/docs/install/gcp_setup#create-google-service-account-keys): storage runtime, Document AI runtime, and deployment/Terraform.
 
 ## Prepare deployment targets
 
@@ -93,6 +94,11 @@ The GKE deployment workflows require:
 - `DOCUMENT_AI_SERVICE_KEY_JSON`
 - `K8S_DEPLOY_TARGETS`
 - One runtime env secret per dispatch-supported collaborator, currently `STAGING_ENV`, `CA_ENV`, `ISGS_ENV`, `NEWTS_ENV`, `OSAGE_ENV`, and `RRC_ENV`
+
+`DEPLOYMENT_SERVICE_KEY_JSON` is used only by GitHub Actions to authenticate to
+Google Cloud and apply the deployment. `STORAGE_SERVICE_KEY_JSON` and
+`DOCUMENT_AI_SERVICE_KEY_JSON` are written into the Kubernetes
+`backend-runtime-files` secret and mounted into backend pods as runtime keys.
 
 The environment-file secret should contain the same key/value pairs used by the VM `.env` file. The workflow overrides these Kubernetes-owned values:
 

@@ -14,68 +14,129 @@ import { GCPOverview, GCPInstructions, GCPEnvironmentVariables } from '@site/src
 
 ## Create Google service-account keys
 
-When `STORAGE_BACKEND=google`, the OGRRE backend needs a Google service-account
-JSON key file so it can read, write, list, move, and delete objects in the
-configured Cloud Storage bucket.
+OGRRE uses three task-specific service accounts. Keep these accounts separate so
+backend runtime access is not combined with deployment or infrastructure access.
 
-When `DOCUMENT_AI_BACKEND=google`, the backend needs a separate Google
-service-account JSON key file for Document AI processing and processor
-deployment operations.
+| Service account | Suggested name | Used by | Credential setting |
+| --- | --- | --- | --- |
+| Storage runtime | `ogrre-storage-runtime` | Backend runtime in production GKE, local Docker, and local non-Docker runs when `STORAGE_BACKEND=google`. Reads, writes, lists, moves, signs, and deletes uploaded/generated files in Cloud Storage. | Local backend env: `STORAGE_SERVICE_KEY`. Backend GitHub secret: `STORAGE_SERVICE_KEY_JSON`. |
+| Document AI runtime | `ogrre-document-ai` | Backend runtime in production GKE, local Docker, and local non-Docker runs when `DOCUMENT_AI_BACKEND=google`. Runs online and batch processing and deploys, undeploys, and checks processor versions. | Local backend env: `DOCUMENT_AI_SERVICE_KEY`. Backend GitHub secret: `DOCUMENT_AI_SERVICE_KEY_JSON`. |
+| Deployment and Terraform | `ogrre-deployment-ci` | GitHub Actions deployment for backend GKE and frontend App Engine. Can also be used by operators to run Terraform when you want service-account based infrastructure changes instead of a human `gcloud` login. | Backend and frontend GitHub secret: `DEPLOYMENT_SERVICE_KEY_JSON`. Optional local Terraform env: `GOOGLE_APPLICATION_CREDENTIALS`. |
 
-### Create the service account
+:::note
+For stricter production governance, split Terraform into a fourth infrastructure
+administrator service account. The documented three-account setup keeps the
+runtime accounts separate and combines Terraform with deployment operations.
+:::
+
+### Create the accounts
+
+Repeat these steps for each service account in the table:
 
 1. Open the [Google Cloud Console](https://console.cloud.google.com).
-2. Select the project that owns the OGRRE storage bucket.
+2. Select the project that owns the OGRRE infrastructure.
 3. Open **IAM & Admin -> Service Accounts**.
 4. Click **Create service account**.
-5. Enter a clear service account name, such as `ogrre-storage`.
-6. Enter a description, such as `OGRRE backend access to Cloud Storage`.
-7. Click **Create and continue**.
-8. Do not grant broad project-level roles unless you intentionally need them.
-   Bucket-level access is usually the better default for OGRRE storage.
-9. Click **Done**.
+5. Enter the service account name and description.
+6. Click **Create and continue**.
+7. Grant only the roles required for that account's task, described below.
+8. Click **Done**.
 
-### Grant bucket access
+### Grant storage runtime access
 
-1. Open **Cloud Storage -> Buckets**.
-2. Click the bucket used by `STORAGE_BUCKET_NAME`.
-3. Open the **Permissions** tab.
-4. Click **Grant access**.
-5. In **New principals**, enter the service account email address.
-6. In **Select a role**, choose **Cloud Storage -> Storage Object User**
-   (`roles/storage.objectUser`).
-7. Click **Save**.
+Grant the storage runtime service account **Storage Object User**
+(`roles/storage.objectUser`) on each OGRRE upload bucket used by
+`STORAGE_BUCKET_NAME` or by `K8S_DEPLOY_TARGETS[*].storage_bucket_name`.
 
-`roles/storage.objectUser` gives the service account object-level access in
-that bucket, including creating, viewing, listing, updating, moving, and deleting
-objects. If an older project policy blocks that role for this workflow,
-`roles/storage.objectAdmin` is the broader fallback. See Google's
-[Cloud Storage IAM roles](https://cloud.google.com/storage/docs/access-control/iam-roles)
+Bucket-level access is the preferred scope. Project-level access also works, but
+it applies to every bucket in the project. If an older project policy blocks
+`roles/storage.objectUser`, **Storage Object Admin** (`roles/storage.objectAdmin`)
+is the broader fallback.
+
+See Google's [Cloud Storage IAM roles](https://cloud.google.com/storage/docs/access-control/iam-roles)
 and [bucket IAM policy](https://cloud.google.com/storage/docs/access-control/using-iam-permissions)
 documentation for the current role definitions and console flow.
 
-### Grant Document AI access
+### Grant Document AI runtime access
 
-Create a second service account, such as `ogrre-document-ai`, for Google
-Document AI. Grant it **Document AI API User** (`roles/documentai.apiUser`) on
-the project or on the specific processors it needs to use. OGRRE also deploys,
-undeploys, and checks processor versions from the backend, so grant a custom
-role containing `documentai.processorVersions.get`,
-`documentai.processorVersions.list`, and `documentai.processorVersions.update`,
-or use **Document AI Editor** (`roles/documentai.editor`) as the broader
-predefined fallback. See Google's
+Grant the Document AI runtime service account **Document AI API User**
+(`roles/documentai.apiUser`) on the project or on the specific processors it
+needs to use.
+
+OGRRE also deploys, undeploys, and checks processor versions from the backend, so
+grant a custom role containing:
+
+- `documentai.processorVersions.get`
+- `documentai.processorVersions.list`
+- `documentai.processorVersions.update`
+
+If you do not want to maintain a custom role, use **Document AI Editor**
+(`roles/documentai.editor`) as the broader predefined fallback. See Google's
 [Document AI IAM roles](https://cloud.google.com/document-ai/docs/access-control/iam-roles)
 documentation for the current role definitions.
 
 For batch processing, OGRRE sends `gs://...` input and output locations to the
-Document AI Batch API. Grant the Document AI service account **Storage Object
-Viewer** (`roles/storage.objectViewer`) on each batch input bucket and
-**Storage Object Creator** (`roles/storage.objectCreator`) on each batch output
-bucket. If input and output use the same OGRRE bucket and you prefer simpler
+Document AI Batch API. Grant this same Document AI service account:
+
+- **Storage Object Viewer** (`roles/storage.objectViewer`) on each batch input bucket.
+- **Storage Object Creator** (`roles/storage.objectCreator`) on each batch output bucket.
+
+If input and output use the same OGRRE bucket and you prefer simpler
 administration, **Storage Object User** (`roles/storage.objectUser`) on that
 bucket is the broader fallback.
 
-### Generate the JSON key file
+### Grant deployment and Terraform access
+
+Grant the deployment and Terraform service account the roles needed for the
+operations it performs.
+
+For Terraform infrastructure updates:
+
+- **Kubernetes Engine Admin** (`roles/container.admin`)
+- **Compute Network Admin** (`roles/compute.networkAdmin`)
+- **Cloud DNS Administrator** (`roles/dns.admin`)
+- **Storage Admin** (`roles/storage.admin`)
+- **Service Usage Admin** (`roles/serviceusage.serviceUsageAdmin`) when Terraform manages project services
+
+The same account also needs read/write access to the shared Terraform state
+bucket, `gs://tidy-outlet-412020-ogrre-terraform-state`. The project-level
+`roles/storage.admin` grant covers this when the state bucket is in the same
+project. If it is scoped more tightly, grant the account access on the state
+bucket directly.
+
+For backend GKE deployments from GitHub Actions, `roles/container.admin` is
+enough for the current simple path. If this account is not used for Terraform,
+**Kubernetes Engine Developer** (`roles/container.developer`) is the narrower
+deployment-only option.
+
+For frontend App Engine deployments from GitHub Actions:
+
+- **App Engine Deployer** (`roles/appengine.deployer`)
+- **Cloud Build Editor** (`roles/cloudbuild.builds.editor`)
+- **Storage Object Admin** (`roles/storage.objectAdmin`) on the App Engine staging/build buckets or the project
+- **Service Account User** (`roles/iam.serviceAccountUser`) on the App Engine runtime service account
+
+Project-level `roles/iam.serviceAccountUser` works, but it lets this deployment
+account act as service accounts across the project. Grant it on the App Engine
+runtime service account when practical.
+
+Do not use the storage runtime or Document AI runtime keys for Terraform,
+`gcloud app deploy`, or GKE deployment workflows.
+
+### Project-level versus resource-level roles
+
+Google Cloud roles granted on a project are inherited by resources in that
+project. Granting `roles/storage.objectUser` at the project level therefore works
+for OGRRE buckets in that project, but it also grants the same access to other
+project buckets. Resource-level grants are narrower and are preferred for the
+runtime accounts.
+
+Use project-level roles for the deployment and Terraform account when the account
+is expected to create and update infrastructure across the project.
+
+### Generate the JSON key files
+
+Repeat these steps for each service account that needs a JSON key:
 
 1. Open **IAM & Admin -> Service Accounts**.
 2. Click the email address for the service account.
@@ -85,23 +146,34 @@ bucket is the broader fallback.
 6. Click **Create**.
 7. Save the downloaded file in a secure local location. Google only downloads
    the private key file once.
-8. Rename the file with a `-service-key.json` suffix, for example
-   `ogrre-storage-service-key.json` or `ogrre-document-ai-service-key.json`.
+8. Rename the file with a `-service-key.json` suffix.
 
-For Docker-based local development, the simplest location is next to
-`orphaned-wells-ui/deployment/.env`:
+Suggested local filenames:
 
 ```text
-orphaned-wells-ui/deployment/ogrre-storage-service-key.json
+ogrre-storage-runtime-service-key.json
+ogrre-document-ai-service-key.json
+ogrre-deployment-ci-service-key.json
+```
+
+### Configure local development
+
+For Docker-based local development, the simplest location for runtime keys is
+next to `orphaned-wells-ui/deployment/.env`:
+
+```text
+orphaned-wells-ui/deployment/ogrre-storage-runtime-service-key.json
 orphaned-wells-ui/deployment/ogrre-document-ai-service-key.json
 ```
 
 Then set these values in `orphaned-wells-ui/deployment/.env`:
 
 ```dotenv
+PROJECT_ID=<project-id>
+LOCATION=us
 STORAGE_BACKEND=google
 STORAGE_BUCKET_NAME=<bucket-name>
-STORAGE_SERVICE_KEY=ogrre-storage-service-key.json
+STORAGE_SERVICE_KEY=ogrre-storage-runtime-service-key.json
 DOCUMENT_AI_BACKEND=google
 DOCUMENT_AI_SERVICE_KEY=ogrre-document-ai-service-key.json
 ```
@@ -109,6 +181,81 @@ DOCUMENT_AI_SERVICE_KEY=ogrre-document-ai-service-key.json
 `STORAGE_SERVICE_KEY` and `DOCUMENT_AI_SERVICE_KEY` can also be absolute paths.
 The Docker start script mounts these key files into the backend container
 automatically when the matching Google backend is configured.
+
+For local non-Docker backend runs, put the same runtime key files in
+`orphaned-wells-ui-server/ogrre/` or use absolute paths in
+`orphaned-wells-ui-server/ogrre/.env`.
+
+Do not set `GOOGLE_APPLICATION_CREDENTIALS` to the storage or Document AI
+runtime key for normal backend development. The backend reads `STORAGE_SERVICE_KEY`
+and `DOCUMENT_AI_SERVICE_KEY` directly.
+
+For local Terraform operations with the deployment and Terraform service account,
+authenticate with that key only in the shell where you run Terraform:
+
+```bash
+cd orphaned-wells-ui-server/deployment/terraform
+export GOOGLE_APPLICATION_CREDENTIALS=/secure/path/ogrre-deployment-ci-service-key.json
+gcloud auth activate-service-account --key-file "$GOOGLE_APPLICATION_CREDENTIALS"
+gcloud config set project <PROJECT_ID>
+terraform init
+terraform workspace select ogrre
+terraform plan
+```
+
+You can also run Terraform with a human `gcloud auth application-default login`
+identity if that user or group has the same infrastructure roles. Do not leave
+`GOOGLE_APPLICATION_CREDENTIALS` set when you return to backend runtime work.
+
+### Configure production GitHub secrets
+
+Store the key JSON contents as GitHub Actions secrets:
+
+```bash
+gh secret set DEPLOYMENT_SERVICE_KEY_JSON \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server \
+  < /secure/path/ogrre-deployment-ci-service-key.json
+
+gh secret set STORAGE_SERVICE_KEY_JSON \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server \
+  < /secure/path/ogrre-storage-runtime-service-key.json
+
+gh secret set DOCUMENT_AI_SERVICE_KEY_JSON \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server \
+  < /secure/path/ogrre-document-ai-service-key.json
+
+gh secret set DEPLOYMENT_SERVICE_KEY_JSON \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui \
+  < /secure/path/ogrre-deployment-ci-service-key.json
+```
+
+Backend GKE deployments create Kubernetes secrets from
+`STORAGE_SERVICE_KEY_JSON` and `DOCUMENT_AI_SERVICE_KEY_JSON` and mount them into
+the backend pods. The frontend App Engine deployment uses
+`DEPLOYMENT_SERVICE_KEY_JSON` only at deploy time; the static frontend does not
+need runtime access to service-account keys.
+
+### Clean up old credentials
+
+After validating storage uploads/downloads, Document AI processing, processor
+deploy/undeploy, backend deployment, and frontend deployment with the new
+accounts, remove old GitHub secrets and local files:
+
+```bash
+gh secret delete SERVICE_KEY_JSON \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server
+
+gh secret delete CREDS_JSON \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server
+
+gh secret delete GCLOUD_SERVICE_ACCOUNT_JSON \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui
+```
+
+Update ignored local `.env` files so they no longer reference
+`michael2-service-key.json`, then delete local copies of the old key. In Google
+Cloud, disable the old service account or key first, verify nothing breaks, then
+delete the old key and remove the old account's IAM bindings.
 
 :::warning Keep service-account keys out of git
 
@@ -119,8 +266,9 @@ backend `.gitignore` rules catch the file before commit.
 Before committing setup changes, verify that git is ignoring the key file:
 
 ```console
-git check-ignore -v deployment/ogrre-storage-service-key.json
+git check-ignore -v deployment/ogrre-storage-runtime-service-key.json
 git check-ignore -v deployment/ogrre-document-ai-service-key.json
+git check-ignore -v deployment/ogrre-deployment-ci-service-key.json
 ```
 
 If the command prints no output, the file is not ignored and should not be

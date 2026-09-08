@@ -96,7 +96,7 @@ Storage configuration:
 When <b>STORAGE_BACKEND=google</b>:
 
 - <b>STORAGE_BUCKET_NAME</b>: Google Cloud Storage bucket for uploaded and generated files.
-- <b>STORAGE_SERVICE_KEY</b>: Service account key filename/path used to connect to Google Cloud Storage. See [GCP service account setup](gcp_setup#create-google-service-account-keys).
+- <b>STORAGE_SERVICE_KEY</b>: Storage runtime service-account key filename/path used to connect to Google Cloud Storage. See [GCP service account setup](gcp_setup#create-google-service-account-keys).
 
 When <b>STORAGE_BACKEND=local</b>:
 
@@ -109,13 +109,18 @@ When <b>DOCUMENT_AI_BACKEND=google</b>:
 
 - <b>PROJECT_ID</b>: Google Cloud project ID.
 - <b>LOCATION</b>: Google Cloud region for Document AI (for example, `us`).
-- <b>DOCUMENT_AI_SERVICE_KEY</b>: Service account key filename/path used to connect to Google Document AI. See [GCP service account setup](gcp_setup#create-google-service-account-keys).
+- <b>DOCUMENT_AI_SERVICE_KEY</b>: Document AI runtime service-account key filename/path used to connect to Google Document AI. See [GCP service account setup](gcp_setup#create-google-service-account-keys).
 
 When <b>DOCUMENT_AI_BACKEND=custom</b>:
 
 - <b>DOCUMENT_AI_URL</b>: HTTP endpoint for your custom document processing service.
 - <b>DOCUMENT_AI_TIMEOUT</b>: Timeout (seconds) for custom document-AI HTTP requests (default: `60`).
 - <b>PROJECT_ID</b> and <b>LOCATION</b> are not required.
+
+For local non-Docker backend runs with Google Cloud integrations, put the storage
+and Document AI runtime key files in `orphaned-wells-ui-server/ogrre/` or set
+`STORAGE_SERVICE_KEY` and `DOCUMENT_AI_SERVICE_KEY` to absolute paths. Do not use
+the deployment/Terraform service-account key as a backend runtime key.
 
 
 ### 4. Start the backend server
