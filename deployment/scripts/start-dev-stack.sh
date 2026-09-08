@@ -57,6 +57,10 @@ case "${backend_mode}" in
     ;;
 esac
 
+quote_yaml() {
+  printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\"'\"'/g")"
+}
+
 storage_backend=$(printf "%s" "${STORAGE_BACKEND:-local}" | tr "[:upper:]" "[:lower:]")
 if [ "${storage_backend}" = "google" ]; then
   if [ -z "${STORAGE_SERVICE_KEY:-}" ]; then
@@ -106,15 +110,11 @@ ${backend_path}/ogrre/${STORAGE_SERVICE_KEY}"
 
   container_path="/tmp/ogrre-storage-key-${key_filename}"
   credential_override_file=$(mktemp "${TMPDIR:-/tmp}/ogrre-compose-XXXXXX.yml")
-  quote_yaml() {
-    printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\"'\"'/g")"
-  }
   {
     echo "services:"
     echo "  backend:"
     echo "    environment:"
     printf "      STORAGE_SERVICE_KEY: %s\n" "$(quote_yaml "${container_path}")"
-    printf "      GOOGLE_APPLICATION_CREDENTIALS: %s\n" "$(quote_yaml "${container_path}")"
     echo "    volumes:"
     echo "      - type: bind"
     printf "        source: %s\n" "$(quote_yaml "${storage_key_host_path}")"
@@ -123,6 +123,65 @@ ${backend_path}/ogrre/${STORAGE_SERVICE_KEY}"
   } > "${credential_override_file}"
   compose_files="${compose_files} -f ${credential_override_file}"
   echo "Mounting Google storage service key into ${container_path}"
+fi
+
+document_ai_backend=$(printf "%s" "${DOCUMENT_AI_BACKEND:-google}" | tr "[:upper:]" "[:lower:]")
+if [ "${document_ai_backend}" = "google" ] && [ -n "${DOCUMENT_AI_SERVICE_KEY:-}" ]; then
+  document_ai_key_host_path=""
+  case "${DOCUMENT_AI_SERVICE_KEY}" in
+    /*)
+      if [ -f "${DOCUMENT_AI_SERVICE_KEY}" ]; then
+        document_ai_key_host_path="${DOCUMENT_AI_SERVICE_KEY}"
+      fi
+      checked_paths="${DOCUMENT_AI_SERVICE_KEY}"
+      ;;
+    *)
+      checked_paths="${deployment_dir}/${DOCUMENT_AI_SERVICE_KEY}
+${backend_path}/${DOCUMENT_AI_SERVICE_KEY}
+${backend_path}/ogrre/${DOCUMENT_AI_SERVICE_KEY}"
+      for candidate in \
+        "${deployment_dir}/${DOCUMENT_AI_SERVICE_KEY}" \
+        "${backend_path}/${DOCUMENT_AI_SERVICE_KEY}" \
+        "${backend_path}/ogrre/${DOCUMENT_AI_SERVICE_KEY}"
+      do
+        if [ -f "${candidate}" ]; then
+          document_ai_key_host_path="${candidate}"
+          break
+        fi
+      done
+      ;;
+  esac
+
+  if [ -z "${document_ai_key_host_path}" ]; then
+    echo "Unable to find DOCUMENT_AI_SERVICE_KEY file '${DOCUMENT_AI_SERVICE_KEY}'." >&2
+    echo "Because DOCUMENT_AI_BACKEND=google and DOCUMENT_AI_SERVICE_KEY is set, OGRRE must be able to mount the Document AI service-account key into the backend container." >&2
+    echo "Provide the key file in one of the checked locations, or set DOCUMENT_AI_SERVICE_KEY to an absolute path." >&2
+    echo "Checked:" >&2
+    printf "%s\n" "${checked_paths}" | sed "s/^/  - /" >&2
+    exit 1
+  fi
+
+  key_filename=$(basename "${DOCUMENT_AI_SERVICE_KEY}")
+  if [ -z "${key_filename}" ] || [ "${key_filename}" = "." ] || [ "${key_filename}" = ".." ]; then
+    echo "Invalid DOCUMENT_AI_SERVICE_KEY path: ${DOCUMENT_AI_SERVICE_KEY}" >&2
+    exit 1
+  fi
+
+  container_path="/tmp/ogrre-document-ai-key-${key_filename}"
+  credential_override_file=$(mktemp "${TMPDIR:-/tmp}/ogrre-compose-XXXXXX.yml")
+  {
+    echo "services:"
+    echo "  backend:"
+    echo "    environment:"
+    printf "      DOCUMENT_AI_SERVICE_KEY: %s\n" "$(quote_yaml "${container_path}")"
+    echo "    volumes:"
+    echo "      - type: bind"
+    printf "        source: %s\n" "$(quote_yaml "${document_ai_key_host_path}")"
+    printf "        target: %s\n" "$(quote_yaml "${container_path}")"
+    echo "        read_only: true"
+  } > "${credential_override_file}"
+  compose_files="${compose_files} -f ${credential_override_file}"
+  echo "Mounting Google Document AI service key into ${container_path}"
 fi
 
 cd "${repo_root}"

@@ -32,6 +32,7 @@ Add a collaborator to `gke_backends` or `gke_backend_overrides` for GKE-only inf
 - GitHub CLI `gh` for updating GitHub Actions secrets from the command line.
 - Access to the target GCP project.
 - Access to the shared Terraform state bucket: `gs://tidy-outlet-412020-ogrre-terraform-state`.
+- A Google identity with the [deployment and Terraform service-account permissions](/docs/install/gcp_setup#grant-deployment-and-terraform-access), either as your human `gcloud` account or as the `ogrre-deployment-ci` service account.
 - A local `terraform.tfvars` file only when you need uncommitted local overrides.
 
 Shared non-secret defaults live in `variables.tf`. Add long-lived public collaborators to the `gke_backends` map there so the repo remains the source of truth.
@@ -48,6 +49,8 @@ gke_backend_overrides = {
 
 ## Authenticate
 
+Use your human Google account when it has the required infrastructure roles:
+
 ```bash
 cd orphaned-wells-ui-server/deployment/terraform
 
@@ -55,6 +58,19 @@ gcloud auth login
 gcloud config set project <PROJECT_ID>
 gcloud auth application-default login
 ```
+
+Or use the deployment and Terraform service-account key for this shell only:
+
+```bash
+cd orphaned-wells-ui-server/deployment/terraform
+
+export GOOGLE_APPLICATION_CREDENTIALS=/secure/path/ogrre-deployment-ci-service-key.json
+gcloud auth activate-service-account --key-file "$GOOGLE_APPLICATION_CREDENTIALS"
+gcloud config set project <PROJECT_ID>
+```
+
+Do not use the storage runtime or Document AI runtime service-account keys for
+Terraform. Those accounts are intentionally limited to backend runtime tasks.
 
 ## Plan and apply
 

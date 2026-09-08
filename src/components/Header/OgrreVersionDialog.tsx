@@ -41,6 +41,7 @@ interface OgrreVersionDialogProps {
 
 const formatPackageName = (packageName: string) => {
   if (packageName === "ogrre_data_cleaning") return "ogrre_data_cleaning";
+  if (packageName === "ogrre_embed" || packageName === "ogrre-embed") return "ogrre-embed";
   if (packageName === "orphaned-wells-ui-server") return "orphaned-wells-ui-server";
   return packageName;
 };
@@ -127,7 +128,7 @@ const OgrreVersionDialog = ({
           OGRRE Version
         </Typography>
         <Typography component="div" sx={{ color: "#6B7280", fontSize: "13px", mt: 0.5 }}>
-          Backend package metadata currently reported by the server.
+          Backend package and dependency metadata currently reported by the server.
         </Typography>
       </DialogTitle>
       <IconButton

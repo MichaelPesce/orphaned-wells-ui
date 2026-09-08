@@ -84,6 +84,7 @@ services:
       IMG_DIR: /data/uploaded_images
       EXPORT_DIR: /data/exports
       DOCUMENT_AI_BACKEND: ${DOCUMENT_AI_BACKEND:-google}
+      DOCUMENT_AI_SERVICE_KEY: ${DOCUMENT_AI_SERVICE_KEY:-}
       DOCUMENT_AI_URL: ${DOCUMENT_AI_URL:-}
       DOCUMENT_AI_TIMEOUT: ${DOCUMENT_AI_TIMEOUT:-60}
       PROJECT_ID: ${PROJECT_ID:-}

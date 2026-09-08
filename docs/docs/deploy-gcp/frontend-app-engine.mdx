@@ -46,6 +46,11 @@ Copy an existing collaborator deployment workflow and update:
 
 The workflow calls `.github/workflows/deploy-dispatch.yml`, which builds the React app and deploys the configured App Engine service.
 
+The frontend repository must have `DEPLOYMENT_SERVICE_KEY_JSON` configured from
+the deployment/Terraform service account. See [Create Google service-account
+keys](/docs/install/gcp_setup#create-google-service-account-keys) and [GitHub
+Secrets and Variables](/docs/deploy-gcp/github-secrets#frontend-repository).
+
 ## Add the backend URL secret
 
 Add a frontend repository secret:

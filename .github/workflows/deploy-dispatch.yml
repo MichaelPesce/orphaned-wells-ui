@@ -14,7 +14,7 @@ on:
         required: true
       google_clientid:
         required: true
-      gcloud_service_account_json:
+      deployment_service_key_json:
         required: true
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
 
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.gcloud_service_account_json }}
+          credentials_json: ${{ secrets.deployment_service_key_json }}
 
       - name: Install packages
         run: npm clean-install

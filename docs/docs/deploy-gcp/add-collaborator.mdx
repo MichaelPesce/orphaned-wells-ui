@@ -227,6 +227,12 @@ terraform plan
 terraform apply
 ```
 
+If Terraform creates a new upload bucket, grant the storage runtime service
+account access to that bucket before deploying the backend. If the collaborator
+will use batch Document AI processing with that bucket as an input or output
+bucket, grant the Document AI runtime service account the matching batch bucket
+access too. See [Create Google service-account keys](/docs/install/gcp_setup#create-google-service-account-keys).
+
 :::caution
 Adding a name to `gke_backends` or `gke_backend_overrides` creates only the GKE backend infrastructure for that collaborator. Only add an entry to `legacy_backend_vms` and `enabled_legacy_backend_vms` if you intentionally need Terraform to manage a legacy VM.
 :::
@@ -345,8 +351,9 @@ Confirm the collaborator deployment has:
 
 - MongoDB database, collections, indexes, roles, and initial users.
 - Processor metadata and schemas for the collaborator.
-- Google Cloud Storage bucket access if using `STORAGE_BACKEND=google`.
-- Google Document AI settings if using `DOCUMENT_AI_BACKEND=google`.
+- Storage runtime service-account access to the collaborator upload bucket if using `STORAGE_BACKEND=google`.
+- Document AI runtime service-account access to the collaborator processors, plus batch input/output bucket access if using `DOCUMENT_AI_BACKEND=google`.
+- Deployment/Terraform service-account access for the backend and frontend deployment workflows.
 - Frontend OAuth sign-in and backend authorization working together.
 
 ## Common pitfalls
