@@ -38,6 +38,21 @@ Use `<collaborator>` below as the short collaborator key, such as `ca`, `isgs`,
 
 4. Deploy the frontend by pushing to the workflow's configured branch.
 
+## Deployment Account Permissions
+
+The frontend GitHub Actions workflow deploys with `gcloud app deploy`, which
+creates a new App Engine version and promotes it to receive traffic by default.
+The deployment service account needs:
+
+- App Engine Deployer (`roles/appengine.deployer`)
+- App Engine Service Admin (`roles/appengine.serviceAdmin`) for traffic promotion
+- Cloud Build Editor (`roles/cloudbuild.builds.editor`)
+- Storage Object Admin (`roles/storage.objectAdmin`) on the App Engine staging/build buckets or project
+- Service Account User (`roles/iam.serviceAccountUser`) on the App Engine runtime service account
+
+If the deploy uploads a version but fails with `appengine.services.update`, the
+missing role is App Engine Service Admin.
+
 ## Add the Domain Route
 
 1. Add the new hostname to `deployment/app-engine/dispatch.yaml`:

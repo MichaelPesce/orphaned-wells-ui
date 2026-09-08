@@ -51,6 +51,13 @@ the deployment/Terraform service account. See [Create Google service-account
 keys](/docs/install/gcp_setup#create-google-service-account-keys) and [GitHub
 Secrets and Variables](/docs/deploy-gcp/github-secrets#frontend-repository).
 
+The deployment account needs App Engine deploy and traffic-promotion access. The
+frontend workflow runs `gcloud app deploy` with the default promotion behavior,
+so `roles/appengine.deployer` alone is not enough. It also needs
+`roles/appengine.serviceAdmin` to update the App Engine service traffic split,
+plus the Cloud Build, Cloud Storage, and Service Account User roles listed in
+the GCP setup guide.
+
 ## Add the backend URL secret
 
 Add a frontend repository secret:
@@ -74,6 +81,11 @@ The deployment workflow writes the build-time React environment values:
 - `REACT_APP_BACKEND_URL`
 - `REACT_APP_GOOGLE_CLIENTID`
 - `REACT_APP_COLLABORATOR`
+
+If deployment uploads a new version but fails while promoting it to default,
+grant `roles/appengine.serviceAdmin` to the deployment service account and rerun
+the workflow. Deploying with `--no-promote` avoids that permission only when you
+intentionally do not want the new version to receive traffic.
 
 ## Add the App Engine dispatch route
 

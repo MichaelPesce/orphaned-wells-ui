@@ -112,9 +112,18 @@ deployment-only option.
 For frontend App Engine deployments from GitHub Actions:
 
 - **App Engine Deployer** (`roles/appengine.deployer`)
+- **App Engine Service Admin** (`roles/appengine.serviceAdmin`) so `gcloud app deploy` can promote the new version by updating service traffic
 - **Cloud Build Editor** (`roles/cloudbuild.builds.editor`)
 - **Storage Object Admin** (`roles/storage.objectAdmin`) on the App Engine staging/build buckets or the project
 - **Service Account User** (`roles/iam.serviceAccountUser`) on the App Engine runtime service account
+
+`roles/appengine.deployer` can create a new App Engine version, but it cannot
+update the service traffic split. The default frontend workflow promotes the new
+version, which requires `appengine.services.update`; `roles/appengine.serviceAdmin`
+is the least-broad predefined App Engine role in this list that grants that
+promotion permission. If a workflow is changed to deploy with `--no-promote`,
+this role is not needed for the deploy step, but a separate operator still needs
+traffic-update permission to make the version live.
 
 Project-level `roles/iam.serviceAccountUser` works, but it lets this deployment
 account act as service accounts across the project. Grant it on the App Engine
