@@ -591,8 +591,12 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
             )}
 
             {isDocTypeGrouping ? (
-              <Grid container spacing={3}>
-                {Object.entries(docTypeColumns!).map(([docType, docTypeCols]) => {
+              (() => {
+                const entries = Object.entries(docTypeColumns!);
+                const leftEntries = entries.filter((_, idx) => idx % 2 === 0);
+                const rightEntries = entries.filter((_, idx) => idx % 2 === 1);
+
+                const renderDocTypeSection = (docType: string, docTypeCols: string[]) => {
                   const attributeCols = docTypeCols.filter((c) => c.toLowerCase() !== "record_notes");
                   const rawNodes = buildFieldTree(attributeCols, docType);
                   const filteredNodes = filterFieldNodes(rawNodes, searchQuery);
@@ -602,7 +606,7 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                   const isCollapsed = collapsedDocTypes.has(docType) && !searchQuery.trim();
 
                   return (
-                    <Grid item xs={12} sm={6} key={docType}>
+                    <Box key={docType}>
                       <Box
                         onClick={() => handleToggleDocType(docType)}
                         data-cy="doc-type-header"
@@ -640,10 +644,25 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                           {filteredNodes.map((node) => renderFieldNode(node))}
                         </Box>
                       </Collapse>
-                    </Grid>
+                    </Box>
                   );
-                })}
-              </Grid>
+                };
+
+                return (
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {leftEntries.map(([docType, cols]) => renderDocTypeSection(docType, cols))}
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {rightEntries.map(([docType, cols]) => renderDocTypeSection(docType, cols))}
+                      </Box>
+                    </Grid>
+                  </Grid>
+                );
+              })()
             ) : (
               <Grid container spacing={2}>
                 {(() => {
