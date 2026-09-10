@@ -8,7 +8,7 @@ sidebar_position: 2
 
 Terraform lives in `orphaned-wells-ui-server/deployment/terraform`.
 
-It manages the current GKE deployment infrastructure, upload buckets, DNS, and deployment target outputs. Legacy VM definitions remain in Terraform for future re-enablement, but Terraform manages legacy VM modules only for names listed in `enabled_legacy_backend_vms`.
+It manages the current GKE deployment infrastructure, upload buckets, DNS, namespace-level Kubernetes RBAC, and deployment target outputs. Legacy VM definitions remain in Terraform for future re-enablement, but Terraform manages legacy VM modules only for names listed in `enabled_legacy_backend_vms`.
 
 ## What Terraform manages
 
@@ -17,12 +17,18 @@ It manages the current GKE deployment infrastructure, upload buckets, DNS, and d
 - One global static IP per backend collaborator for Kubernetes Ingress.
 - Optional `<collaborator>-k8s-server.uow-carbon.org` test DNS records.
 - Primary backend DNS records, such as `staging-server.uow-carbon.org`, pointing to the GKE static IP.
+- One Kubernetes namespace plus the `backend-api`/`processing-worker` ServiceAccounts and worker-dispatch Role/RoleBinding per backend.
 - `kubernetes_deploy_targets`, the output consumed by backend GitHub Actions.
 - Legacy Compute Engine VM resources only for names listed in `enabled_legacy_backend_vms`.
 
 :::caution
 Add a collaborator to `gke_backends` or `gke_backend_overrides` for GKE-only infrastructure. Add a collaborator to `legacy_backend_vms` only when you need to preserve a reusable VM definition, and add it to `enabled_legacy_backend_vms` only when Terraform should actively manage that VM.
 :::
+
+Set `enable_kubernetes_workloads = false` in a GKE backend definition to retain
+its cloud resources but exclude it from Kubernetes namespaces, runtime RBAC,
+and `kubernetes_deploy_targets`. CA currently uses this setting. Change it to
+`true` when CA is ready for a complete GKE deployment.
 
 ## Prerequisites
 
@@ -32,7 +38,7 @@ Add a collaborator to `gke_backends` or `gke_backend_overrides` for GKE-only inf
 - GitHub CLI `gh` for updating GitHub Actions secrets from the command line.
 - Access to the target GCP project.
 - Access to the shared Terraform state bucket: `gs://tidy-outlet-412020-ogrre-terraform-state`.
-- A Google identity with the [deployment and Terraform service-account permissions](/docs/install/gcp_setup#grant-deployment-and-terraform-access), either as your human `gcloud` account or as the `ogrre-deployment-ci` service account.
+- A Terraform platform identity with the [deployment and Terraform service-account permissions](/docs/install/gcp_setup#grant-deployment-and-terraform-access), including permission to create Kubernetes Roles and RoleBindings. Use a privileged human identity or dedicated infrastructure account; the GitHub deployment account's `roles/container.developer` is intentionally insufficient for RBAC creation.
 - A local `terraform.tfvars` file only when you need uncommitted local overrides.
 
 Shared non-secret defaults live in `variables.tf`. Add long-lived public collaborators to the `gke_backends` map there so the repo remains the source of truth.
@@ -64,7 +70,7 @@ Or use the deployment and Terraform service-account key for this shell only:
 ```bash
 cd orphaned-wells-ui-server/deployment/terraform
 
-export GOOGLE_APPLICATION_CREDENTIALS=/secure/path/ogrre-deployment-ci-service-key.json
+export GOOGLE_APPLICATION_CREDENTIALS=/secure/path/ogrre-terraform-platform-service-key.json
 gcloud auth activate-service-account --key-file "$GOOGLE_APPLICATION_CREDENTIALS"
 gcloud config set project <PROJECT_ID>
 ```
@@ -81,6 +87,22 @@ terraform workspace show
 terraform plan
 terraform apply
 ```
+
+## Existing namespace migration
+
+Terraform now owns OGRRE namespaces and runtime Kubernetes RBAC. Before the
+first apply, import every namespace that already exists in the cluster. For
+example:
+
+```bash
+terraform import 'kubernetes_namespace_v1.backend["staging"]' uow-staging
+```
+
+Repeat for each existing collaborator namespace, then review the plan. It
+should create the ServiceAccounts, Job-dispatch Role, and RoleBinding without
+requiring a GitHub Actions RBAC bootstrap. New collaborators are created by a
+normal Terraform apply after being added to `gke_backends` or
+`gke_backend_overrides`.
 
 To exclude GKE resources from a plan:
 
@@ -115,6 +137,30 @@ Terraform keys bucket resources by bucket name, so collaborators can intentional
 Collaborator backends default to 2 replicas with 1850m CPU and 12 GiB memory per pod. The memory headroom preserves large upload and batch-processing workflows. Staging is intentionally smaller: 1 replica with 1 CPU and 6 GiB memory.
 
 Changing these values in Terraform does not update running Kubernetes pods by itself. Apply Terraform, update `K8S_DEPLOY_TARGETS`, then redeploy the affected backend environments.
+
+### Batch-worker sizing
+
+GCS-backed batch processing now runs in a short-lived Kubernetes Job rather
+than in a FastAPI background task. Terraform exports, but does not directly
+create, the Job settings below through `kubernetes_deploy_targets`:
+
+- `api_uvicorn_workers`
+- `processing_job_cpu_request` and `processing_job_memory_request`
+- `processing_job_cpu_limit` and `processing_job_memory_limit`
+- `processing_job_ephemeral_storage`
+- `processing_job_active_deadline_seconds`
+- `processing_job_ttl_seconds_after_finished`
+- `processing_job_max_active`
+
+The worker defaults to 1850m CPU and 12 GiB memory for collaborator
+environments; staging uses 1 CPU and 6 GiB. One batch worker may be active per
+environment initially, and failed Jobs are not automatically retried. These
+settings are generated by backend GitHub Actions and should not be copied into
+the collaborator runtime-env secrets.
+
+The first worker migration does not lower API Pod resources, because
+single-file and ZIP processing still run there. Reduce those API requests only
+after staging validation and a later migration of those workflows.
 
 ## Legacy Compute Engine VMs
 

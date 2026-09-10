@@ -8,7 +8,7 @@ sidebar_position: 3
 
 The current backend deployment path runs each collaborator as a Kubernetes workload in the shared GKE cluster.
 
-Terraform owns the cloud infrastructure. GitHub Actions renders `orphaned-wells-ui-server/deployment/kubernetes/backend.yaml` with collaborator-specific values and applies it to GKE.
+Terraform owns the cloud infrastructure, namespaces, and long-lived Kubernetes RBAC. GitHub Actions renders `orphaned-wells-ui-server/deployment/kubernetes/backend.yaml` with collaborator-specific values and applies the workload-only manifest to GKE.
 
 ## Architecture
 
@@ -19,9 +19,17 @@ Terraform creates:
 - One global static IP per collaborator backend.
 - Optional test DNS records at `<collaborator>-k8s-server.uow-carbon.org`.
 - Primary backend DNS records at `<collaborator>-server.uow-carbon.org`.
+- Each backend namespace, `backend-api` and `processing-worker` ServiceAccounts, and the API Job-dispatch Role/RoleBinding.
 - `kubernetes_deploy_targets`, the JSON map consumed by GitHub Actions.
 
-Kubernetes creates one namespace per collaborator, using the `uow-<collaborator>` naming pattern. Each namespace contains:
+Terraform creates one namespace per Kubernetes-workload-enabled collaborator,
+using the `uow-<collaborator>` naming pattern. Terraform owns these resources:
+
+- `ServiceAccount/backend-api` and namespace-scoped RBAC for dispatching document-processing Jobs
+- `ServiceAccount/processing-worker` for short-lived document-processing Pods
+- namespace labels
+
+GitHub Actions creates these workload resources in that namespace:
 
 - `Deployment/backend`
 - `Service/backend`
@@ -32,6 +40,31 @@ Kubernetes creates one namespace per collaborator, using the `uow-<collaborator>
 - `Secret/backend-runtime-env`
 - `Secret/backend-runtime-files`
 - `Secret/dockerhub-pull`
+
+An entry can retain its cloud infrastructure while remaining unavailable for
+Kubernetes deployment by setting `enable_kubernetes_workloads = false` in its
+Terraform backend definition. Terraform then omits the namespace, runtime
+ServiceAccounts/RBAC, and `kubernetes_deploy_targets` entry. CA currently uses
+this setting; change it to `true` when CA is ready for a full GKE deployment.
+
+## Batch processing workers
+
+The API Deployment remains the only always-running backend workload. When a
+user submits a GCS batch, the API stores durable job state in MongoDB and
+creates one Kubernetes Job. Kubernetes schedules a high-memory worker Pod from
+the same immutable backend image; it processes the batch, records progress and
+failures in MongoDB, then exits. The worker is not a public service and does
+not run FastAPI.
+
+The first rollout applies only to GCS-backed batch processing. Single-file and
+ZIP uploads still use API Pods, so retain the current API memory requests until
+those workflows are moved to workers.
+
+GitHub Actions does not create namespaces or RBAC. A Terraform apply creates
+them before the first worker-capable deployment. Existing namespaces must be
+imported into Terraform state once; the exact migration commands are in the
+backend [Terraform README](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/tree/main/deployment/terraform). Do not run the former
+GitHub Actions RBAC bootstrap.
 
 ## Prerequisites
 
@@ -54,7 +87,8 @@ Other required access:
 
 - Ability to edit GitHub Secrets and Actions for the OGRRE GitHub project `CATALOG-HISTORIC-RECORDS`.
 - Permissions to manage GKE, Compute addresses, Cloud DNS, Cloud Storage buckets, OAuth, and project services in Google Cloud.
-- The three [OGRRE service accounts](/docs/install/gcp_setup#create-google-service-account-keys): storage runtime, Document AI runtime, and deployment/Terraform.
+- The OGRRE service accounts for storage runtime, Document AI runtime, GitHub deployment, and the Terraform platform identity. The last two may share an identity only when that broader privilege is intentional.
+- A Terraform platform identity with Kubernetes permission to create namespaces, ServiceAccounts, Roles, and RoleBindings. Keep this separate from the GitHub deployment identity when practical.
 
 ## Prepare deployment targets
 
@@ -93,7 +127,7 @@ The GKE deployment workflows require:
 - `STORAGE_SERVICE_KEY_JSON`
 - `DOCUMENT_AI_SERVICE_KEY_JSON`
 - `K8S_DEPLOY_TARGETS`
-- One runtime env secret per dispatch-supported collaborator, currently `STAGING_ENV`, `CA_ENV`, `ISGS_ENV`, `NEWTS_ENV`, `OSAGE_ENV`, and `RRC_ENV`
+- One runtime env secret per currently enabled collaborator: `STAGING_ENV`, `ISGS_ENV`, `NEWTS_ENV`, `OSAGE_ENV`, and `RRC_ENV`. `CA_ENV` may remain configured for future use, but CA cannot deploy while `enable_kubernetes_workloads = false`.
 
 `DEPLOYMENT_SERVICE_KEY_JSON` is used only by GitHub Actions to authenticate to
 Google Cloud and apply the deployment. `STORAGE_SERVICE_KEY_JSON` and
@@ -132,10 +166,14 @@ Collaborator workflows deploy an existing image tag through `IMAGE_TAG: auto`. O
 gh workflow run deploy-k8s-isgs.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref isgs
 gh workflow run deploy-k8s-newts.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref newts
 gh workflow run deploy-k8s-osage.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref osage
-gh workflow run deploy-k8s-ca.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref ca
+gh workflow run deploy-k8s-rrc.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref rrc
 ```
 
-The exact set of deployable collaborators is controlled by `.github/workflows/deploy-k8s-dispatch.yml`. Confirm the collaborator is present in `workflow_dispatch.inputs.DEPLOY_ENV.options` and in the runtime-env secret mapping before dispatching it.
+The exact set of deployable collaborators is controlled by both
+`kubernetes_deploy_targets` and `.github/workflows/deploy-k8s-dispatch.yml`.
+Confirm that the collaborator has an output entry, is present in
+`workflow_dispatch.inputs.DEPLOY_ENV.options`, and has a runtime-env secret
+mapping before dispatching it.
 
 Merging source changes into a collaborator branch only changes the live backend when that branch's deployment workflow runs. If automatic deployments are enabled for the branch, the merge can trigger the rollout. Otherwise, manually dispatch the collaborator workflow after the merge.
 
@@ -149,7 +187,6 @@ Or one collaborator at a time:
 
 ```text
 ENABLE_GKE_STAGING_DEPLOY=true
-ENABLE_GKE_CA_DEPLOY=true
 ENABLE_GKE_ISGS_DEPLOY=true
 ENABLE_GKE_NEWTS_DEPLOY=true
 ENABLE_GKE_OSAGE_DEPLOY=true
@@ -174,6 +211,7 @@ kubectl -n uow-staging get deployment backend
 kubectl -n uow-staging get pods -l app.kubernetes.io/name=orphaned-wells-ui-server -o wide
 kubectl -n uow-staging get ingress backend
 kubectl -n uow-staging get managedcertificate backend-cert
+kubectl -n uow-staging get jobs -l app.kubernetes.io/component=processor
 ```
 
 Read logs:
@@ -181,6 +219,7 @@ Read logs:
 ```bash
 kubectl -n uow-staging logs deployment/backend --tail=200
 kubectl -n uow-staging logs deployment/backend --tail=200 -f
+kubectl -n uow-staging logs job/<worker-job-name> --tail=200
 ```
 
 Restart a backend deployment:
@@ -204,3 +243,4 @@ kubectl top nodes
 - The rendered manifest in `deployment/kubernetes/rendered/backend.yaml` is an ephemeral artifact. Do not commit it.
 - The Kubernetes Deployment uses pod-local `emptyDir` volumes for `/logs` and `/data`. Production document storage should continue using the Terraform-managed Google Cloud Storage upload bucket.
 - The default collaborator backend resource target is 2 replicas at 1850m CPU and 12 GiB memory per pod. Staging is intentionally smaller at 1 replica with 1 CPU and 6 GiB memory.
+- Worker Jobs have independent CPU, memory, scratch-storage, deadline, retention, and maximum-active-job settings. GitHub Actions supplies these generated settings from `K8S_DEPLOY_TARGETS`; do not place `PROCESSING_JOB_*` values in collaborator runtime-env secrets.

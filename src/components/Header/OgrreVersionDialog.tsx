@@ -50,6 +50,23 @@ const hasDeploymentInfo = (deployment?: OgrreVersionInfo["deployment"]) => {
   return Boolean(deployment?.image || deployment?.deploy_run_id || deployment?.deployed_at);
 };
 
+const formatDeploymentDate = (deployedAt?: string) => {
+  if (!deployedAt) return deployedAt;
+
+  const deploymentDate = new Date(deployedAt);
+  if (Number.isNaN(deploymentDate.getTime())) return deployedAt;
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  }).format(deploymentDate);
+};
+
 const VersionMetadataLine = ({ label, value }: { label: string; value?: string }) => {
   if (!value) return null;
   return (
@@ -154,7 +171,10 @@ const OgrreVersionDialog = ({
               <VersionInfoCard title="Backend Deployment">
                 <VersionMetadataLine label="Image" value={versionInfo?.deployment?.image} />
                 <VersionMetadataLine label="Run" value={versionInfo?.deployment?.deploy_run_id} />
-                <VersionMetadataLine label="Deployed" value={versionInfo?.deployment?.deployed_at} />
+                <VersionMetadataLine
+                  label="Deployed"
+                  value={formatDeploymentDate(versionInfo?.deployment?.deployed_at)}
+                />
               </VersionInfoCard>
             )}
             {versionInfo?.packages?.map((packageInfo) => (
