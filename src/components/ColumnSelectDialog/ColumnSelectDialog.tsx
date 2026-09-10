@@ -572,8 +572,9 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                 sx={{
                   position: "absolute",
                   top: 6,
-                  right: 6,
+                  right: 8,
                   zIndex: 2,
+                  pl: 2,
                 }}
               >
                 <Tooltip title={isAllCollapsed ? "Expand All" : "Collapse All"}>
@@ -582,7 +583,7 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                     onClick={handleToggleAllDocTypes}
                     data-cy="expand-collapse-all-doc-types"
                     aria-label={isAllCollapsed ? "Expand All" : "Collapse All"}
-                    sx={{ color: "#555" }}
+                    sx={{ color: "#555", ml: 1 }}
                   >
                     {isAllCollapsed ? <UnfoldMore fontSize="small" /> : <UnfoldLess fontSize="small" />}
                   </IconButton>
@@ -619,7 +620,7 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                           mb: 1,
                           borderBottom: "1px solid #ddd",
                           pb: 0.5,
-                          pr: 4,
+                          pr: 5,
                           "&:hover": {
                             color: "primary.main",
                           },
@@ -649,7 +650,7 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
                 };
 
                 return (
-                  <Grid container spacing={3}>
+                  <Grid container spacing={3} sx={{ pt: 1 }}>
                     <Grid item xs={12} sm={6}>
                       <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                         {leftEntries.map(([docType, cols]) => renderDocTypeSection(docType, cols))}
