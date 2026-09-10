@@ -11,11 +11,16 @@ import {
   TextField,
   InputAdornment,
   Typography,
+  Collapse,
 } from "@mui/material";
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Checkbox, Stack, Divider } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import SearchIcon from "@mui/icons-material/Search";
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import UnfoldLess from "@mui/icons-material/UnfoldLess";
+import UnfoldMore from "@mui/icons-material/UnfoldMore";
 import { callAPI, convertFiltersToMongoFormat } from "../../util";
 import { downloadRecords, getColumnData, getDownloadSize } from "../../services/app.service";
 import { ColumnSelectDialogProps, CheckboxesGroupProps, ExportTypeSelectionProps } from "../../types";
@@ -349,6 +354,7 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
 const CheckboxesGroup = (props: CheckboxesGroupProps) => {
   const { columns, docTypeColumns, selected, setSelected, disabled, location } = props;
   const [searchQuery, setSearchQuery] = useState("");
+  const [collapsedDocTypes, setCollapsedDocTypes] = useState<Set<string>>(new Set());
 
   const hasRecordNotes = columns.some((col) => col.toLowerCase() === "record_notes");
   const notesKey = columns.find((col) => col.toLowerCase() === "record_notes") || "record_notes";
@@ -360,6 +366,28 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
       : "Select All Fields in the Records";
 
   const isDocTypeGrouping = Boolean(docTypeColumns && Object.keys(docTypeColumns).length > 0);
+  const allDocTypes = isDocTypeGrouping ? Object.keys(docTypeColumns!) : [];
+  const isAllCollapsed = allDocTypes.length > 0 && allDocTypes.every((docType) => collapsedDocTypes.has(docType));
+
+  const handleToggleAllDocTypes = () => {
+    if (isAllCollapsed) {
+      setCollapsedDocTypes(new Set());
+    } else {
+      setCollapsedDocTypes(new Set(allDocTypes));
+    }
+  };
+
+  const handleToggleDocType = (docType: string) => {
+    setCollapsedDocTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(docType)) {
+        next.delete(docType);
+      } else {
+        next.add(docType);
+      }
+      return next;
+    });
+  };
 
   const getAllSelectableAttributeKeys = (): string[] => {
     const allKeys: string[] = [];
@@ -536,32 +564,106 @@ const CheckboxesGroup = (props: CheckboxesGroupProps) => {
               minHeight: "180px",
               overflowY: "auto",
               backgroundColor: "#fafafa",
+              position: "relative",
             }}
           >
+            {isDocTypeGrouping && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 6,
+                  right: 8,
+                  zIndex: 2,
+                  pl: 2,
+                }}
+              >
+                <Tooltip title={isAllCollapsed ? "Expand All" : "Collapse All"}>
+                  <IconButton
+                    size="small"
+                    onClick={handleToggleAllDocTypes}
+                    data-cy="expand-collapse-all-doc-types"
+                    aria-label={isAllCollapsed ? "Expand All" : "Collapse All"}
+                    sx={{ color: "#555", ml: 1 }}
+                  >
+                    {isAllCollapsed ? <UnfoldMore fontSize="small" /> : <UnfoldLess fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
+
             {isDocTypeGrouping ? (
-              <Grid container spacing={3}>
-                {Object.entries(docTypeColumns!).map(([docType, docTypeCols]) => {
+              (() => {
+                const entries = Object.entries(docTypeColumns!);
+                const leftEntries = entries.filter((_, idx) => idx % 2 === 0);
+                const rightEntries = entries.filter((_, idx) => idx % 2 === 1);
+
+                const renderDocTypeSection = (docType: string, docTypeCols: string[]) => {
                   const attributeCols = docTypeCols.filter((c) => c.toLowerCase() !== "record_notes");
                   const rawNodes = buildFieldTree(attributeCols, docType);
                   const filteredNodes = filterFieldNodes(rawNodes, searchQuery);
 
                   if (searchQuery && filteredNodes.length === 0) return null;
 
+                  const isCollapsed = collapsedDocTypes.has(docType) && !searchQuery.trim();
+
                   return (
-                    <Grid item xs={12} sm={6} key={docType}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: "bold", color: "#555", mb: 1, borderBottom: "1px solid #ddd", pb: 0.5 }}
+                    <Box key={docType}>
+                      <Box
+                        onClick={() => handleToggleDocType(docType)}
+                        data-cy="doc-type-header"
+                        data-doc-type={docType}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          userSelect: "none",
+                          mb: 1,
+                          borderBottom: "1px solid #ddd",
+                          pb: 0.5,
+                          pr: 5,
+                          "&:hover": {
+                            color: "primary.main",
+                          },
+                        }}
                       >
-                        {docType}
-                      </Typography>
-                      <Box sx={{ display: "flex", flexDirection: "column" }}>
-                        {filteredNodes.map((node) => renderFieldNode(node))}
+                        <IconButton
+                          size="small"
+                          sx={{ p: 0, mr: 0.5, color: "inherit" }}
+                          aria-label={isCollapsed ? `Expand ${docType}` : `Collapse ${docType}`}
+                        >
+                          {isCollapsed ? <KeyboardArrowRight fontSize="small" /> : <KeyboardArrowDown fontSize="small" />}
+                        </IconButton>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: "bold", color: "#555" }}
+                        >
+                          {docType}
+                        </Typography>
+                      </Box>
+                      <Collapse in={!isCollapsed}>
+                        <Box sx={{ display: "flex", flexDirection: "column" }}>
+                          {filteredNodes.map((node) => renderFieldNode(node))}
+                        </Box>
+                      </Collapse>
+                    </Box>
+                  );
+                };
+
+                return (
+                  <Grid container spacing={3} sx={{ pt: 1 }}>
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {leftEntries.map(([docType, cols]) => renderDocTypeSection(docType, cols))}
                       </Box>
                     </Grid>
-                  );
-                })}
-              </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {rightEntries.map(([docType, cols]) => renderDocTypeSection(docType, cols))}
+                      </Box>
+                    </Grid>
+                  </Grid>
+                );
+              })()
             ) : (
               <Grid container spacing={2}>
                 {(() => {
