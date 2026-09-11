@@ -68,17 +68,35 @@ Apply Terraform's upload bucket CORS and lifecycle settings before deploying the
 paired frontend and backend changes. Review existing rules in the plan, since
 Terraform manages these bucket settings. CORS defaults to the custom frontend
 origins: `https://uow-carbon.org` for staging and
-`https://<collaborator>.uow-carbon.org` for collaborators.
+`https://<collaborator>.uow-carbon.org` for collaborators. The staging bucket
+also allows `http://localhost:3000` for native/Docker development and
+`http://localhost:3001` for the isolated Docker E2E stack.
 
-For other hosts, override the full origin list per bucket:
+For other hosts or ports, override the full origin list per bucket, retaining
+the default origins you still use. For example, to also use port 3002:
 
 ```hcl
 upload_bucket_cors_origins = {
-  uploaded_documents_v0 = ["https://uow-carbon.org", "http://localhost:3000"]
+  uploaded_documents_v0 = [
+    "https://uow-carbon.org",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+  ]
 }
 ```
 
-Backend `ALLOWED_ORIGINS` must contain the same browser origins. The browser
+The backend serving the frontend must allow its browser origin in
+`ALLOWED_ORIGINS`. Configure this on the local backend for a local stack; only
+add localhost to a deployed backend if developers call that backend directly.
+Bucket CORS does not update backend settings. Use the browser's published host
+port, not the container's internal port; `127.0.0.1` and `localhost` are distinct
+origins. See [Docker development](../install/docker_setup.mdx#troubleshooting).
+
+The bucket rules govern GCS XML API requests. Directory uploads use JSON API
+resumable sessions, which receive the frontend origin at creation and have
+their own [CORS handling](https://docs.cloud.google.com/storage/docs/cross-origin#cloud-storage-cors-support).
+The browser
 uses GCS resumable `PUT` requests with `Content-Range` and reads `Range` responses.
 The existing storage runtime identity authorizes uploads and verifies object
 metadata. Document AI needs the same GCS input/output permissions as an existing

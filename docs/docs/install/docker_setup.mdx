@@ -120,6 +120,13 @@ DOCUMENT_AI_SERVICE_KEY=ogrre-document-ai-service-key.json
 
 Put those key files next to `deployment/.env` or use absolute paths. The Docker start scripts mount each file into the backend container separately.
 
+For directory uploads using the staging bucket (`uploaded_documents_v0`),
+Terraform includes `http://localhost:3000` and `http://localhost:3001` in the
+bucket CORS defaults. Normal Docker development uses port 3000; the isolated
+E2E stack uses port 3001. The local backend's `ALLOWED_ORIGINS` must include the
+origin you open in the browser. See [upload bucket configuration](../deploy-gcp/backend-gke.mdx#directory-upload-storage-configuration)
+for other hosts or ports. With `STORAGE_BACKEND=local`, bucket CORS is not used.
+
 ## Stop or reset the stack
 
 Stop containers without removing them:
@@ -183,6 +190,13 @@ FRONTEND_HOST_PORT=3000
 BACKEND_HOST_PORT=8001
 MONGODB_HOST_PORT=27018
 ```
+
+If you change `FRONTEND_HOST_PORT`, also set `ALLOWED_ORIGINS` to the frontend's
+browser origin, for example `http://localhost:3001`. The browser uses the
+published host port even though the frontend listens on port 3000 inside Docker.
+For Google-backed development, keep the bucket CORS origin list aligned as
+documented above. Opening `http://127.0.0.1:3001` requires that exact origin;
+it does not match `http://localhost:3001`.
 
 If you change `BACKEND_HOST_PORT`, also update:
 
