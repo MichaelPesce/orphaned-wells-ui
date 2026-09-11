@@ -1,234 +1,91 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Alert, Box, Button, FormControlLabel, LinearProgress, Stack, Switch, TextField, Typography } from "@mui/material";
 import { useUserContext } from "../../usercontext";
-import { Grid, Box, Button, Stack, FormControlLabel, Switch, Tooltip, TextField } from "@mui/material";
-import { UploadDirectoryProps } from "../../types";
-import { uploadDocument, checkForDuplicateRecords } from "../../services/app.service";
-import { callAPI } from "../../util";
-import CircularProgress from "@mui/material/CircularProgress";
+import { DirectoryUploadConfig, UploadDirectoryProps } from "../../types";
+import { checkForDuplicateRecords, getDirectoryUploadConfig } from "../../services/app.service";
+import { requestUploadApi, filePath } from "./uploadApi";
+import { useDirectoryUpload } from "./useDirectoryUpload";
+import ProcessingJobs from "./ProcessingJobs";
 
-const UploadDirectory = (props: UploadDirectoryProps) => {
-  const params = useParams<{ id: string }>();
-  const { userEmail } = useUserContext();
-  const { directoryName, directoryFiles, runCleaningFunctions, setRunCleaningFunctions, uploading, setUploading } = props;
-  const [ amountToUpload, setAmountToUpload ] = useState(directoryFiles.length);
-  const [ filesToUpload, setFilesToUpload ] = useState<File[]>([]);
-  const [ finishedUploading, setFinishedUploading ] = useState(false);
-  const [ progress, setProgress ] = useState(0);
-  const [ preventDuplicates, setPreventDuplicates ] = useState(true);
-  const [ uploadedFiles, setUploadedFiles ] = useState<string[]>([]);
-  const [ duplicateFiles, setDuplicateFiles ] = useState<string[]>();
-  const [ unduplicateFiles, setUnduplicateFiles ] = useState<File[]>();
-  const [ errorFiles, setErrorFiles ] = useState<string[]>([]);
-  const [ disabled, setDisabled ] = useState(true);
-  const MAX_UPLOAD_AMT = 1000;
-
-  const getFileBaseName = (filename: string) => {
-    const lastDotIndex = filename.lastIndexOf(".");
-    return lastDotIndex > 0 ? filename.slice(0, lastDotIndex) : filename;
-  };
+const UploadDirectory = ({directoryName, directoryFiles, runCleaningFunctions, setRunCleaningFunctions, uploading, setUploading}: UploadDirectoryProps) => {
+  const {id = ""} = useParams<{id: string}>();
+  const {userEmail, hasPermission} = useUserContext();
+  const [amount, setAmount] = useState(Math.min(directoryFiles.length, 1000));
+  const [preventDuplicates, setPreventDuplicates] = useState(true);
+  const [duplicates, setDuplicates] = useState<string[]>([]);
+  const [config, setConfig] = useState<DirectoryUploadConfig>();
+  const [error, setError] = useState("");
+  const [checking, setChecking] = useState(true);
+  const [checkAttempt, setCheckAttempt] = useState(0);
+  const upload = useDirectoryUpload(id, userEmail, setUploading);
 
   useEffect(() => {
-    let uploadedAmt = uploadedFiles.length;
-    if (uploading && uploadedAmt === filesToUpload.length) {
-      setFinishedUploading(true);
-      setTimeout(()=> {
-        window.location.reload();
-      },3000);
-    }
-    try {
-      if (filesToUpload.length!== 0) {
-        setProgress( (uploadedAmt / filesToUpload.length) * 100);
-      }
-    } catch(e) {
-      setProgress(0);
-    }
-  },[uploadedFiles]);
+    let cancelled = false;
+    setChecking(true);
+    setError("");
+    Promise.all([
+      requestUploadApi<DirectoryUploadConfig>(getDirectoryUploadConfig, [id]),
+      requestUploadApi<string[]>(checkForDuplicateRecords, [{file_list: directoryFiles.map((file) => file.name)}, id]),
+    ]).then(([configuration, existing]) => {
+      if (!cancelled) { setConfig(configuration); setDuplicates(existing); }
+    }).catch((failure) => {
+      if (!cancelled) setError(failure.message);
+    }).finally(() => { if (!cancelled) setChecking(false); });
+    return () => { cancelled = true; };
+  }, [id, directoryFiles, checkAttempt]);
 
-  useEffect(() => {
-    if (isNaN(amountToUpload) || amountToUpload <=0) {
-      setDisabled(true);
-      setFilesToUpload([]);
-      return;
-    } 
-    // TODO CONFIRM THE BELOW CODE WORKS:
-    // rather than determine the files that are duplicates EVERY time we update amountToUpload,
-    // let's create a list of files that are not duplicates one time (after fetching duplicate records)
-    // then, in this function we can just set filesToUpload to be the first X (amountToUpload) files from
-    // either the unduplicate list, or the entire list, depending on whether preventDuplicates is true
-    if (duplicateFiles !== undefined) {
-      if(amountToUpload > MAX_UPLOAD_AMT) setDisabled(true);
-      else setDisabled(false);
-      let tempFilesToUpload: File[];
-      if (preventDuplicates) {
-        if (unduplicateFiles?.length || 0 > amountToUpload) {
-          tempFilesToUpload = unduplicateFiles?.slice(0,amountToUpload) || [];
-        } else {
-          tempFilesToUpload = [...unduplicateFiles || []];
-        }
-      } else {
-        if (directoryFiles.length || 0 > amountToUpload) {
-          tempFilesToUpload = directoryFiles?.slice(0,amountToUpload);
-        } else {
-          tempFilesToUpload = [...directoryFiles || []];
-        }
-      }
-      setFilesToUpload(tempFilesToUpload);
-    }
-  },[amountToUpload, duplicateFiles, preventDuplicates]);
+  const files = useMemo(() => {
+    const seen = new Set(duplicates);
+    return directoryFiles.filter((file) => {
+      const base = file.name.replace(/\.[^.]+$/, "");
+      if (!preventDuplicates) return true;
+      if (seen.has(base)) return false;
+      seen.add(base);
+      return true;
+    }).slice(0, Math.max(0, amount));
+  }, [directoryFiles, duplicates, preventDuplicates, amount]);
+  const totalBytes = files.reduce((total, file) => total + file.size, 0);
+  const tooLarge = config && (files.some((file) => file.size <= 0 || file.size > config.max_file_bytes) || totalBytes > config.max_total_bytes);
+  const disabled = checking || !!error || !config || config.mode === "unavailable" || !files.length || !Number.isInteger(amount) || amount < 1 || amount > (config?.max_files || 1000) || !!tooLarge || !hasPermission("upload_document");
 
-  useEffect(() => {
-    setAmountToUpload(directoryFiles.length);
-
-    let data = {
-      file_list: directoryFiles.map((directoryFile) => directoryFile.name)
-    };
-    callAPI(
-      checkForDuplicateRecords,
-      [data, params.id],
-      fetchedDuplicateRecords,
-      (e, status) => console.error(e)
-    );
-  },[directoryFiles]);
-
-
-  const styles = {
-    button: {
-      borderRadius: "8px", 
-      width: 200,
-    },
-    stack: {
-      height: "30vh",
-      overflow: "scroll",
-      boxShadow: 1,
-      padding: 2,
-      marginTop: 2
-    }
-  };
-
-  const fetchedDuplicateRecords = (r: string[]) => {
-    setDuplicateFiles(r);
-    const temp_unduplicateFiles = directoryFiles.filter((f) => !r.includes(getFileBaseName(f.name)));
-    // console.log(r.length)
-    // console.log(temp_unduplicateFiles.length)
-    // console.log(directoryFiles.length)
-    setUnduplicateFiles(temp_unduplicateFiles);
-    setDisabled(false);
-  };
-
-  const upload = () => {
-    setUploading(true);
-    filesToUpload.map((file) => {
-      let formData = new FormData();
-      formData.append("file", file, file.name);
-      callAPI(
-        uploadDocument,
-        [formData, params.id, userEmail, false, preventDuplicates, runCleaningFunctions],
-        () => handleSuccessfulDocumentUpload(file),
-        (e, status) => handleAPIErrorResponse(file, status)
-      );
-    });
-  };
-
-  const handleSuccessfulDocumentUpload = (file: File) => {
-    setUploadedFiles((uploadedFiles) => [...uploadedFiles, file.name]);
-  };
-
-  const handleAPIErrorResponse = (file: File, status_code?: number) => {
-    if (status_code === 208) {
-      console.log("duplicate: "+file.name);
-    } else {
-      console.error(`error uploading ${file.name} with status code ${status_code}`);
-      setErrorFiles((errorFiles) => [...errorFiles, file.name]);
-    }
-    setUploadedFiles((uploadedFiles) => [...uploadedFiles, file.name]);
-  };
-
-  const handlePreventDuplicates = (e: any) => {
-    setPreventDuplicates(e.target.checked);
-  };
-
-  const formatFileName = (filename: string) => {
-    let style = {
-      color: "black"
-    };
-    if (errorFiles.includes(filename)) style.color = "red";
-    if (uploadedFiles.includes(filename)) return <s style={style}>{`- ${filename}`}</s>; 
-    else return <span style={style}>{`- ${filename}`}</span>;
-  };
-
-  const handleUpdateAmountToUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let newamount = parseInt(event.target.value);
-    if (isNaN(newamount)) setAmountToUpload(0);
-    else setAmountToUpload(newamount);
-  };
-
-
-  return (
-    <Grid container>
-      <Grid item xs={12}>
-        <p style={{marginBottom: 0}}>How many files would you like to upload from the directory <i>{directoryName}</i>? Please enter an amount between 0 and {MAX_UPLOAD_AMT}.</p>
-        <Stack direction='row' alignItems={"baseline"} justifyContent="space-around">
-          <TextField 
-            data-cy="directory-upload-amount-input"
-            id="amt-to_upload" 
-            label="Upload Amount" 
-            variant="standard" 
-            type="number"
-            defaultValue={amountToUpload}
-            onChange={handleUpdateAmountToUpload}
-            disabled={uploading}
-          />
-          <p><b>{filesToUpload.length}</b> files to be uploaded</p>
-        </Stack>
-                
-                
-      </Grid>
-      <Grid item xs={12}>
-        <Stack direction='column' sx={styles.stack}>
-          {filesToUpload.map((file, idx) =>  (
-            <p style={{margin: 3}} key={`${file.name}_${idx}`}>
-              {formatFileName(file.name)}
-            </p>
-          ))}
-        </Stack>
-      </Grid>
-      <Grid item xs={12}>
-        <Box sx={{display: "flex", justifyContent: "space-around", marginTop: 1}}>
-          <Stack direction={"row"}>
-            <Tooltip title={"When selected, filenames that are already present in database will not be uploaded."}>
-              <FormControlLabel 
-                data-cy="directory-prevent-duplicates-toggle"
-                disabled={uploading || disabled}
-                control={<Switch/>} 
-                label="Prevent Duplicates" 
-                onChange={handlePreventDuplicates}
-                checked={preventDuplicates}
-              />
-            </Tooltip>
-            <FormControlLabel 
-              data-cy="directory-run-cleaning-toggle"
-              disabled={uploading || disabled}
-              control={<Switch/>} 
-              label="Run cleaning functions" 
-              onChange={(e: any) => setRunCleaningFunctions(e.target.checked)}
-              checked={runCleaningFunctions}
-            />
-          </Stack>
-        </Box>
-        <Box sx={{display: "flex", justifyContent: "space-around", marginTop: 1}}>
-          {!uploading && !finishedUploading && 
-                        <Button data-cy="directory-upload-button" variant="contained" sx={styles.button} onClick={upload} disabled={disabled}>
-                            Upload
-                        </Button>
-          }
-          {uploading && 
-                        <CircularProgress variant="determinate" value={progress} />
-          }
-        </Box>
-      </Grid>
-    </Grid>
-  );
+  return <Stack spacing={2} sx={{width: "100%"}}>
+    <Typography>Upload files from <strong>{directoryName}</strong>.</Typography>
+    <TextField data-cy="directory-upload-amount-input" label="Upload amount" type="number"
+      value={amount} onChange={(event) => setAmount(Number(event.target.value))}
+      inputProps={{min: 1, max: config?.max_files || 1000}} disabled={uploading || upload.finished} />
+    <Typography><strong>{files.length}</strong> files to be uploaded</Typography>
+    <Box sx={{maxHeight: "25vh", overflow: "auto", border: 1, borderColor: "divider", p: 1}}>
+      {files.map((file) => <Typography key={filePath(file)} variant="body2" color={upload.fileErrors.includes(filePath(file)) ? "error" : "text.primary"} sx={{overflowWrap: "anywhere"}}>
+        {filePath(file)}{upload.fileErrors.includes(filePath(file)) ? " — transfer failed" : ""}
+      </Typography>)}
+    </Box>
+    <Stack direction="row" flexWrap="wrap">
+      <FormControlLabel data-cy="directory-prevent-duplicates-toggle" label="Prevent Duplicates"
+        control={<Switch checked={preventDuplicates} onChange={(event) => setPreventDuplicates(event.target.checked)} />}
+        disabled={uploading || upload.finished} />
+      <FormControlLabel data-cy="directory-run-cleaning-toggle" label="Run cleaning functions"
+        control={<Switch checked={runCleaningFunctions} onChange={(event) => setRunCleaningFunctions(event.target.checked)} />}
+        disabled={uploading || upload.finished} />
+    </Stack>
+    {checking && <LinearProgress />}
+    {error && <Alert severity="error" action={<Button onClick={() => setCheckAttempt((value) => value + 1)}>Retry</Button>}>{error}</Alert>}
+    {config?.mode === "unavailable" && <Alert severity="error">Directory uploads are not configured for this environment.</Alert>}
+    {tooLarge && <Alert severity="error">Files must be nonempty and within the configured limits: {Math.floor(config!.max_file_bytes / 1024 / 1024)} MiB per file and {Math.floor(config!.max_total_bytes / 1024**3)} GiB per directory.</Alert>}
+    {config?.mode === "direct" && !upload.finished && <Typography variant="body2">Keep this window open until file transfer finishes. Processing then continues in the background. To resume after a refresh, select the same directory and upload options again.</Typography>}
+    {upload.error && <Alert severity="error">{upload.error}</Alert>}
+    {uploading && <Box>
+      <Typography>{upload.phase}: {upload.transferred} of {files.length} files transferred</Typography>
+      <LinearProgress variant="determinate" value={upload.progress} sx={{my: 1}} />
+      {upload.phase === "Transferring files" && <Button onClick={upload.pause}>Pause transfer</Button>}
+    </Box>}
+    {!uploading && !upload.finished && <Button data-cy="directory-upload-button" variant="contained" disabled={disabled}
+      onClick={() => config && config.mode !== "unavailable" && upload.start(files, config.mode, preventDuplicates, runCleaningFunctions)}>
+      {upload.error ? "Retry upload" : "Upload"}
+    </Button>}
+    {upload.finished && <Alert severity="success">{upload.job ? "Files transferred. Processing status appears below." : "Files submitted for processing."}</Alert>}
+    <ProcessingJobs recordGroupId={id} latestJobId={upload.job?.job_id} />
+  </Stack>;
 };
 
 export default UploadDirectory;

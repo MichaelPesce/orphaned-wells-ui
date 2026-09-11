@@ -11,11 +11,14 @@ import { FileUploader } from "react-drag-drop-files";
 import { UploadDocumentsModalProps } from "../../types";
 import UploadDirectory from "./UploadDirectory";
 import UploadGcsDirectory from "./UploadGcsDirectory";
+import ProcessingJobs from "./ProcessingJobs";
+import { useUserContext } from "../../usercontext";
 import { checkProcessorStatus, deployProcessor, undeployProcessor } from "../../services/app.service";
 import { callAPI } from "../../util";
 
 const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
   const params = useParams<{ id: string }>();
+  const {hasPermission} = useUserContext();
   const { setShowModal, handleUploadDocument } = props;
   const [ showWarning, setShowWarning ] = useState(false);
   const [ warningMessage, setWarningMessage ] = useState("");
@@ -100,6 +103,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
   };
 
   const handleClose = () => {
+    if (uploadingDirectory || uploadingGcsDirectory) return;
     setShowModal(false);
   };
 
@@ -252,7 +256,6 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
     if (uploadDirectory) {
       return (
         <UploadDirectory
-          setShowModal={setShowModal}
           directoryName={uploadDirectory}
           directoryFiles={uploadDirectoryFiles}
           runCleaningFunctions={runCleaningFunctions}
@@ -319,7 +322,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
               style={styles.button}
               startIcon={<CreateNewFolderIcon/>}
               onClick={() => inputRef.current?.click()}
-              disabled={processorState > 1}
+              disabled={processorState > 1 || !hasPermission("upload_document")}
             >
                           Local Directory
             </Button>
@@ -329,12 +332,13 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
               style={styles.button}
               startIcon={<CloudQueueIcon/>}
               onClick={handleChooseGcsDirectory}
-              disabled={processorState > 1}
+              disabled={processorState > 1 || !hasPermission("upload_document")}
             >
                             GCS Directory
             </Button>
           </Box>
         </Grid>
+        <Grid item xs={12}><ProcessingJobs recordGroupId={params.id || ""} /></Grid>
       </>
     );
   };
@@ -352,7 +356,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
         <Grid item xs={3}>
           {(uploadDirectory || showGcsUpload) &&
                         <Box sx={{display: "flex", justifyContent: "flex-start", marginLeft: "10px"}}>
-                          <IconButton data-cy="upload-back-button" onClick={handleBack}><ArrowBackIcon/></IconButton>
+                          <IconButton data-cy="upload-back-button" disabled={uploadingDirectory || uploadingGcsDirectory} onClick={handleBack}><ArrowBackIcon/></IconButton>
                         </Box>
           }
         </Grid>
@@ -363,7 +367,7 @@ const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
         </Grid>
         <Grid item xs={3}>
           <Box sx={{display: "flex", justifyContent: "flex-end", marginRight: "10px"}}>
-            <IconButton onClick={handleClose}><CloseIcon/></IconButton>
+            <IconButton disabled={uploadingDirectory || uploadingGcsDirectory} onClick={handleClose}><CloseIcon/></IconButton>
           </Box>
         </Grid>
         <Grid item xs={12}>

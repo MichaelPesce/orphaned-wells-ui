@@ -50,15 +50,70 @@ this setting; change it to `true` when CA is ready for a full GKE deployment.
 ## Batch processing workers
 
 The API Deployment remains the only always-running backend workload. When a
-user submits a GCS batch, the API stores durable job state in MongoDB and
+user finalizes a local directory upload or submits a GCS batch, the API stores durable job state in MongoDB and
 creates one Kubernetes Job. Kubernetes schedules a high-memory worker Pod from
 the same immutable backend image; it processes the batch, records progress and
 failures in MongoDB, then exits. The worker is not a public service and does
 not run FastAPI.
 
-The first rollout applies only to GCS-backed batch processing. Single-file and
-ZIP uploads still use API Pods, so retain the current API memory requests until
-those workflows are moved to workers.
+Local directory files now transfer directly from the browser to GCS and use
+the same worker path. Single-file and ZIP uploads still use API Pods. Keep API
+resource requests until staging measurements cover these remaining workflows.
+See [Uploads and processing](../concepts/upload-processing.mdx) for diagrams,
+progress states, interrupted transfers, and retry behavior.
+
+### Directory upload storage configuration
+
+Apply Terraform's upload bucket CORS and lifecycle settings before deploying the
+paired frontend and backend changes. Review existing rules in the plan, since
+Terraform manages these bucket settings. CORS defaults to the custom frontend
+origins: `https://uow-carbon.org` for staging and
+`https://<collaborator>.uow-carbon.org` for collaborators.
+
+For other hosts, override the full origin list per bucket:
+
+```hcl
+upload_bucket_cors_origins = {
+  uploaded_documents_v0 = ["https://uow-carbon.org", "http://localhost:3000"]
+}
+```
+
+Backend `ALLOWED_ORIGINS` must contain the same browser origins. The browser
+uses GCS resumable `PUT` requests with `Content-Range` and reads `Range` responses.
+The existing storage runtime identity authorizes uploads and verifies object
+metadata. Document AI needs the same GCS input/output permissions as an existing
+batch workflow. Users do not need their own GCS credentials.
+
+Staged originals under `directory_uploads/` and temporary output under
+`directory_upload_outputs/` expire through a 14-day bucket lifecycle rule.
+Sessions last seven days. Keep retention longer than the session window plus
+worker runtime. Record display images under `uploads/`, deleted-record audit
+files, and caller-owned GCS batch sources are outside these rules.
+
+`DIRECTORY_UPLOAD_MAX_BYTES` controls the total original bytes per directory
+(default 20 GiB). The manifest is limited to 1,000 files. Existing Document AI
+file-size and processor limits still apply.
+
+### Capacity, failure recovery, and resource sizing
+
+`PROCESSING_JOB_MAX_ACTIVE` reserves worker capacity atomically in MongoDB.
+Additional submissions remain queued. The API runs job maintenance every 30
+seconds to dispatch queued work and reconcile failed pods without browser polling.
+No additional Kubernetes role or deployment is needed.
+
+Before lowering API resources, validate a representative 500-file directory with
+large multipage PDFs while normal API traffic continues. Test transfer interruption,
+repeated finalization, simultaneous submissions, worker termination, and reopening
+the upload dialog after a refresh. Compare API and worker memory, CPU, throttling,
+temporary storage, OOM/restarts, duration, and API latency separately using their
+`app.kubernetes.io/component=api` and `processor` labels.
+
+A possible first staging experiment is 1 CPU / 4 GiB with two Uvicorn workers,
+retaining the current replica count. This is a test candidate, not an established
+production size. API resource defaults remain unchanged. Verify admitted pod
+requests because Autopilot can adjust CPU/memory ratios. The backend
+[Kubernetes README](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/tree/main/deployment/kubernetes#browser-directory-upload-rollout)
+contains the full rollout checks.
 
 GitHub Actions does not create namespaces or RBAC. A Terraform apply creates
 them before the first worker-capable deployment. Existing namespaces must be

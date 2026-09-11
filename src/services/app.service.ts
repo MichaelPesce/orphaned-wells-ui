@@ -1,6 +1,7 @@
 import {
   ChangeCollaboratorRequest,
   ChangeTeamRequest,
+  DirectoryUploadRequest,
   MongoProcessor,
   RoleCategory,
   UpdateRolePermissionsRequest,
@@ -174,6 +175,33 @@ export const batchProcessDocuments = (project_id: string, data: any) => {
     headers: JSON_HEADERS,
   });
 };
+
+export const getDirectoryUploadConfig = (recordGroupId: string) => fetch(
+  `${BACKEND_URL}/directory_uploads/${recordGroupId}/config`, {mode: CORS_MODE}
+);
+
+export const createDirectoryUpload = (recordGroupId: string, data: DirectoryUploadRequest) => fetch(
+  `${BACKEND_URL}/directory_uploads/${recordGroupId}/sessions`,
+  {method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(data)}
+);
+
+export const createDirectoryFileUpload = (recordGroupId: string, sessionId: string, fileId: string) => fetch(
+  `${BACKEND_URL}/directory_uploads/${recordGroupId}/sessions/${sessionId}/files/${fileId}`,
+  {method: "POST", mode: CORS_MODE}
+);
+
+export const finalizeDirectoryUpload = (recordGroupId: string, sessionId: string) => fetch(
+  `${BACKEND_URL}/directory_uploads/${recordGroupId}/sessions/${sessionId}/finalize`,
+  {method: "POST", mode: CORS_MODE}
+);
+
+export const listProcessingJobs = (recordGroupId: string) => fetch(
+  `${BACKEND_URL}/processing_jobs/${recordGroupId}`, {mode: CORS_MODE}
+);
+
+export const retryProcessingJob = (recordGroupId: string, jobId: string) => fetch(
+  `${BACKEND_URL}/processing_jobs/${recordGroupId}/${jobId}/retry`, {method: "POST", mode: CORS_MODE}
+);
 
 export const checkGcsBucketPath = (project_id: string, data: any) => {
   return fetch(BACKEND_URL + "/batch_process_documents/" + project_id + "/check_gcs_path", {

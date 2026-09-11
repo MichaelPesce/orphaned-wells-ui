@@ -17,6 +17,8 @@ import {
   checkGcsBucketPath,
 } from "../../services/app.service";
 import { callAPI } from "../../util";
+import { useUserContext } from "../../usercontext";
+import ProcessingJobs from "./ProcessingJobs";
 
 interface UploadGcsDirectoryProps {
   runCleaningFunctions: boolean;
@@ -42,6 +44,7 @@ interface GcsPathCheckResult {
 
 const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
   const params = useParams<{ id: string }>();
+  const {hasPermission} = useUserContext();
   const {
     runCleaningFunctions,
     setRunCleaningFunctions,
@@ -234,7 +237,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
       {jobId && (
         <Grid item xs={12}>
           <Alert severity="success">
-            Batch processing started. Job ID: {jobId}
+            Batch submitted. Processing status appears below.
           </Alert>
         </Grid>
       )}
@@ -284,7 +287,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
                 variant="contained"
                 sx={styles.button}
                 onClick={submit}
-                disabled={!bucketName.trim() || checkingPath || (pathCheckResult !== null && getFilesToSubmit() === 0)}
+                disabled={!hasPermission("upload_document") || !bucketName.trim() || checkingPath || (pathCheckResult !== null && getFilesToSubmit() === 0)}
               >
                 Start Batch Processing
               </Button>
@@ -292,6 +295,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
           )}
         </Stack>
       </Grid>
+      <Grid item xs={12}><ProcessingJobs recordGroupId={params.id || ""} latestJobId={jobId} /></Grid>
     </Grid>
   );
 };

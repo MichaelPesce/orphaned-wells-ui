@@ -19,7 +19,7 @@ const sidebars: SidebarsConfig = {
       type: "category",
       label: "Concepts",
       link: {type: "doc", id: "concepts/index"},
-      items: ["concepts/docai"],
+      items: ["concepts/docai", "concepts/upload-processing"],
     },
     {
       type: "category",

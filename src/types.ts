@@ -448,13 +448,57 @@ export interface UploadProcessorProps {
 }
 
 export interface UploadDirectoryProps {
-    setShowModal: (show: boolean) => void;
     directoryFiles: File[];
     directoryName: string;
     runCleaningFunctions: boolean;
     setRunCleaningFunctions: (show: boolean) => void;
     uploading: boolean;
     setUploading: (show: boolean) => void;
+}
+
+export interface DirectoryUploadConfig {
+    mode: "direct" | "legacy" | "unavailable";
+    max_files: number;
+    max_file_bytes: number;
+    max_total_bytes: number;
+}
+
+export interface DirectoryUploadFile {
+    name: string;
+    relative_path: string;
+    size: number;
+}
+
+export interface DirectoryUploadRequest {
+    session_id: string;
+    files: DirectoryUploadFile[];
+    prevent_duplicates: boolean;
+    run_cleaning_functions: boolean;
+}
+
+export interface DirectoryUploadSession {
+    session_id: string;
+    expires_at: number;
+    files: (DirectoryUploadFile & {file_id: string; content_type: string})[];
+    job?: ProcessingJob;
+}
+
+export interface ProcessingJob {
+    job_id: string;
+    status: "queued" | "dispatched" | "running" | "completed" | "completed_with_errors" | "error";
+    created_at: number;
+    request_user: {email: string};
+    input: {upload_session_id?: string};
+    batches_total: number;
+    batches_completed: number;
+    summary: {
+        total_submitted: number;
+        total_succeeded: number;
+        total_failed: number;
+        total_skipped_duplicates: number;
+        failed_document_uris: string[];
+    };
+    error?: string;
 }
 
 export interface BottombarProps {
