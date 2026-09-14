@@ -206,9 +206,10 @@ const RecordGroupPage = () => {
   };
 
   const hasProcessor = Boolean(recordGroup.processorId);
-  const canUploadRecords = hasPermission("upload_document") && Boolean(recordGroup._id);
+  const isRecordGroupLoaded = Boolean(recordGroup._id) && recordGroup._id === params.id;
+  const canUploadRecords = hasPermission("upload_document");
   const primaryButtonName = canUploadRecords
-    ? hasProcessor
+    ? !isRecordGroupLoaded || hasProcessor
       ? "Upload new record(s)"
       : "Import JSON/CSV records"
     : undefined;
@@ -222,6 +223,7 @@ const RecordGroupPage = () => {
       <Subheader
         currentPage={recordGroup.name}
         buttonName={primaryButtonName}
+        disableButton={!isRecordGroupLoaded}
         handleClickButton={handlePrimaryButtonClick}
         actions={subheaderActions}
         previousPages={navigation}
