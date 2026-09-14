@@ -382,6 +382,14 @@ export interface RecordsTableProps {
     onFiltersChange?: (filters: FilterOption[]) => void;
     disabled?: boolean;
     disabledMessage?: string;
+    refreshKey?: number;
+    pollWhileIdle?: boolean;
+}
+
+export interface RecordsResponse {
+    records: RecordData[];
+    record_count: number;
+    has_active_processing_jobs?: boolean;
 }
 
 export interface PopupModalProps {
@@ -454,6 +462,8 @@ export interface UploadDirectoryProps {
     setRunCleaningFunctions: (show: boolean) => void;
     uploading: boolean;
     setUploading: (show: boolean) => void;
+    onClose?: () => void;
+    processorReady?: boolean;
 }
 
 export interface DirectoryUploadConfig {
@@ -488,7 +498,14 @@ export interface ProcessingJob {
     status: "queued" | "dispatched" | "running" | "completed" | "completed_with_errors" | "error";
     created_at: number;
     request_user: {email: string};
-    input: {upload_session_id?: string};
+    input: {upload_session_id?: string; bucket_name?: string; prefix?: string; upload_expires_at?: number};
+    source_type?: "directory" | "gcs";
+    file_count?: number | null;
+    started_at?: number;
+    completed_at?: number;
+    last_progress_at?: number;
+    stage?: string;
+    attempt?: number;
     batches_total: number;
     batches_completed: number;
     summary: {
@@ -496,9 +513,23 @@ export interface ProcessingJob {
         total_succeeded: number;
         total_failed: number;
         total_skipped_duplicates: number;
-        failed_document_uris: string[];
+        failed_document_uris?: string[];
     };
     error?: string;
+}
+
+export interface ProcessingJobHistory {
+    active_jobs: ProcessingJob[];
+    active_count: number;
+    jobs: ProcessingJob[];
+    count: number;
+}
+
+export interface ProcessingJobDetails {
+    job: ProcessingJob;
+    files: {name: string; source_uri?: string; record_id?: string; status?: string}[];
+    file_count: number;
+    retry: {allowed: boolean; reason?: string};
 }
 
 export interface BottombarProps {

@@ -49,7 +49,7 @@ const RecordGroupPage = () => {
   }, [project]);
 
   useEffect(() => {
-    let tempActions = {} as SubheaderActions;
+    let tempActions = {"Upload history": () => navigate(`/record_group/${params.id}/uploads`)} as SubheaderActions;
     const hasProcessor = Boolean(recordGroup.processorId);
     const hasSchema = hasProcessor || Boolean(recordGroup.attributes?.length);
     if (hasPermission("manage_project")) {
@@ -234,6 +234,8 @@ const RecordGroupPage = () => {
           onFiltersChange={setRecordFilters}
           disabled={deletingRecords}
           disabledMessage="Deleting records..."
+          refreshKey={Number(showDocumentModal)}
+          pollWhileIdle={showDocumentModal}
         />
       </Box>
       {showDocumentModal && 

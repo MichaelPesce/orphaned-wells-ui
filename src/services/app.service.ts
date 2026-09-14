@@ -195,8 +195,14 @@ export const finalizeDirectoryUpload = (recordGroupId: string, sessionId: string
   {method: "POST", mode: CORS_MODE}
 );
 
-export const listProcessingJobs = (recordGroupId: string) => fetch(
-  `${BACKEND_URL}/processing_jobs/${recordGroupId}`, {mode: CORS_MODE}
+export const getProcessingJobHistory = (recordGroupId: string, body: object) => fetch(
+  `${BACKEND_URL}/processing_jobs/${recordGroupId}/history`,
+  {method: "POST", headers: JSON_HEADERS, mode: CORS_MODE, body: JSON.stringify(body)}
+);
+
+export const getProcessingJobDetails = (recordGroupId: string, jobId: string, fileKind = "records", page = 0) => fetch(
+  `${BACKEND_URL}/processing_jobs/${recordGroupId}/${jobId}?file_kind=${fileKind}&page=${page}&page_size=25`,
+  {mode: CORS_MODE}
 );
 
 export const retryProcessingJob = (recordGroupId: string, jobId: string) => fetch(

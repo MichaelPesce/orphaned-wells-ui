@@ -148,7 +148,7 @@ const Record = () => {
     let tempActions = {
       "Change record name": () => setOpenUpdateNameModal(true)
     } as SubheaderActions;
-    if (hasPermission("upload_document") && (recordData.image_files || []).length === 0) {
+    if (hasPermission("upload_document") && (recordData.image_files || []).length === 0 && !["queued", "processing"].includes(recordData.status)) {
       tempActions["Upload record image(s)"] = () => setOpenImageUploadDialog(true);
     }
     if (hasPermission("clean_record")) {
@@ -159,7 +159,7 @@ const Record = () => {
       tempActions["Delete record"] = () => setOpenDeleteModal(true);
     }
     setSubheaderActions(tempActions);
-  }, [hasPermission, recordData.image_files]);
+  }, [hasPermission, recordData.image_files, recordData.status]);
 
   // Process successful record fetch: set record data, schema, and breadcrumb navigation
   const handleSuccessfulFetchRecord = React.useCallback((data: any, lock_record?: boolean) => {
@@ -526,7 +526,7 @@ const Record = () => {
   }
 
   const hasRecordImages = (recordData.image_files || []).length > 0;
-  const canUploadRecordImages = hasPermission("upload_document") && !hasRecordImages;
+  const canUploadRecordImages = hasPermission("upload_document") && !hasRecordImages && !["queued", "processing"].includes(recordData.status);
 
   return (
     <Box sx={styles.outerBox}>

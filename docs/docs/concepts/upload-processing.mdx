@@ -24,9 +24,10 @@ flowchart LR
     Browser -->|Metadata and finalization| API
     API -->|Upload session URLs| Browser
     Browser -->|Original file bytes| GCS
+    API -->|Queued records and job| MongoDB
     API -->|Dispatch| Job[Kubernetes Job]
     GCS -->|Original files| Job
-    Job -->|Records and progress| MongoDB
+    Job -->|Update records and progress| MongoDB
     API -->|Read progress| MongoDB
 ```
 
@@ -39,10 +40,17 @@ The steps are:
    paths prevent files in different subdirectories from overwriting one another.
 3. The browser transfers at most four files at once, using resumable uploads.
 4. Once all transfers finish, the API checks the stored objects' size, content
-   type, and generation. Repeated finalization returns the same processing job.
+   type, and generation, then creates metadata-only records marked **queued**.
+   Repeated finalization returns the same job and records.
 5. The API dispatches a worker, or leaves the job queued until capacity is free.
-6. The worker creates display images and records, detects whitespace, calls
-   Document AI, applies optional cleaning functions, and saves the results.
+6. The worker prepares display images and changes those records to **processing**,
+   detects whitespace, calls Document AI, applies optional cleaning functions,
+   and saves the results. Records become **digitized** or **error**.
+
+The record table shows queued records after verification, including while a job
+waits for a worker. File bytes and image conversion remain outside the API.
+Records keep the same IDs and record numbers through preparation and retries.
+Files that fail during download or conversion remain visible as error records.
 
 Supported directory files are PDF, PNG, JPEG, and TIFF. Rename document files
 containing `#`, `?`, or `%` before uploading; these characters conflict with the
@@ -56,7 +64,9 @@ The **Upload File** control has its own separate size limit.
 **Prevent Duplicates** compares filename bases within the record group. For
 example, `well.pdf` and `well.tif` share a base name. The directory selection also
 skips repeated bases inside the selected folder when this option is enabled.
-The worker checks again before creating records.
+The API records duplicate decisions during finalization before creating pending
+records, so a retry does not treat its own records as duplicates. Files skipped
+as duplicates do not receive new records.
 
 ### Transfer interruptions
 
@@ -99,26 +109,65 @@ span multiple Document AI batches; the worker limits concurrent batch operations
 
 ## Processing status and recovery
 
-The upload dialog shows the ten most recent jobs for the current record group,
-including jobs submitted before a page refresh. Active jobs refresh every five
-seconds; an idle list refreshes every fifteen seconds.
+The upload dialog shows only the current submission. Its desktop layout has a
+fixed header, footer, file-list region, and status region; loading responses and
+changes in file count do not resize or recenter it. On small screens it fills
+the viewport. The form body and file list scroll while actions remain visible.
+Source tabs sit below the title; the compact processor status menu contains the
+existing deploy/undeploy controls.
+
+Open **Upload history** from the dialog footer or the record group's actions
+menu. The page separates **Active uploads** from **Finished uploads**, each with
+server pagination (25 jobs per page). Finished-job filters cover status, source,
+uploader, and submission date; they never hide active uploads. Jobs are shown
+newest first. An older active job remains accessible even after many newer jobs.
+
+Open **Details** to see source paths, counts, timestamps, errors, and paginated
+created records, directory manifest, failed files, or skipped duplicates. Existing
+records link directly to their record pages. A GCS batch's file count remains
+**Pending discovery** until its worker discovers the source files.
+
+History and details refresh every five seconds while work is active and the
+browser tab is visible. Refreshes preserve existing rows. Settled views stop
+polling; use **Refresh uploads** in the page actions or **Refresh** in details,
+or return to the tab to fetch new information. The page URL can link directly
+to a job's details after a browser refresh.
+
+History covers directory uploads using the worker path and GCS batches after
+submission. Single-file/ZIP uploads, record-image attachments, imports, and the
+local-storage directory fallback are not tracked here. Incomplete browser
+transfers are not processing jobs yet.
 
 | Status | Meaning |
 | --- | --- |
-| Waiting for a processing worker | The job is queued behind the environment's active worker limit. |
-| Starting processing worker | Dispatch has begun; Kubernetes may still be scheduling the pod. |
-| Processing documents | Conversion, whitespace detection, Document AI, or result import is running. |
-| Processing complete | All submitted files succeeded or were skipped as duplicates. |
-| Processing completed with errors | Some files failed; expand the failed-file list. |
-| Processing failed | The worker or job failed; inspect the error before retrying. |
+| Waiting for a worker | The job is queued behind the environment's active worker limit. |
+| Starting worker | Dispatch has begun; Kubernetes may still be scheduling the pod. |
+| Processing | Conversion, whitespace detection, Document AI, or result import is running. |
+| Complete | All submitted files succeeded or were skipped as duplicates. |
+| Completed with errors | Some files failed; open Details and select Failed files. |
+| Failed | The worker or job failed; inspect the error before retrying. |
 
 Counts update as each Document AI batch finishes, so they can remain unchanged
 while conversion or an external operation is running. Once transfer finishes,
-processing continues after closing the dialog or browser. Use **Refresh records**
-to reload the record table when results are ready.
+processing continues after closing the dialog or browser. The record-group table
+refreshes every five seconds while processing is active, including when active
+records are outside its current page or filters, and stops after fetching the
+finished results. It also checks while the upload dialog is open. These updates
+preserve filters, pagination, and existing rows. The table is still subject to
+your current filters and sort order; queued records can be on another page.
+Use **View records** to return to the record group.
+
+Details show the worker start time and last reported activity (preparing images,
+waiting for Document AI, or saving/cleaning results). These are activity events,
+not a heartbeat or a processing percentage. Concurrent batches can report
+different stages; the display shows the most recently reported activity.
+Older jobs may have no activity timestamp. Elapsed time alone does not establish
+that a job failed, and the UI does not force-restart active jobs.
 
 For a failed local-directory job, the original uploader can select **Retry failed
-processing** during the seven-day session window. Successfully digitized records
+processing** in **Upload history → Details** during the seven-day session window.
+When retry is unavailable, details explain whether the cause is ownership,
+permission, expiration, or an unconfirmed/still-stopping worker. Successfully digitized records
 are preserved. Failed records reuse their original record IDs, and the worker
 reattaches to a recorded, unconsumed Document AI operation instead of submitting
 it again. Automatic Kubernetes retries remain disabled. An interrupted external
@@ -151,7 +200,10 @@ not silently fall back to API processing when direct uploads are unavailable.
 
 For Google-backed local development, transfers still go directly to GCS, while
 `PROCESSING_JOB_MODE=background` executes processing in the API process after
-the response. Production uses `PROCESSING_JOB_MODE=kubernetes`.
+the response using the API's existing Mongo connection. Local worker-startup
+errors are recorded on the job; temporary failures writing that error are retried
+while the API process remains running. Local execution does not survive stopping
+or reloading the backend. Production uses `PROCESSING_JOB_MODE=kubernetes`.
 
 See [Backend on GKE](../deploy-gcp/backend-gke.mdx) for bucket CORS, runtime
 permissions, staging retention, deployment order, and resource validation.

@@ -48,10 +48,11 @@ export const DEFAULT_FILTER_OPTIONS: {
     operator: "equals",
     options: [
       { name: "digitized", checked: true, value: "digitized" },
+      { name: "queued", checked: true, value: "queued" },
       { name: "processing", checked: true, value: "processing" },
       { name: "error", checked: true, value: "error" },
     ],
-    selectedOptions: ["digitized", "processing", "error"]
+    selectedOptions: ["digitized", "queued", "processing", "error"]
   },
   error_status: {
     key: "error_status",

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import ProjectsListPage from "./views/ProjectsListPage/ProjectsListPage";
 import Project from "./views/ProjectPage/ProjectPage";
 import RecordGroup from "./views/RecordGroupPage/RecordGroupPage";
+import UploadHistoryPage from "./views/UploadHistoryPage/UploadHistoryPage";
 import Record from "./views/RecordPage/RecordPage";
 import TeamRecordsPage from "./views/TeamRecordsPage/TeamRecordsPage";
 import AdminPage from "./views/AdminPage/AdminPage";
@@ -68,6 +69,7 @@ function App() {
             element={<LoginRoute />}
           />
           <Route element={<ProtectedRoutes />}>
+            <Route path="record_group/:id/uploads" element={<UploadHistoryPage />} />
             <Route
               path="record/:id"
               element={<Record />}
