@@ -1,7 +1,7 @@
 import React, { useEffect, Fragment, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter, TablePagination } from "@mui/material";
-import { Button, Box, Paper, IconButton, Grid, Typography, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Alert, Button, Box, Paper, IconButton, Grid, Typography, Menu, MenuItem, Tooltip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import IosShareIcon from "@mui/icons-material/IosShare";
 import ErrorIcon from "@mui/icons-material/Error";
@@ -25,7 +25,8 @@ import { styles } from "../../styles";
 import RecordNotesDialog from "../RecordNotesDialog/RecordNotesDialog";
 import TableFilters from "../TableFilters/TableFilters";
 import { RecordData, RecordsTableProps, RecordNote } from "../../types";
-import { getRecords, deleteRecords } from "../../services/app.service";
+import { deleteRecords } from "../../services/app.service";
+import { useRecordsTableData } from "./useRecordsTableData";
 import ColumnSelectDialog from "../ColumnSelectDialog/ColumnSelectDialog";
 import EmptyTable from "../EmptyTable/EmptyTable";
 import TableLoading from "../TableLoading/TableLoading";
@@ -57,15 +58,14 @@ const RecordsTable = (props: RecordsTableProps) => {
     onFiltersChange,
     disabled,
     disabledMessage,
+    refreshKey,
+    pollWhileIdle,
   } = props;
 
   const { hasPermission, user } = useUserContext();
-  const [loading, setLoading] = useState(true);
   const [ showNotes, setShowNotes ] = useState(false);
   const [ notesRecordId, setNotesRecordId ] = useState<string>();
   const [ openColumnSelect, setOpenColumnSelect ] = useState(false);
-  const [records, setRecords] = useState<RecordData[]>([]);
-  const [recordCount, setRecordCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(() => {
     const pageParam = searchParams.get('page');
     return pageParam ? parseInt(pageParam, 10) - 1 : DEFAULT_PAGE_NUMBER; // Convert from 1-based URL to 0-based internal
@@ -88,6 +88,10 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const tableDisabled = disabled || deletingDisplayedRecords;
   const tableDisabledMessage = disabledMessage || "Deleting records...";
+  const {records, setRecords, recordCount, loading, error: recordsError} = useRecordsTableData({
+    location, scopeId: params.id, currentPage, pageSize, filters: filterBy, sort: sorted,
+    refreshKey, pollWhileIdle, paused: tableDisabled,
+  });
 
   useEffect(() => {
     onFiltersChange?.(filterBy);
@@ -140,12 +144,6 @@ const RecordsTable = (props: RecordsTableProps) => {
       collaborator === "osage" ? OSAGE_TABLE_ATTRIBUTES[location] :
         TABLE_ATTRIBUTES[location];
 
-  useEffect(() => {
-    setRecords([]);
-    setLoading(true);
-    loadData();
-  }, [params.id, pageSize, currentPage, filterBy, sorted]);
-
   const handleCopyName = (e: React.MouseEvent, recordId: string, name: string) => {
     e.stopPropagation();
     navigator.clipboard.writeText(name).then(() => {
@@ -156,32 +154,6 @@ const RecordsTable = (props: RecordsTableProps) => {
     }).catch((err) => {
       console.error("Failed to copy text: ", err);
     });
-  };
-
-  const loadData = () => {
-    const body = {
-      sort: sorted,
-      filter: convertFiltersToMongoFormat(filterBy),
-      id: params.id,
-    };
-    const args = [location, body, currentPage, pageSize];
-    callAPI(
-      getRecords,
-      args,
-      handleSuccess,
-      handleAPIError,
-    );
-  };
-
-  const handleSuccess = (data: { records: any[], record_count: number }) => {
-    setLoading(false);
-    setRecords(data.records);
-    setRecordCount(data.record_count);
-  };
-
-  const handleAPIError = (e: Error) => {
-    setLoading(false);
-    console.error("error getting record group data: ", e);
   };
 
   const handleClickRecord = (record_id: string) => {
@@ -332,7 +304,7 @@ const RecordsTable = (props: RecordsTableProps) => {
     // determine colors of status icons. this is getting more and more complicated...
     let digitizationStatusIconColor = row.has_errors ? "#B71D1C" : "green";
     let reviewStatusIconColor = row.has_errors ? "#B71D1C" : "green";
-    if (row.status === "processing") digitizationStatusIconColor = "#EF6C0B";
+    if (["queued", "processing"].includes(row.status)) digitizationStatusIconColor = "#EF6C0B";
     if (row.verification_status === "required" || row.review_status === "incomplete") reviewStatusIconColor = "#E3B62E";
     else if (row.review_status === "defective") reviewStatusIconColor = "#9F0100";
     else if (row.review_status === "unreviewed") reviewStatusIconColor = "grey";
@@ -386,7 +358,7 @@ const RecordsTable = (props: RecordsTableProps) => {
         <Typography variant='inherit' noWrap>
           <IconButton sx={{ color: digitizationStatusIconColor }}>
             {
-              row.status === "processing" ? 
+              ["queued", "processing"].includes(row.status) ?
                 <CachedIcon /> :
                 row.status === "digitized" ? 
                   <CheckCircleOutlineIcon /> :
@@ -471,6 +443,7 @@ const RecordsTable = (props: RecordsTableProps) => {
 
   return (
     <React.Fragment>
+      {recordsError && <Alert severity="warning">{recordsError}</Alert>}
       <TableContainer
         component={Paper}
         sx={{ position: "relative" }}

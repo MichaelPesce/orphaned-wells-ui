@@ -1,429 +1,63 @@
-import { useState, useRef, ChangeEvent, useEffect } from "react";
+import { ChangeEvent, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Grid, Box, Modal, IconButton, Button, Switch, FormControlLabel, Badge, CircularProgress, Stack, Tooltip, Typography } from "@mui/material";
-import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import { Box, Dialog, DialogTitle, IconButton, Tab, Tabs, Typography, useMediaQuery, useTheme } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CreateNewFolderIcon from "@mui/icons-material/CreateNewFolder";
-import CloudQueueIcon from "@mui/icons-material/CloudQueue";
-import { FileUploader } from "react-drag-drop-files";
 import { UploadDocumentsModalProps } from "../../types";
+import { useUserContext } from "../../usercontext";
 import UploadDirectory from "./UploadDirectory";
 import UploadGcsDirectory from "./UploadGcsDirectory";
-import { checkProcessorStatus, deployProcessor, undeployProcessor } from "../../services/app.service";
-import { callAPI } from "../../util";
+import SingleFileUpload from "./SingleFileUpload";
+import UploadProcessorStatus from "./UploadProcessorStatus";
 
-const UploadDocumentsModal = (props: UploadDocumentsModalProps) => {
-  const params = useParams<{ id: string }>();
-  const { setShowModal, handleUploadDocument } = props;
-  const [ showWarning, setShowWarning ] = useState(false);
-  const [ warningMessage, setWarningMessage ] = useState("");
-  const [ file, setFile ] = useState<File | null>(null);
-  const [uploadDirectory, setUploadDirectory] = useState<string>();
-  const [uploadDirectoryFiles, setUploadDirectoryFiles ] = useState<any>([]);
-  const [ runCleaningFunctions, setRunCleaningFunctions ] = useState(true);
-  const [ processorState, setProcessorState ] = useState(10);
-  const [ uploadingDirectory, setUploadingDirectory ] = useState(false);
-  const [ showGcsUpload, setShowGcsUpload ] = useState(false);
-  const [ uploadingGcsDirectory, setUploadingGcsDirectory ] = useState(false);
-  const maxFileSize = 10;
-  const fileTypes: string[] = ["tiff", "tif", "pdf", "png", "jpg", "jpeg", "zip"];
-  const validFileTypes = ["image/png", "application/pdf", "image/tiff", "image/jpeg"];
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    callAPI(
-      checkProcessorStatus,
-      [params.id],
-      (data) => handleCheckedProcessorStatus(data),
-      (e, status) => console.error(e)
-    );
-  }, [params.id]);
-
-  const styles = {
-    modalStyle: {
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      minWidth: 650,
-      maxWidth: 650,
-      // maxWidth: '80vw',
-      bgcolor: "background.paper",
-      border: "1px solid #AEAEAE",
-      borderRadius: 2,
-      boxShadow: 24,
-      p: 2,
-      maxHeight: "75vh",
-      overflow: "scroll",
-      overflowX: "hidden"
-    },
-    header: {
-      marginTop: 5
-    },
-    button: {
-      borderRadius: "8px", 
-      // width: 200,
-    },
-    sampleFile: {
-      textDecoration: "none",
-      fontWeight: "bold",
-      cursor: "pointer"
-    },
-    fileUploaderBox: {
-      border: showWarning ? "2px dashed #E07174" : "2px dashed black",
-      borderRadius: 2,
-      p: 8,
-      cursor: "pointer",
-      backgroundColor: showWarning ? "#FDF7F7" : "white",
-    },
-    uploadIcon: {
-      color: showWarning ? "#D3242F" : "#2196F3",
-      paddingBottom: 3
-    },
-    uploadContainerBox: {
-      display: "flex", 
-      justifyContent: "center"
-    },
-    uploadContainerItem: {
-      display: "flex", 
-      justifyContent: "center"
-    },
-    processorDeploymentText: {
-      margin:"10px"
-    }
+const UploadDocumentsModal = ({setShowModal, handleUploadDocument}: UploadDocumentsModalProps) => {
+  const {id = ""} = useParams<{id: string}>();
+  const {hasPermission} = useUserContext();
+  const fullScreen = useMediaQuery(useTheme().breakpoints.down("sm"));
+  const [mode, setMode] = useState("file");
+  const [directory, setDirectory] = useState<{name: string; files: File[]; selection: number}>();
+  const [clean, setClean] = useState(true);
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const permitted = hasPermission("upload_document");
+  const close = () => {if (!busy) setShowModal(false);};
+  const chooseDirectory = (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    if (!selected.length) return;
+    const files = selected.filter((file) => /\.(pdf|tiff?|png|jpe?g)$/i.test(file.name));
+    setDirectory((previous) => ({name: selected[0].webkitRelativePath?.split("/")[0] || "Selected directory", files, selection: (previous?.selection || 0) + 1}));
+    setMode("directory");
+    event.target.value = "";
   };
-
-  const handleCheckedProcessorStatus = (state: number) => {
-    setProcessorState(state);
-  };
-
-  const handleClose = () => {
-    setShowModal(false);
-  };
-
-  const handleClickUpload = () => {
-    if (file === null) {
-      setWarningMessage("Please upload a valid file");
-      setShowWarning(true);
-      setTimeout(() => {
-        setShowWarning(false);
-      }, 5000);
-    } else {
-      handleUploadDocument(file, runCleaningFunctions, true);
-      setShowWarning(false);
-      setShowModal(false);
-    }
-  };
-
-  const fileTypeError = () => {
-    setWarningMessage("Unsupported file type");
-    setShowWarning(true);
-  };
-
-  const fileSizeError = () => {
-    setWarningMessage("File too large");
-    setShowWarning(true);
-  };
-
-  const handleChooseDirectory = (e: ChangeEvent<HTMLInputElement>) => {
-    handleDirectoryInput(e.target.files);
-    setShowWarning(false);
-  };
-
-  const handleBack = () => {
-    setUploadDirectory(undefined);
-    setUploadDirectoryFiles([]);
-    setShowGcsUpload(false);
-    setFile(null);
-  };
-
-  const handleChooseGcsDirectory = () => {
-    setShowGcsUpload(true);
-    setShowWarning(false);
-    setFile(null);
-  };
-
-  const handleDirectoryInput = (f: FileList | null) => {
-    let files = f || [] as any;
-    let validFiles = [];
-    let directoryName;
-    // console.log(`handling ${files.length} files`)
-    for (let file of files) {
-      if (validFileTypes.includes(file.type)) {
-        validFiles.push(file);
-      }
-    }
-    // console.log(`found ${validFiles.length} valid document files`)
-    if (files && files.length && files.length > 0) {
-      let filePath = files[0].webkitRelativePath;
-      let splitPath = filePath.split("/");
-      directoryName = splitPath[0];
-    }
-    setUploadDirectory(directoryName);
-    setUploadDirectoryFiles(validFiles);
-  };
-
-  const handleDeployProcessor = () => {
-    let apiFunc;
-    if (processorState === 1) {
-      apiFunc = undeployProcessor;
-    }
-    else if (processorState === 3) {
-      apiFunc = deployProcessor;
-    }
-    else return;
-    callAPI(
-      apiFunc,
-      [params.id],
-      (data) => handleSuccessfulDeploy(data),
-      (data) => handleFailedDeploy(data),
-    );
-  };
-
-  const handleSuccessfulDeploy = (response: number) => {
-    if (response) setProcessorState(response);
-  };
-
-  const handleFailedDeploy = (response: any) => {
-    console.error("failed to deploy");
-    if (response) setProcessorState(response);
-  };
-
-  const fileUploaderContainer = () => {
-    return (
-      <Box data-cy="upload-dropzone" sx={styles.fileUploaderBox}>
-        <Box sx={styles.uploadContainerBox}>
-          <IconButton sx={styles.uploadIcon}>
-            <UploadFileIcon/>
-          </IconButton>
-        </Box>
-        <Box sx={styles.uploadContainerBox}>
-          <h3 style={{marginTop: 0, paddingTop: 0, color: "#2196F3", textDecoration: "underline"}}>Browse files</h3>
-        </Box>
-        <Box sx={styles.uploadContainerBox}>
-          <p style={{marginTop: 0, paddingTop: 0}}>or Drag and Drop File</p>
-        </Box>
-        {showWarning && 
-                    <Box sx={styles.uploadContainerBox}>
-                      <p style={{marginTop: 0, paddingTop: 0, color: "#AD3244", fontWeight: "bold"}}>{warningMessage}</p>
-                    </Box>
-        }
-        <Box sx={styles.uploadContainerBox}>
-          <p style={{margin: 0, padding: 0, color: "#9B9B9B"}}>Choose from supported files:</p>
-        </Box>
-        <Box sx={styles.uploadContainerBox}>
-          <p style={{marginTop: 0, paddingTop: 0, color: "#9B9B9B"}}>
-            {fileTypes.map((v, i) => {
-              if (i === fileTypes.length - 1) return "or " + v.toUpperCase() + ` (max ${maxFileSize}MB)`;
-              else return v.toUpperCase() + ", ";
-            })}
-          </p>
-        </Box>
-        <Box sx={styles.uploadContainerBox}>
-          <p style={{margin: 0, padding: 0}}>{file === null ? "" : file.name}</p>
-        </Box>
+  return <Dialog open onClose={close} fullScreen={fullScreen} maxWidth={false} aria-labelledby="upload-dialog-title" data-cy="upload-documents-modal"
+    PaperProps={{sx: {
+      width: 860, height: fullScreen ? "100dvh" : 660,
+      maxHeight: fullScreen ? "100dvh" : "90dvh", m: fullScreen ? 0 : 2,
+      borderRadius: fullScreen ? 0 : 2,
+      "& .MuiButton-root": {textTransform: "none"},
+      "& .MuiDialogContent-root": {borderTop: 0, borderBottom: 0, px: 3, py: 2.5},
+    }}}>
+    <DialogTitle id="upload-dialog-title" component="div" sx={{display: "flex", alignItems: "flex-start", gap: 2, px: 3, pt: 2.5, pb: 1.5}}>
+      <Box sx={{flex: 1}}>
+        <Typography component="h2" variant="h6" fontWeight={600}>Upload records</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>Choose a source to add documents to this record group.</Typography>
       </Box>
-    );
-  };
-
-  const DragDrop = () => {
-    const handleChange = (file: File) => {
-      setWarningMessage("");
-      setShowWarning(false);
-      setFile(file);
-    };
-    return (
-      <FileUploader 
-        handleChange={handleChange} 
-        name="file" 
-        types={fileTypes}
-        children={fileUploaderContainer()}
-        onTypeError={fileTypeError}
-        onSizeError={fileSizeError}
-        maxSize={maxFileSize}
-        disabled={processorState > 1}
-      />
-    );
-  };
-
-  const uploadContent = () => {
-    if (uploadDirectory) {
-      return (
-        <UploadDirectory
-          setShowModal={setShowModal}
-          directoryName={uploadDirectory}
-          directoryFiles={uploadDirectoryFiles}
-          runCleaningFunctions={runCleaningFunctions}
-          setRunCleaningFunctions={setRunCleaningFunctions}
-          uploading={uploadingDirectory}
-          setUploading={setUploadingDirectory}
-        />
-      );
-    }
-
-    if (showGcsUpload) {
-      return (
-        <UploadGcsDirectory
-          runCleaningFunctions={runCleaningFunctions}
-          setRunCleaningFunctions={setRunCleaningFunctions}
-          uploading={uploadingGcsDirectory}
-          setUploading={setUploadingGcsDirectory}
-        />
-      );
-    }
-
-    return (
-      <>
-        <Tooltip title={processorState > 1 && "Processor must be deployed to upload files"}>
-          <Grid item xs={12}>
-            {DragDrop()}
-          </Grid>
-        </Tooltip>
-        <Grid item xs={12}>
-          <input
-            data-cy="local-directory-input"
-            ref={inputRef}
-            type="file"
-            onChange={handleChooseDirectory}
-            style={{ display: "none" }}
-            multiple
-            {...{ webkitdirectory: "", mozdirectory: "", directory: "" }}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <Box sx={{display: "flex", justifyContent: "space-around", marginBottom: 1}}>
-            <FormControlLabel
-              data-cy="upload-run-cleaning-toggle"
-              control={<Switch/>}
-              label="Run cleaning functions"
-              onChange={(e: any) => setRunCleaningFunctions(e.target.checked)}
-              checked={runCleaningFunctions}
-            />
-          </Box>
-          <Box sx={{display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 2}}>
-            <Button
-              data-cy="upload-file-button"
-              variant="contained"
-              style={styles.button}
-              startIcon={<UploadFileIcon/>}
-              onClick={handleClickUpload}
-              disabled={file === null}
-            >
-                            Upload File
-            </Button>
-            <Button
-              data-cy="local-directory-button"
-              variant="outlined"
-              style={styles.button}
-              startIcon={<CreateNewFolderIcon/>}
-              onClick={() => inputRef.current?.click()}
-              disabled={processorState > 1}
-            >
-                          Local Directory
-            </Button>
-            <Button
-              data-cy="gcs-directory-button"
-              variant="outlined"
-              style={styles.button}
-              startIcon={<CloudQueueIcon/>}
-              onClick={handleChooseGcsDirectory}
-              disabled={processorState > 1}
-            >
-                            GCS Directory
-            </Button>
-          </Box>
-        </Grid>
-      </>
-    );
-  };
-
-  return (
-    <Modal
-      open={true}
-      onClose={handleClose}
-      data-cy="upload-documents-modal"
-      aria-labelledby="modal-modal-title"
-      aria-describedby="modal-modal-description"
-    >
-      <Grid container sx={styles.modalStyle} spacing={1}>
-        {/** TODO: convert the below 3 items to a stack? */}
-        <Grid item xs={3}>
-          {(uploadDirectory || showGcsUpload) &&
-                        <Box sx={{display: "flex", justifyContent: "flex-start", marginLeft: "10px"}}>
-                          <IconButton data-cy="upload-back-button" onClick={handleBack}><ArrowBackIcon/></IconButton>
-                        </Box>
-          }
-        </Grid>
-        <Grid item xs={6}>
-          <Box sx={{display: "flex", justifyContent: "center"}}>
-            <h2 style={styles.header}>Upload document(s)</h2>
-          </Box>
-        </Grid>
-        <Grid item xs={3}>
-          <Box sx={{display: "flex", justifyContent: "flex-end", marginRight: "10px"}}>
-            <IconButton onClick={handleClose}><CloseIcon/></IconButton>
-          </Box>
-        </Grid>
-        <Grid item xs={12}>
-          <Stack direction={"row"} justifyContent={"space-between"}>
-            <span style={styles.processorDeploymentText}>
-                        Processor status: &nbsp; 
-              {
-                processorState > 3 ? (
-                  <span>
-                    <CircularProgress color='primary' size='16px'/>
-                  </span>
-                )
-                  : 
-                  processorState === 3 ? (
-                    <span>
-                                         &nbsp;
-                      <Badge color="error" variant="dot"/>
-                                        &nbsp;
-                                        undeployed
-                    </span>
-                  )
-                    : 
-                    processorState === 2 ? (
-                      <span>
-                                         &nbsp;
-                        <Badge color="warning" variant="dot"/>
-                                        &nbsp;
-                                        deploying
-                      </span>
-                    )
-                      : (
-                        <span>
-                                         &nbsp;
-                          <Badge color="secondary" variant="dot"/>
-                                        &nbsp;
-                                        deployed
-                        </span>
-                      )
-              }
-            </span>
-            <span>
-              <Button 
-                variant='outlined' 
-                endIcon={<RocketLaunchIcon/>} 
-                disabled={processorState > 3 || processorState === 2 || uploadingDirectory || uploadingGcsDirectory}
-                onClick={handleDeployProcessor}    
-              >
-                {processorState === 1 ? "Undeploy" : "Deploy"} Processor
-              </Button>
-            </span>
-          </Stack>
-                    
-                        
-        </Grid>
-        {uploadContent()}
-                
-      </Grid>
-            
-    </Modal>
-  );
+      <IconButton aria-label="Close upload dialog" disabled={busy} onClick={close}><CloseIcon /></IconButton>
+    </DialogTitle>
+    <Box sx={{display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", px: 3, gap: {xs: 0, sm: 1}, borderBottom: 1, borderColor: "divider", flexShrink: 0}}>
+      <Tabs value={mode} aria-label="Upload source" variant="scrollable" scrollButtons="auto" sx={{minHeight: 48, order: {xs: 1, sm: 0}, width: {xs: "100%", sm: "auto"}, "& .MuiTab-root": {minHeight: 48, minWidth: 0, px: {xs: 1.5, sm: 2}, textTransform: "none", fontWeight: 500}}}>
+        <Tab id="upload-source-file" aria-controls="upload-source-panel" data-cy="upload-back-button" label="File / ZIP" value="file" disabled={busy} onClick={() => setMode("file")} />
+        <Tab id="upload-source-directory" aria-controls="upload-source-panel" data-cy="local-directory-button" label="Local directory" value="directory" disabled={busy || !ready || !permitted} onClick={() => input.current?.click()} />
+        <Tab id="upload-source-gcs" aria-controls="upload-source-panel" data-cy="gcs-directory-button" label="GCS directory" value="gcs" disabled={busy || !ready || !permitted} onClick={() => setMode("gcs")} />
+      </Tabs>
+      <UploadProcessorStatus recordGroupId={id} busy={busy} permitted={permitted} onReady={setReady} />
+    </Box>
+    <input data-cy="local-directory-input" aria-label="Select local directory files" ref={input} type="file" multiple hidden onChange={chooseDirectory} {...{webkitdirectory: "", directory: ""}} />
+    <Box role="tabpanel" id="upload-source-panel" aria-labelledby={`upload-source-${mode}`} sx={{display: "flex", flexDirection: "column", flex: 1, minHeight: 0}}>
+      {mode === "file" && <SingleFileUpload disabled={!ready || !permitted} onUpload={(file, cleaning) => {handleUploadDocument(file, cleaning, true); close();}} />}
+      {mode === "directory" && directory && <UploadDirectory key={directory.selection} directoryName={directory.name} directoryFiles={directory.files} runCleaningFunctions={clean} setRunCleaningFunctions={setClean} uploading={busy} setUploading={setBusy} onClose={close} processorReady={ready} />}
+      {mode === "gcs" && <UploadGcsDirectory runCleaningFunctions={clean} setRunCleaningFunctions={setClean} uploading={busy} setUploading={setBusy} onClose={close} processorReady={ready} />}
+    </Box>
+  </Dialog>;
 };
-
 export default UploadDocumentsModal;

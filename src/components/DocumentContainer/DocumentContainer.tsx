@@ -393,9 +393,10 @@ const DocumentContainer = ({
 
 
 
-  const showErrorState = !loading && !attributesList && recordStatus === "error";
+  const showErrorState = !loading && !attributesList?.length && recordStatus === "error";
   const resolvedErrorMessage = errorMessage || "Unknown error.";
   const showNoImageState = !loading && !hasRecordImages;
+  const awaitingImages = recordStatus === "queued" || recordStatus === "processing";
 
   return (
     <Box style={styles.outerBox}>
@@ -556,12 +557,14 @@ const DocumentContainer = ({
                                 <UploadFileIcon color="primary" fontSize="large" />
                               </Box>
                               <Typography variant="h6" sx={styles.noImageTitle}>
-                                No document image
+                                {awaitingImages ? "Document images are being prepared" : "No document image"}
                               </Typography>
                               <Typography color="text.secondary" sx={styles.noImageText}>
-                                Attach an image or PDF to review this record alongside its extracted fields.
+                                {awaitingImages
+                                  ? "Your upload is waiting for processing or preparing its images. Return to the records table to follow its progress."
+                                  : "Attach an image or PDF to review this record alongside its extracted fields."}
                               </Typography>
-                              {canUploadRecordImages && (
+                              {canUploadRecordImages && !awaitingImages && (
                                 <Button
                                   data-cy="record-image-empty-upload"
                                   variant="contained"
