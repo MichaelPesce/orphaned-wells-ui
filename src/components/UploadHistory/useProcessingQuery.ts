@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { callAPI } from "../../util";
 
 /** Refresh active work while visible; retain the last response during refresh. */
@@ -41,6 +41,6 @@ export const useProcessingQuery = <T,>(api: (...args: any[]) => Promise<Response
     load();
     return () => { cancelled = true; clearTimeout(timer); document.removeEventListener("visibilitychange", onVisibility); };
   }, [api, key, revision]);
-  return {data, loading, error, refresh: () => setRevision((value) => value + 1)};
+  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  return {data, loading, error, refresh};
 };
-

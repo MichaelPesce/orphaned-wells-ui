@@ -17,7 +17,7 @@ test("history refresh preserves rows, serializes requests, and stops when no act
   let resolveRefresh: (result: unknown) => void = () => {};
   (getProcessingJobHistory as jest.Mock).mockResolvedValueOnce(response({active_count: 1, jobs: ["saved"]}))
     .mockImplementationOnce(() => new Promise((resolve) => {resolveRefresh = resolve;}));
-  const {result, unmount} = renderHook(() => useProcessingQuery<{active_count: number; jobs: string[]}>(getProcessingJobHistory, ["group", {}], (data) => data.active_count > 0));
+  const {result, unmount} = renderHook(() => useProcessingQuery<{active_count: number; jobs: string[]}>(getProcessingJobHistory, [{record_group_id: "group"}], (data) => data.active_count > 0));
   await waitFor(() => expect(result.current.data?.jobs).toEqual(["saved"]));
   await act(async () => {jest.advanceTimersByTime(5000);});
   expect(result.current.loading).toBe(false);
@@ -35,7 +35,7 @@ test("ignores a response from a previous group and retains data on refresh failu
   (getProcessingJobHistory as jest.Mock).mockImplementationOnce(() => new Promise((resolve) => {finishOld = resolve;}))
     .mockResolvedValueOnce(response({active_count: 0, jobs: ["new group"]}))
     .mockResolvedValueOnce({status: 403, json: async () => ({detail: "Access denied"})});
-  const {result, rerender} = renderHook(({id}) => useProcessingQuery<{active_count: number; jobs: string[]}>(getProcessingJobHistory, [id, {}], (data) => data.active_count > 0), {initialProps: {id: "old"}});
+  const {result, rerender} = renderHook(({id}) => useProcessingQuery<{active_count: number; jobs: string[]}>(getProcessingJobHistory, [{record_group_id: id}], (data) => data.active_count > 0), {initialProps: {id: "old"}});
   rerender({id: "new"});
   await waitFor(() => expect(result.current.data?.jobs).toEqual(["new group"]));
   await act(async () => {finishOld(response({active_count: 0, jobs: ["old group"]}));});

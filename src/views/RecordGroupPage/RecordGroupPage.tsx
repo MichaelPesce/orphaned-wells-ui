@@ -49,7 +49,7 @@ const RecordGroupPage = () => {
   }, [project]);
 
   useEffect(() => {
-    let tempActions = {"Upload history": () => navigate(`/record_group/${params.id}/uploads`)} as SubheaderActions;
+    let tempActions = {"Upload history": () => navigate(`/admin?tab=uploads&record_group=${params.id}`)} as SubheaderActions;
     const hasProcessor = Boolean(recordGroup.processorId);
     const hasSchema = hasProcessor || Boolean(recordGroup.attributes?.length);
     if (hasPermission("manage_project")) {

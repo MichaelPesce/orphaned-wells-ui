@@ -15,7 +15,7 @@ const CurrentUploadStatus = ({recordGroupId, jobId, onClose}: {recordGroupId: st
     {job && <Typography variant="body2">{job.summary.total_succeeded} processed · {job.summary.total_failed} failed · {job.summary.total_skipped_duplicates} duplicates skipped</Typography>}
     {job && isActiveJob(job) && <Typography variant="caption">{jobStages[job.stage || ""] || "Processing continues after you close this dialog."}</Typography>}
     <Stack direction="row" spacing={1}>
-      <Button size="small" component={Link} to={`/record_group/${recordGroupId}/uploads?job=${jobId}`}>Upload details</Button>
+      <Button size="small" component={Link} to={`/admin?tab=uploads&job_group=${recordGroupId}&job=${jobId}`}>Upload details</Button>
       <Button size="small" component={Link} to={`/record_group/${recordGroupId}`} onClick={onClose}>View records</Button>
     </Stack>
   </Stack>;

@@ -16,7 +16,7 @@ beforeEach(() => {
 
 test("history link is present immediately and selected files occupy a fixed region", async () => {
   const {container} = render(<MemoryRouter initialEntries={["/record_group/group"]}><Routes><Route path="record_group/:id" element={<UploadDocumentsModal setShowModal={jest.fn()} handleUploadDocument={jest.fn()} />} /></Routes></MemoryRouter>);
-  expect(screen.getByRole("link", {name: "Upload history"})).toHaveAttribute("href", "/record_group/group/uploads");
+  expect(screen.getByRole("link", {name: "Upload history"})).toHaveAttribute("href", "/admin?tab=uploads");
   await waitFor(() => expect(screen.getByRole("tab", {name: "Local directory"})).toBeEnabled());
   const files = Array.from({length: 500}, (_, index) => new File(["pdf"], `well-${index}.pdf`, {type: "application/pdf"}));
   fireEvent.change(screen.getByLabelText("Select local directory files"), {target: {files}});

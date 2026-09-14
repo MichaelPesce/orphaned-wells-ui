@@ -116,11 +116,26 @@ the viewport. The form body and file list scroll while actions remain visible.
 Source tabs sit below the title; the compact processor status menu contains the
 existing deploy/undeploy controls.
 
-Open **Upload history** from the dialog footer or the record group's actions
-menu. The page separates **Active uploads** from **Finished uploads**, each with
-server pagination (25 jobs per page). Finished-job filters cover status, source,
-uploader, and submission date; they never hide active uploads. Jobs are shown
-newest first. An older active job remains accessible even after many newer jobs.
+Open **Admin → Upload history**, or follow **Upload history** in the dialog
+footer. By default, history includes uploads across all projects you can access
+in your current team. Each upload identifies its project and record group; the
+record group name links to its records. Project and record-group selections
+filter both **Active uploads** and **Finished uploads**. The record group's
+actions menu opens this tab with that group already selected.
+
+Both lists use server pagination (25 jobs per page). Additional finished-job
+filters cover status, source, uploader, and submission date; they never hide
+active uploads within the selected projects/groups. Jobs are shown newest first.
+An older active job remains accessible even after many newer jobs.
+
+Admin tabs follow the URL: `/admin` (or `?tab=users`) opens **Users**,
+`/admin?tab=roles` opens **Roles & Permissions** for users with that permission,
+and `/admin?tab=uploads` opens **Upload history**. Optional `project` and
+`record_group` parameters preserve the history selection. Job details add `job`
+and `job_group`, preserving the surrounding filters. Browser refresh and
+back/forward navigation retain these selections. Old record-group history URLs
+redirect to the corresponding Admin view. Reading upload history requires
+project access; moving it into Admin does not grant user or role management rights.
 
 Open **Details** to see source paths, counts, timestamps, errors, and paginated
 created records, directory manifest, failed files, or skipped duplicates. Existing
@@ -129,7 +144,7 @@ records link directly to their record pages. A GCS batch's file count remains
 
 History and details refresh every five seconds while work is active and the
 browser tab is visible. Refreshes preserve existing rows. Settled views stop
-polling; use **Refresh uploads** in the page actions or **Refresh** in details,
+polling; use **Refresh uploads** above the lists or **Refresh** in details,
 or return to the tab to fetch new information. The page URL can link directly
 to a job's details after a browser refresh.
 

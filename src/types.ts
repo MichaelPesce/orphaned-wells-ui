@@ -495,6 +495,10 @@ export interface DirectoryUploadSession {
 
 export interface ProcessingJob {
     job_id: string;
+    record_group_id: string;
+    project_id?: string;
+    project_name?: string;
+    record_group_name?: string;
     status: "queued" | "dispatched" | "running" | "completed" | "completed_with_errors" | "error";
     created_at: number;
     request_user: {email: string};
@@ -523,6 +527,12 @@ export interface ProcessingJobHistory {
     active_count: number;
     jobs: ProcessingJob[];
     count: number;
+}
+
+export interface ProcessingHistoryProject {
+    id: string;
+    name: string;
+    record_groups: {id: string; name: string}[];
 }
 
 export interface ProcessingJobDetails {

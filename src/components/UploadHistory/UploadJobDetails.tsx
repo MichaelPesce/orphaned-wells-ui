@@ -8,7 +8,7 @@ import { useUserContext } from "../../usercontext";
 import { useProcessingQuery } from "./useProcessingQuery";
 import { isActiveJob, jobStages, jobStatusLabels, jobTime } from "./jobPresentation";
 
-const UploadJobDetails = ({recordGroupId, jobId, onClose, onRetry}: {recordGroupId: string; jobId: string; onClose: () => void; onRetry: () => void}) => {
+const UploadJobDetails = ({recordGroupId, jobId, projectName, recordGroupName, onClose, onRetry}: {recordGroupId: string; jobId: string; projectName?: string; recordGroupName?: string; onClose: () => void; onRetry: () => void}) => {
   const [kind, setKind] = useState("records");
   const [page, setPage] = useState(0);
   const [retrying, setRetrying] = useState(false);
@@ -26,6 +26,7 @@ const UploadJobDetails = ({recordGroupId, jobId, onClose, onRetry}: {recordGroup
   return <Dialog open onClose={retrying ? undefined : onClose} fullScreen={fullScreen} fullWidth maxWidth="md" aria-labelledby="upload-details-title" PaperProps={{sx: {height: fullScreen ? "100dvh" : 720}}}>
     <DialogTitle id="upload-details-title">Upload details</DialogTitle>
     <DialogContent dividers>
+      <Typography variant="body2" sx={{mb: 1, overflowWrap: "anywhere"}}>{projectName && `${projectName} / `}<Link to={`/record_group/${recordGroupId}`}>{recordGroupName || recordGroupId}</Link></Typography>
       <Typography variant="caption" sx={{overflowWrap: "anywhere"}}>Job ID: {jobId}</Typography>
       <Box sx={{height: 4, my: 1}}>{loading && <LinearProgress />}</Box>
       {(error || retryError) && <Alert severity="error">{retryError || error}</Alert>}
