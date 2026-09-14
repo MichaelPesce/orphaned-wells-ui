@@ -416,7 +416,8 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
     }
   }, [forceEditMode]);
 
-  const handleDoubleClick = () => {
+  const handleDoubleClick = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     makeEditable();
   };
 
@@ -435,7 +436,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   };
 
   const makeEditable = () => {
-    if (locked) return;
+    if (locked || isParent) return;
     setEditMode(true);
   };
 
@@ -570,6 +571,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
         data-field-alias={thisAlias}
         sx={fieldIsSelected ? {backgroundColor: "#EDEDED"} : {}}
         onClick={handleClickInside}
+        onDoubleClick={handleDoubleClick}
       >
         <TableCell sx={styles.fieldKey}>
           <span>
@@ -600,6 +602,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                       <TextField 
                         data-cy="edit-field-input"
                         onClick={(e) => e.stopPropagation()}
+                        onDoubleClick={(e) => e.stopPropagation()}
                         autoFocus
                         name={k}
                         size="small"
