@@ -37,6 +37,37 @@ const selectFiles = () => cy.getByCy("local-directory-input").then(($input) => {
 
 describe("upload dialog layout and history", () => {
   beforeEach(() => {cy.clearLocalStorage(); setup();});
+  it("recovers unavailable status and shows deployment through stale status responses", () => {
+    let available = false, requested = false, checksAfterDeploy = 0;
+    cy.intercept("GET", "**/check_processor_status/**", (request) => {
+      const state = !available ? 10 : !requested ? 3 : [3, 2, 1][Math.min(checksAfterDeploy++, 2)];
+      request.reply({body: state});
+    }).as("processorStatus");
+    cy.intercept("POST", `**/deploy_processor/${group}`, (request) => {
+      requested = true;
+      request.reply({delay: 800, body: 2});
+    }).as("deployProcessor");
+    cy.visit(`/record_group/${group}`);
+    cy.getByCy("subheader-primary-action").click();
+    cy.wait("@processorStatus");
+    cy.contains("button", "Processor unavailable").should("be.enabled").click();
+    cy.contains("Processor not found or its status is unavailable.").should("be.visible").then(() => {available = true;});
+    cy.contains('[role="menuitem"]', "Retry status check").click();
+    cy.wait("@processorStatus");
+    cy.contains("button", "Processor undeployed").click();
+    cy.contains('[role="menuitem"]', "Deploy processor").click();
+    cy.contains("button", "Processor deploying").should("be.visible").and("be.disabled");
+    cy.wait("@deployProcessor");
+    [3, 2].forEach((state) => {
+      cy.wait("@processorStatus", {requestTimeout: 10000}).its("response.body").should("eq", state);
+      cy.contains("button", "Processor deploying").should("be.disabled");
+      cy.contains('[role="menuitem"]', "Deploy processor").should("not.exist");
+    });
+    cy.wait("@processorStatus", {requestTimeout: 10000}).its("response.body").should("eq", 1);
+    cy.contains("button", "Processor deployed").should("be.enabled");
+    cy.getByCy("local-directory-button").should("be.enabled");
+    cy.get("@deployProcessor.all").should("have.length", 1);
+  });
   it("keeps desktop geometry stable for slow configuration and 1/10/500 files", () => {
     cy.viewport(1280, 1000);
     open();
@@ -65,12 +96,16 @@ describe("upload dialog layout and history", () => {
   });
   it("keeps mobile actions visible and blocks closing during submission", () => {
     cy.viewport(390, 844);
+    cy.intercept("POST", `**/batch_process_documents/${group}/check_gcs_path`, {body: {totalFiles: 1, totalFilesToSubmit: 1, totalBatches: 1, totalBatchesToSubmit: 1, duplicateCount: 0}}).as("checkPath");
     cy.intercept("POST", `**/batch_process_documents/${group}`, {delay: 1500, body: {job_id: "submitted", status: "queued"}}).as("submit");
     cy.intercept("GET", `**/processing_jobs/${group}/submitted?*`, {body: {job: job("submitted", "queued"), files: [], file_count: 0, retry: {allowed: false}}});
     open();
     cy.getByCy("gcs-directory-button").click();
     cy.getByCy("gcs-bucket-input").find("input").type("test-bucket");
-    cy.getByCy("gcs-start-batch-button").should("be.visible").click();
+    cy.getByCy("gcs-start-batch-button").should("be.visible").and("be.disabled");
+    cy.getByCy("gcs-check-path-button").click();
+    cy.wait("@checkPath");
+    cy.getByCy("gcs-start-batch-button").should("be.enabled").click();
     cy.get('[aria-label="Close upload dialog"]').should("be.disabled");
     cy.wait("@submit");
     cy.contains("button", "Close").should("be.visible");

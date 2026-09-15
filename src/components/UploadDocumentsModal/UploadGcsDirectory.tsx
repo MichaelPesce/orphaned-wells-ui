@@ -116,6 +116,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
   };
 
   const submit = () => {
+    if (!canSubmit) return;
     const requestData = getRequestData();
     if (!requestData) return;
 
@@ -141,31 +142,36 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
     );
   };
 
-  const handlePreventDuplicates = (e: any) => {
-    setPreventDuplicates(e.target.checked);
+  const invalidatePathCheck = () => {
     setPathCheckResult(null);
+    setErrorMessage("");
+    setJobId("");
+  };
+
+  const handlePreventDuplicates = (e: ChangeEvent<HTMLInputElement>) => {
+    setPreventDuplicates(e.target.checked);
+    invalidatePathCheck();
   };
 
   const handleBucketNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     setBucketName(e.target.value);
-    setPathCheckResult(null);
-    setJobId("");
+    invalidatePathCheck();
   };
 
   const handlePrefixChange = (e: ChangeEvent<HTMLInputElement>) => {
     setPrefix(e.target.value);
-    setPathCheckResult(null);
-    setJobId("");
+    invalidatePathCheck();
   };
 
   const disabled = uploading || checkingPath || !!jobId;
+  const canSubmit = !disabled && processorReady && hasPermission("upload_document") && !!bucketName.trim() && pathCheckResult !== null && getFilesToSubmit() > 0;
   const status = jobId ? <CurrentUploadStatus recordGroupId={params.id || ""} jobId={jobId} onClose={onClose} />
     : errorMessage ? <Alert severity="error">{errorMessage}</Alert>
       : checkingPath || uploading ? <Stack spacing={1}><Typography variant="body2">{checkingPath ? "Checking bucket and path…" : "Starting batch job…"}</Typography><LinearProgress /></Stack>
         : pathCheckResult ? <Alert severity={getFilesToSubmit() > 0 ? "info" : "warning"}>
           {pathCheckResult.totalFiles} supported files found · {pathCheckResult.duplicateCount || 0} duplicates · {getFilesToSubmit()} files to submit across {getBatchesToSubmit()} batches.
         </Alert>
-          : <Typography variant="body2">Check the bucket and path to preview file and duplicate counts. Processing continues after submission.</Typography>;
+          : <Typography variant="body2">Use Check path to confirm there are files to submit. Check again after changing the bucket, prefix, or Prevent Duplicates.</Typography>;
 
   return <>
     <DialogContent dividers>
@@ -187,7 +193,7 @@ const UploadGcsDirectory = (props: UploadGcsDirectoryProps) => {
       {jobId ? <Button onClick={onClose}>Close</Button> : <>
         <Button data-cy="gcs-check-path-button" variant="outlined" onClick={checkPath} disabled={disabled || !bucketName.trim() || !hasPermission("upload_document")}>Check path</Button>
         <Button data-cy="gcs-start-batch-button" variant="contained" onClick={submit}
-          disabled={disabled || !processorReady || !hasPermission("upload_document") || !bucketName.trim() || (pathCheckResult !== null && getFilesToSubmit() === 0)}>Start processing</Button>
+          disabled={!canSubmit}>Start processing</Button>
       </>}
     </UploadFooter>
   </>;

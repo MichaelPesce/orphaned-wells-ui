@@ -92,8 +92,13 @@ outputs are eligible for storage cleanup after 14 days.
 ## GCS directory batches
 
 Choose **GCS Directory** when originals are already in a storage bucket. Enter
-the bucket name and optional folder prefix, then use **Check Bucket/Path** to
-review the supported file count and duplicate count before submission.
+the bucket name and optional folder prefix, then use **Check path** to review
+the supported file count and duplicate count. **Start processing** is enabled
+only after a successful check finds files to submit and the processor is deployed.
+A path with no supported files, or only duplicates with **Prevent Duplicates**
+enabled, cannot be submitted. Changing the bucket name, prefix/folder path, or
+**Prevent Duplicates** requires another check. Changing **Run cleaning functions**
+preserves the check.
 
 ```mermaid
 flowchart LR
@@ -119,6 +124,12 @@ changes in file count do not resize or recenter it. On small screens it fills
 the viewport. The form body and file list scroll while actions remain visible.
 Source tabs sit below the title; the compact processor status menu contains the
 existing deploy/undeploy controls.
+
+Selecting **Deploy processor** immediately shows **Processor deploying** and
+disables deployment controls while the request and deployment are in progress.
+The dialog checks for completion automatically; no refresh is needed. Missing,
+failed, or unavailable processors show **Processor unavailable** with details
+and **Retry status check** in the status menu, instead of loading indefinitely.
 
 Open **Admin → Upload history**, or follow **Upload history** in the dialog
 footer. By default, history includes uploads across all projects you can access
