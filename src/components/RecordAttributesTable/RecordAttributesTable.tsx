@@ -418,6 +418,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
   const handleDoubleClick = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    handleClickField(fieldId, coordinates, true);
     makeEditable();
   };
 
@@ -432,7 +433,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
 
   const handleClickEditIcon = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    handleDoubleClick();
+    handleDoubleClick(e);
   };
 
   const makeEditable = () => {
