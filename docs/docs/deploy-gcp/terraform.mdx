@@ -134,26 +134,29 @@ Terraform keys bucket resources by bucket name, so collaborators can intentional
 
 ## GKE resource sizing
 
-Collaborator APIs retain 2 replicas with 1850m CPU and 12 GiB memory per pod
-while the smaller staging size is validated. Staging targets 1 API replica
+Collaborator APIs target 2 replicas with 1 CPU and 6 GiB memory per pod.
+Staging targets 1 API replica
 with 1 CPU and 4 GiB memory, using two Uvicorn workers. These values set both
 requests and limits. Processing-worker resources are configured separately.
 
 Changing these values in Terraform does not update running Kubernetes pods by itself. Apply Terraform, update `K8S_DEPLOY_TARGETS`, then redeploy the affected backend environments.
 
-For an otherwise up-to-date workspace, the staging reduction should change only
-the `kubernetes_deploy_targets.staging` output: `memory_request` and
-`memory_limit` go from `6Gi` to `4Gi`. It requires no infrastructure resources
-to be added, changed, or destroyed. Review any other plan changes separately.
-An older `K8S_DEPLOY_TARGETS` secret containing `6Gi` continues to select that
-size until refreshed; explicit target values take precedence over workflow
-defaults. The updated workflow honors a `4Gi` limit without increasing it.
+For an otherwise up-to-date workspace, the reduction changes only the
+`kubernetes_deploy_targets` output. Production API `cpu_request` and `cpu_limit`
+go from `1850m` to `1`, and `memory_request` and `memory_limit` go from `12Gi` to
+`6Gi`. Staging memory also changes from `6Gi` to `4Gi` if that output update has
+not already been applied. It requires no infrastructure resources to be added,
+changed, or destroyed. Review any other plan changes separately. An older
+`K8S_DEPLOY_TARGETS` secret continues to select the old sizes until refreshed;
+explicit target values take precedence over workflow defaults. Applying and
+exporting these outputs does not resize live pods; a backend deployment
+activates the target for that environment.
 
 Follow the [staging validation and rollback steps](./backend-gke.mdx#capacity-failure-recovery-and-resource-sizing)
-before reducing production. After validation, apply API overrides to one
-production environment at a time, keeping its two replicas and existing worker
-settings. The first candidate is 1 CPU / 4 GiB per API pod; 1 CPU / 6 GiB is an
-intermediate option if measurements require more headroom.
+and deploy production environments one at a time at 1 CPU / 6 GiB, keeping two
+API replicas and existing worker settings. Validate 4 GiB in staging before
+considering further production reductions. Use `gke_backend_overrides` for
+environment-specific adjustments or rollback.
 
 ### Batch-worker sizing
 

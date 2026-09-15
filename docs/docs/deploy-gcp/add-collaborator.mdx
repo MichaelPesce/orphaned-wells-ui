@@ -215,7 +215,9 @@ variable "gke_backends" {
 }
 `}</CollaboratorCodeBlock>
 
-The default collaborator resource target is 2 replicas with 1850m CPU and 12 GiB memory per pod. Use overrides only when the collaborator needs different sizing, such as a smaller temporary test deployment.
+The default collaborator API target is 2 replicas with 1 CPU and 6 GiB memory
+per pod. Processing workers retain 1850m CPU and 12 GiB. Use overrides when the
+collaborator needs different sizing, such as a smaller temporary test deployment.
 
 Run Terraform:
 
