@@ -119,17 +119,51 @@ Additional submissions remain queued. The API runs job maintenance every 30
 seconds to dispatch queued work and reconcile failed pods without browser polling.
 No additional Kubernetes role or deployment is needed.
 
-Before lowering API resources, validate a representative 500-file directory with
+At the smaller staging API size, validate a representative 500-file directory with
 large multipage PDFs while normal API traffic continues. Test transfer interruption,
 repeated finalization, simultaneous submissions, worker termination, and reopening
 the upload dialog after a refresh. Compare API and worker memory, CPU, throttling,
 temporary storage, OOM/restarts, duration, and API latency separately using their
 `app.kubernetes.io/component=api` and `processor` labels.
 
-A possible first staging experiment is 1 CPU / 4 GiB with two Uvicorn workers,
-retaining the current replica count. This is a test candidate, not an established
-production size. API resource defaults remain unchanged. Verify admitted pod
-requests because Autopilot can adjust CPU/memory ratios. The backend
+Staging now targets 1 CPU / 4 GiB for the API, with one replica and two Uvicorn
+workers. Its processing workers retain 1 CPU / 6 GiB. Production retains two
+API replicas at 1850m CPU / 12 GiB each, with the same per-worker allocation.
+Include single-file/ZIP uploads, record-image uploads, imports, rotation, and
+exports in load checks because those workflows still execute in the API.
+Use peak measurements and response times under load to choose production sizing;
+an idle usage snapshot is insufficient.
+
+Apply Terraform, refresh `K8S_DEPLOY_TARGETS`, and deploy staging with the updated
+workflow. The sizing change updates only the staging API memory request and
+limit in the Terraform output, from `6Gi` to `4Gi`. Verify admitted pod resources
+because Autopilot can adjust requests:
+
+```bash
+kubectl -n uow-staging get pods -l app.kubernetes.io/component=api \
+  -o 'custom-columns=NAME:.metadata.name,CPU_REQUEST:.spec.containers[*].resources.requests.cpu,MEMORY_REQUEST:.spec.containers[*].resources.requests.memory,CPU_LIMIT:.spec.containers[*].resources.limits.cpu,MEMORY_LIMIT:.spec.containers[*].resources.limits.memory'
+kubectl -n uow-staging top pods -l app.kubernetes.io/component=api
+```
+
+After validation, deploy one production environment at a time with the measured
+API size, preserving two replicas and all processing-worker settings. The first
+candidate is 1 CPU / 4 GiB; 1 CPU / 6 GiB is an intermediate option if more
+memory headroom is needed. Change API requests and limits together.
+
+To restore staging to its previous allocation, merge this entry into the existing
+`gke_backend_overrides` map in `terraform.tfvars`, apply, refresh the deploy-target
+secret, and redeploy staging:
+
+```hcl
+gke_backend_overrides = {
+  staging = {
+    memory_request = "6Gi"
+    memory_limit   = "6Gi"
+  }
+}
+```
+
+Remove the override when resuming validation at `4Gi`. The backend
 [Kubernetes README](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/tree/main/deployment/kubernetes#browser-directory-upload-rollout)
 contains the full rollout checks.
 
@@ -315,5 +349,5 @@ kubectl top nodes
 - Google-managed certificates require DNS to point at the GKE load balancer before they become active.
 - The rendered manifest in `deployment/kubernetes/rendered/backend.yaml` is an ephemeral artifact. Do not commit it.
 - The Kubernetes Deployment uses pod-local `emptyDir` volumes for `/logs` and `/data`. Production document storage should continue using the Terraform-managed Google Cloud Storage upload bucket.
-- The default collaborator backend resource target is 2 replicas at 1850m CPU and 12 GiB memory per pod. Staging is intentionally smaller at 1 replica with 1 CPU and 6 GiB memory.
+- The default collaborator API resource target is 2 replicas at 1850m CPU and 12 GiB memory per pod. Staging targets 1 API replica with 1 CPU and 4 GiB memory; its processing workers retain 1 CPU and 6 GiB.
 - Worker Jobs have independent CPU, memory, scratch-storage, deadline, retention, and maximum-active-job settings. GitHub Actions supplies these generated settings from `K8S_DEPLOY_TARGETS`; do not place `PROCESSING_JOB_*` values in collaborator runtime-env secrets.
