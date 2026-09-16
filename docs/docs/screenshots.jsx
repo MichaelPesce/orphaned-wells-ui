@@ -1,4 +1,6 @@
 import ProjectExportUrl from '@site/static/screenshots/project-export.png';
+import ExportFieldSelectionUrl from '@site/static/screenshots/export-field-selection.png';
+import ExportSelectedRecordGroupsUrl from '@site/static/screenshots/export-selected-record-groups.png';
 import ProjectListUrl from '@site/static/screenshots/project-list.png';
 import ProjectReportsUrl from '@site/static/screenshots/project-reports.png';
 import ProjectReviewUrl from '@site/static/screenshots/project-review.png';
@@ -23,7 +25,13 @@ const imageStyle = {
 };
 
 export function ProjectExportImg() {
-    return <img src={ProjectExportUrl} style={imageStyle}/>;
+    return <img src={ProjectExportUrl} alt="Export project dialog with JSON selected, User Notes, field selection, and the Export Data button" style={imageStyle}/>;
+}
+export function ExportFieldSelectionImg() {
+    return <img src={ExportFieldSelectionUrl} alt="Export dialog filtering field names by receipt and showing nested table fields" style={imageStyle}/>;
+}
+export function ExportSelectedRecordGroupsImg() {
+    return <img src={ExportSelectedRecordGroupsUrl} alt="Export dialog for two selected record groups with all four formats selected and fields grouped by document type" style={imageStyle}/>;
 }
 export function ProjectListImg() {
     return <img src={ProjectListUrl} style={imageStyle}/>;

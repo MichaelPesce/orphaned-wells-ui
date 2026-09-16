@@ -5,6 +5,8 @@ description: OGRRE UI usage
 
 import {
   ProjectExportImg,
+  ExportFieldSelectionImg,
+  ExportSelectedRecordGroupsImg,
   ProjectListImg,
   ProjectReviewImg,
   ProjectViewImg,
@@ -211,16 +213,95 @@ A record can be in one of the following review statuses:
 
 ## Export records
 
-You can export all the record data in a project with the `Export Project` button from any view containing the records table, including the **project** and **record group** page.
+Click **Export** above a records table to choose the output formats and fields,
+then click **Export Data** to download a ZIP archive. JSON is selected by default,
+along with all available fields and **User Notes**.
 
 <ProjectExportImg />
 
-You can select attributes to include in the exported data.
+### Choose which records to export
 
-The *CSV* option will export the values from each record as a comma-separated values table, whereas
-the *JSON* option will export the values along with additional metadata about confidence
-as a JSON (JavaScript Object Notation) object. Either of these formats can be read easily
-using Python, and of course CSV is easily imported in Excel, Google Sheets, etc. Additionally, you can choose to export the document image files along with the extracted values.
+| Where you open Export | Records included |
+| --- | --- |
+| Project → **All Records** | Records in that project matching the table's applied filters. |
+| A record group | Records in that group matching the table's applied filters. |
+| **Records** in the header | Accessible records in the current team matching the table's applied filters. |
+| Project → **Record Groups** | Records in the groups whose row checkboxes you selected. Select at least one group to enable Export. |
+
+Exports from a records table use its applied filters and sort order across all
+matching records, including records on other pages. Changing **Rows per page**
+does not limit an export. Apply filters before opening the dialog if you want a
+smaller subset.
+
+When exporting selected record groups, the dialog shows the selected-group count
+and organizes fields by document type. Use the arrows beside document-type names,
+or **Collapse All / Expand All**, to navigate those sections. Collapsing a section
+does not deselect its fields.
+
+<ExportSelectedRecordGroupsImg />
+
+### Export formats
+
+Select one or more formats. All selected outputs are packaged into the same ZIP.
+
+| Option | What it contains |
+| --- | --- |
+| **csv** | One row per record with the selected field values, a `file` column, and a `URL` linking back to the record. Useful in Excel, Google Sheets, and other spreadsheet tools. Schema aliases are used as column headings when available; nested fields use bracketed headings such as `receipt_from_other_source[facility_name]`. |
+| **json** | An array of records containing the source filename and selected attribute objects. These preserve values, keys, nested subattributes, and available page and coordinate metadata. The current export does **not** include confidence scores or raw-text values. |
+| **image files** | The document page images stored in OGRRE, under `documents/<record name>/` in the ZIP. These are the stored display images, which may have been converted from the original PDF or TIFF during upload. |
+| **Embedded PDF Files** | Generates a PDF from each record's stored page images and embeds a searchable text layer from its extracted fields. Available PDFs are placed under `documents/<record name>/` with a `_searchable.pdf` suffix. |
+
+Project-wide and team-wide CSV exports are separated by document type; their JSON
+export is a single file. A record-group export, or an export from selected record
+groups, combines the matching records into one file for each selected data format.
+
+Embedded PDFs require PDF-embedding support on the server. Searchable text depends
+on the record having page and coordinate metadata; this option does not run new
+OCR. Records without images cannot produce image or PDF files. If PDF generation
+is unavailable or fails, the ZIP can still download without PDFs; check its
+contents and ask your administrator to inspect the server logs when expected
+PDFs are missing.
+
+### Select attributes and notes
+
+- **User Notes** includes active record notes in the CSV or JSON. CSV stores them
+  as text with the author; JSON preserves the note objects. Deleted notes are
+  excluded. This setting is separate from field selection.
+- **Select All Fields in the Records** selects or clears all attribute fields.
+  For selected record groups, the label is **Select All Fields from all Document
+  Types**. It applies to the full field list, including fields hidden by search.
+- **Search Field Name** narrows the displayed field list. Searching does not
+  change which fields are selected or filter the records themselves.
+- Individual checkboxes select fields. Table fields show their children indented
+  beneath the parent; toggling a parent toggles its child checkboxes. A dash
+  indicates a partial selection.
+
+<ExportFieldSelectionImg />
+
+For nested data, select the parent field to include the table. The current
+exporter includes all children of a selected parent; individual child checkboxes
+do not trim its exported contents. Selecting only a child without its parent
+does not export that table. If you need specific child columns, export the parent
+and remove unwanted columns from the downloaded data.
+
+For CSV or JSON, leave at least one field or **User Notes** selected. Clearing
+every field and User Notes currently falls back to exporting all fields and notes.
+Field and note selections do not remove content from exported images or embedded
+PDFs.
+
+### Download and check the archive
+
+Click **Export Data** after choosing your options. When images or embedded PDFs
+are selected, OGRRE first estimates the image download size; preparation may take
+longer than a data-only export. A progress indicator appears while the download
+runs. You can continue using OGRRE, but keep the browser tab open and avoid
+refreshing until the ZIP finishes downloading.
+
+Extract the ZIP and check that it contains the formats and records you intended.
+Image exports may include a `zip_log_*.txt` file with transfer details. The
+exported JSON or CSV can be imported into OGRRE again; see
+[Importing JSON/CSV records](./import_records.mdx) for supported formats and how
+to attach document images separately.
 
 ## Exit / Sign out
 
