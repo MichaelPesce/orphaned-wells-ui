@@ -6,6 +6,7 @@ import ProjectViewUrl from '@site/static/screenshots/project-view.png';
 import AddNewUserUrl from '@site/static/screenshots/add-new-user.png';
 import UsersPageUrl from '@site/static/screenshots/users-page.png';
 import UpdateUserRoleButtonUrl from '@site/static/screenshots/update-user-button.png';
+import AssignUserRolesUrl from '@site/static/screenshots/assign-user-roles.png';
 import UploadRecordsModalUrl from '@site/static/screenshots/upload-records-modal.png';
 import UploadDocumentUrl from '@site/static/screenshots/upload-document.png';
 import UploadDirectoryUrl from '@site/static/screenshots/upload-directory.png';
@@ -37,25 +38,28 @@ export function ProjectViewImg() {
     return <img src={ProjectViewUrl} style={imageStyle}/>;
 }
 export function AddNewUser() {
-    return <img src={AddNewUserUrl} style={imageStyle}/>;
+    return <img src={AddNewUserUrl} alt="Add user dialog with an email address ready to submit" style={imageStyle}/>;
 }
 export function UsersPage() {
-    return <img src={UsersPageUrl} style={imageStyle}/>;
+    return <img src={UsersPageUrl} alt="Admin Users page with team and system roles and the Add user button" style={imageStyle}/>;
 }
 export function UpdateUserRoleButton() {
-    return <img src={UpdateUserRoleButtonUrl} style={imageStyle}/>;
+    return <img src={UpdateUserRoleButtonUrl} alt="Update roles action in the Users table" style={imageStyle}/>;
+}
+export function AssignUserRoles() {
+    return <img src={AssignUserRolesUrl} alt="Assign roles dialog showing selectable system and team role chips" style={imageStyle}/>;
 }
 export function UploadRecordsModalImg() {
     return <img src={UploadRecordsModalUrl} style={imageStyle}/>;
 }
 export function UploadDocumentImg() {
-    return <img src={UploadDocumentUrl} style={imageStyle}/>;
+    return <img src={UploadDocumentUrl} alt="Upload records dialog with the File / ZIP tab and a deployed processor" style={imageStyle}/>;
 }
 export function UploadDirectoryImg() {
-    return <img src={UploadDirectoryUrl} style={imageStyle}/>;
+    return <img src={UploadDirectoryUrl} alt="Local directory upload with selected files, upload amount, and duplicate and cleaning options" style={imageStyle}/>;
 }
 export function GcsUploadImg() {
-    return <img src={GcsUploadUrl} style={imageStyle}/>;
+    return <img src={GcsUploadUrl} alt="GCS directory upload with bucket and prefix fields, Check path, and Start processing" style={imageStyle}/>;
 }
 export function SchemaViewImg() {
     return <img src={SchemaViewUrl} style={imageStyle}/>;

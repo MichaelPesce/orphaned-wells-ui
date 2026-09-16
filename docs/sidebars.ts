@@ -83,6 +83,7 @@ const sidebars: SidebarsConfig = {
       link: {type: "doc", id: "usage/index"},
       items: [
         "usage/ui",
+        "usage/import_records",
         "usage/add_users",
         "usage/updating_processor_schema",
       ],
