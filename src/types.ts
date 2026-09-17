@@ -659,6 +659,7 @@ export interface handleClickFieldSignature {
     (
         fieldID: FieldID, 
         vertices: number[][] | null,
+        forceDisplay?: boolean,
     ): void;
 }
 
