@@ -1,0 +1,25 @@
+{
+  "format": "ogrre-json-records-v1",
+  "records": [
+    {
+      "name": "Example well 001",
+      "filename": "example-well-001.pdf",
+      "attributesList": [
+        { "key": "operator_name", "value": "Example Energy", "confidence": null },
+        { "key": "lease_name", "value": "Sample Lease", "confidence": null },
+        { "key": "well_number", "value": "001", "confidence": null },
+        { "key": "county", "value": "Reeves", "confidence": null }
+      ]
+    },
+    {
+      "name": "Example well 002",
+      "filename": "example-well-002.pdf",
+      "attributesList": [
+        { "key": "operator_name", "value": "Example Energy", "confidence": null },
+        { "key": "lease_name", "value": "Sample Lease", "confidence": null },
+        { "key": "well_number", "value": "002", "confidence": null },
+        { "key": "county", "value": "Reeves", "confidence": null }
+      ]
+    }
+  ]
+}

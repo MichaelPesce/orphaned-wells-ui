@@ -1,17 +1,27 @@
-import { AddNewUser, UsersPage, UpdateUserRoleButton } from "@site/docs/screenshots";
+import { AddNewUser, UsersPage, UpdateUserRoleButton, AssignUserRoles } from "@site/docs/screenshots";
 
 export function AddUser() {
   return (
     <div>
-            To add a user, you must have the <code>sys_admin</code> or <code>team_lead</code> role. By default, if using the <code>initializeMongoDB.py</code> script, the first user created will have the <code>sys_admin</code> role. 
+      <p>
+        Adding a user requires the <code>add_user</code> permission. Check that
+        you have selected the intended team in the header before adding someone.
+        Roles and their permissions can be customized by your administrator.
+      </p>
       <ol>
         <li>
-                    Navigate to the Admin tab on the header:
-          {UsersPage()}
+          Open <strong>Admin</strong> in the header and select <strong>Users</strong>.
+          <UsersPage />
         </li>
         <li>
-                    Click add user and enter new email address (note: <i>users must have a Gmail or a Google Workspace account</i>):
-          {AddNewUser()}
+          Click <strong>+ Add user</strong> and enter the email address the person
+          uses to sign in with Google.
+          <AddNewUser />
+        </li>
+        <li>
+          Click <strong>Submit</strong>. The Users table refreshes after a
+          successful addition. New users receive the team member role for the
+          current team; assign any additional roles as described below.
         </li>
       </ol>
     </div>
@@ -21,12 +31,35 @@ export function AddUser() {
 export function UpdateRole() {
   return (
     <div>
+      <p>
+        Updating roles requires <code>manage_team</code> permission. Users can hold
+        multiple roles. Team roles apply to the team currently selected in the
+        header; system roles apply across teams.
+      </p>
       <ol>
         <li>
-                    To update a user's role, click the update role button pictured below, and select from the available roles. Note: team leads have additional privileges over team members, including adding new users, uploading documents, and verifying document integrity.
-          {UpdateUserRoleButton()}
+          In the user's row, click the <strong>Update roles</strong> icon in
+          the <strong>Actions</strong> column.
+          <UpdateUserRoleButton />
+        </li>
+        <li>
+          In <strong>Assign roles</strong>, click role chips to select or deselect
+          them. Selected roles have a check mark. The <strong>System Roles</strong>
+          {' '}section is available only with <code>system_administration</code>
+          {' '}permission; <strong>Team Roles</strong> identifies the team being edited.
+          <AssignUserRoles />
+        </li>
+        <li>
+          Click <strong>Update Roles</strong> to save. Check the refreshed Users
+          table to confirm the assignment.
         </li>
       </ol>
+      <p>
+        Administrators with <code>system_administration</code> permission can
+        inspect and change what roles allow under <strong>Admin → Roles &amp;
+        Permissions</strong>. Assigning a role to a user and changing a role's
+        permissions are separate actions.
+      </p>
     </div>
   );
 }
