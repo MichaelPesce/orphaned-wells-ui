@@ -2,14 +2,12 @@ import ProjectExportUrl from '@site/static/screenshots/project-export.png';
 import ExportFieldSelectionUrl from '@site/static/screenshots/export-field-selection.png';
 import ExportSelectedRecordGroupsUrl from '@site/static/screenshots/export-selected-record-groups.png';
 import ProjectListUrl from '@site/static/screenshots/project-list.png';
-import ProjectReportsUrl from '@site/static/screenshots/project-reports.png';
 import ProjectReviewUrl from '@site/static/screenshots/project-review.png';
 import ProjectViewUrl from '@site/static/screenshots/project-view.png';
 import AddNewUserUrl from '@site/static/screenshots/add-new-user.png';
 import UsersPageUrl from '@site/static/screenshots/users-page.png';
 import UpdateUserRoleButtonUrl from '@site/static/screenshots/update-user-button.png';
 import AssignUserRolesUrl from '@site/static/screenshots/assign-user-roles.png';
-import UploadRecordsModalUrl from '@site/static/screenshots/upload-records-modal.png';
 import UploadDocumentUrl from '@site/static/screenshots/upload-document.png';
 import UploadDirectoryUrl from '@site/static/screenshots/upload-directory.png';
 import GcsUploadUrl from '@site/static/screenshots/GCS-upload.png';
@@ -36,9 +34,6 @@ export function ExportSelectedRecordGroupsImg() {
 export function ProjectListImg() {
     return <img src={ProjectListUrl} style={imageStyle}/>;
 }
-export function ProjectReportsImg() {
-    return <img src={ProjectReportsUrl} style={imageStyle}/>;
-}
 export function ProjectReviewImg() {
     return <img src={ProjectReviewUrl} style={imageStyle}/>;
 }
@@ -56,9 +51,6 @@ export function UpdateUserRoleButton() {
 }
 export function AssignUserRoles() {
     return <img src={AssignUserRolesUrl} alt="Assign roles dialog showing selectable system and team role chips" style={imageStyle}/>;
-}
-export function UploadRecordsModalImg() {
-    return <img src={UploadRecordsModalUrl} style={imageStyle}/>;
 }
 export function UploadDocumentImg() {
     return <img src={UploadDocumentUrl} alt="Upload records dialog with the File / ZIP tab and a deployed processor" style={imageStyle}/>;
