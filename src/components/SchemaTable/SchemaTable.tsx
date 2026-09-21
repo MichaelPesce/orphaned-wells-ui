@@ -17,7 +17,7 @@ interface SchemaTableProps {
     fieldName: string,
     updates: Record<string, string | number | null>,
     operation?: "update" | "add" | "delete"
-  ) => void;
+  ) => Promise<boolean>;
   setErrorMessage: (v: string | null) => void;
   clickUpdateFields: (v: MongoProcessor) => void;
 }
@@ -108,6 +108,7 @@ const SchemaTable = (props: SchemaTableProps) => {
           tabValue === 0 ? (
             <SchemaOverViewSheet
               processors={processors || []}
+              readOnly={schema?.read_only !== false}
               setTabValue={setTabValue}
               setEditingProcessor={setEditingProcessor}
               setErrorMessage={setErrorMessage}
@@ -115,6 +116,7 @@ const SchemaTable = (props: SchemaTableProps) => {
           ) : (
             <SchemaSheet
               processor={processors?.[tabValue-1]}
+              readOnly={schema?.read_only !== false}
               cleaningFunctions={cleaningFunctions}
               onAttributeChange={onAttributeChange}
             />
@@ -123,7 +125,7 @@ const SchemaTable = (props: SchemaTableProps) => {
        
         
       </TableContainer>
-      {editingProcessor !== undefined && processors && (
+      {editingProcessor !== undefined && processors && schema?.read_only === false && (
         <EditProcessorDialog
           open={editingProcessor !== undefined}
           onClose={() => setEditingProcessor(undefined)}

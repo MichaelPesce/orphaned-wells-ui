@@ -520,10 +520,8 @@ export const uploadProcessorSchema = (
   documentType: string,
   imageLink?: string,
 ) => {
-  let endpoint = BACKEND_URL + `/upload_processor_schema/?name=${name}&displayName=${displayName}&processorId=${processorId}&modelId=${modelId}&documentType=${documentType}`;
-  let img = imageLink;
-  if (imageLink === undefined) img = "";
-  endpoint+= `&img=${img}`;
+  const query = new URLSearchParams({ name, displayName, processorId, modelId, documentType, img: imageLink || "" });
+  const endpoint = BACKEND_URL + `/upload_processor_schema?${query}`;
   return fetch(endpoint, {
     method: "POST",
     mode: CORS_MODE,
@@ -535,7 +533,7 @@ export const uploadSampleImage = (
   data: FormData,
   name: string,
 ) => {
-  let endpoint = BACKEND_URL + `/upload_sample_image/${name}`;
+  const endpoint = BACKEND_URL + `/upload_sample_image/${encodeURIComponent(name)}`;
   return fetch(endpoint, {
     method: "POST",
     mode: CORS_MODE,
@@ -578,7 +576,7 @@ export const getSampleImage = (processorName: string) => {
 };
 
 export const deleteProcessorSchema = (processor_name: string) => {
-  return fetch(BACKEND_URL + `/delete_processor/${processor_name}`, {
+  return fetch(BACKEND_URL + `/delete_processor/${encodeURIComponent(processor_name)}`, {
     method: "POST",
     mode: CORS_MODE,
   });

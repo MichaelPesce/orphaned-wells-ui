@@ -20,8 +20,10 @@ import { MongoProcessor, SchemaField } from "../../types";
 import { schemaProcessorColumns as columns } from "../../util";
 import PopupModal from "../PopupModal/PopupModal";
 import AddSchemaFieldDialog from "./AddSchemaFieldDialog";
+import { useUserContext } from "../../usercontext";
 
 interface SchemaSheetProps {
+  readOnly: boolean;
   processor?: MongoProcessor;
   cleaningFunctions?: string[];
   onAttributeChange: (
@@ -29,16 +31,18 @@ interface SchemaSheetProps {
     fieldName: string,
     updates: Record<string, string | number | null>,
     operation?: "update" | "add" | "delete"
-  ) => void | Promise<void>;
+  ) => Promise<boolean>;
 }
 
-const DATA_TYPE_OPTIONS = ["Checkbox", "Plain text", "Datetime", "Parent"];
+const DATA_TYPE_OPTIONS = ["Checkbox", "Plain text", "Datetime", "Parent", "Number", "Address"];
 
 const DATABASE_DATA_TYPE_OPTIONS: Record<string, string[]> = {
   Checkbox: ["bool"],
-  "Plain text": ["str", "int", "float"],
-  Datetime: ["date"],
+  "Plain text": ["str", "int", "float", "date", "bool"],
+  Datetime: ["date", "str"],
   Parent: ["Table"],
+  Number: ["int", "float", "str"],
+  Address: ["str"],
 };
 
 const EDIT_CONTROL_SX = {
@@ -55,7 +59,6 @@ const EDIT_CONTROL_SX = {
 };
 
 const EDITABLE_KEYS = [
-  "name",
   "alias",
   "cleaning_function",
   "data_type",
@@ -70,7 +73,6 @@ const getDatabaseOptions = (dataType?: string) =>
   DATABASE_DATA_TYPE_OPTIONS[dataType || ""] || [];
 
 const getDraftFromRow = (row: SchemaField): DraftState => ({
-  name: row.name || "",
   alias: row.alias || "",
   cleaning_function: row.cleaning_function || "",
   data_type: row.data_type || "",
@@ -80,10 +82,14 @@ const getDraftFromRow = (row: SchemaField): DraftState => ({
 });
 
 const SchemaSheet = ({
+  readOnly,
   processor,
   cleaningFunctions = [],
   onAttributeChange,
 }: SchemaSheetProps) => {
+  const { hasPermission } = useUserContext();
+  const canEdit = !readOnly && hasPermission("manage_schema");
+  const canChangeStructure = canEdit && hasPermission("manage_schema_destructive");
   const { attributes = [] } = processor || {};
   const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
@@ -137,11 +143,12 @@ const SchemaSheet = ({
 
   const handleSelectChange =
     (key: EditableKey) =>
-    (event: SelectChangeEvent<string>) => {
-      handleDraftValueChange(key, event.target.value);
-    };
+      (event: SelectChangeEvent<string>) => {
+        handleDraftValueChange(key, event.target.value);
+      };
 
   const getPageOrderSortInvalid = (pageOrderSort: string) => {
+    if (pageOrderSort.trim() === "") return false;
     const pageOrderSortValue = Number(pageOrderSort);
     return !Number.isInteger(pageOrderSortValue) || pageOrderSortValue <= 0;
   };
@@ -163,7 +170,7 @@ const SchemaSheet = ({
         if (previousValue !== nextValue) {
           acc[key] =
             key === "page_order_sort"
-              ? Number(nextValue)
+              ? nextValue.trim() === "" ? null : Number(nextValue)
               : nextValue || null;
         }
 
@@ -177,18 +184,16 @@ const SchemaSheet = ({
       return;
     }
 
-    await onAttributeChange(processor.name, row.name, updates, "update");
-    stopEditingRow();
+    if (await onAttributeChange(processor.name, row.name, updates, "update")) stopEditingRow();
   };
 
   const handleDeleteRow = async () => {
     if (!processor?.name || !pendingDeleteRow?.name) return;
 
-    await onAttributeChange(processor.name, pendingDeleteRow.name, {}, "delete");
-    if (editingRowKey && pendingDeleteRow.name === draft?.name) {
+    if (await onAttributeChange(processor.name, pendingDeleteRow.name, {}, "delete")) {
       stopEditingRow();
+      setPendingDeleteRow(null);
     }
-    setPendingDeleteRow(null);
   };
 
   const handleOpenAddDialog = () => {
@@ -202,13 +207,14 @@ const SchemaSheet = ({
   const handleAddField = async (
     updates: Record<string, string | number | null>
   ) => {
-    if (!processor?.name) return;
+    if (!processor?.name) return false;
     const fieldName = String(updates.name || "");
-    if (!fieldName) return;
-    await onAttributeChange(processor.name, fieldName, updates, "add");
+    if (!fieldName) return false;
+    return onAttributeChange(processor.name, fieldName, updates, "add");
   };
 
   const renderSelect = (
+    label: string,
     value: string,
     onChange: (event: SelectChangeEvent<string>) => void,
     options: string[],
@@ -217,6 +223,7 @@ const SchemaSheet = ({
   ) => (
     <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
       <Select
+        inputProps={{ "aria-label": label }}
         data-cy={testId}
         value={value}
         displayEmpty={allowEmpty}
@@ -264,16 +271,16 @@ const SchemaSheet = ({
                 {col.displayName}
               </TableCell>
             ))}
-            <TableCell sx={{ fontWeight: 600, width: 170 }}>
+            {canEdit && <TableCell sx={{ fontWeight: 600, width: 170 }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <span>Actions</span>
                 <Tooltip title="Add field">
-                  <IconButton data-cy="schema-add-field-button" size="small" onClick={handleOpenAddDialog}>
+                  <IconButton aria-label="Add field" data-cy="schema-add-field-button" size="small" onClick={handleOpenAddDialog}>
                     <AddIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
               </Stack>
-            </TableCell>
+            </TableCell>}
           </TableRow>
         </TableHead>
 
@@ -308,7 +315,7 @@ const SchemaSheet = ({
                           : undefined
                     }
                   >
-                    {isEditing && (col.key === "name" || col.key === "alias") ? (
+                    {isEditing && col.key === "alias" ? (
                       <TextField
                         data-cy={`schema-edit-${col.key}`}
                         size="small"
@@ -321,22 +328,25 @@ const SchemaSheet = ({
                       />
                     ) : isEditing && col.key === "cleaning_function" ? (
                       renderSelect(
+                        "Cleaning function",
                         draft.cleaning_function,
                         handleSelectChange("cleaning_function"),
                         cleaningFunctions,
                         true,
                         "schema-edit-cleaning_function"
                       )
-                    ) : isEditing && col.key === "data_type" ? (
+                    ) : isEditing && canChangeStructure && col.key === "data_type" ? (
                       renderSelect(
+                        "Data type",
                         draft.data_type,
                         handleSelectChange("data_type"),
                         DATA_TYPE_OPTIONS,
                         false,
                         "schema-edit-data_type"
                       )
-                    ) : isEditing && col.key === "database_data_type" ? (
+                    ) : isEditing && canChangeStructure && col.key === "database_data_type" ? (
                       renderSelect(
+                        "Database data type",
                         draft.database_data_type,
                         handleSelectChange("database_data_type"),
                         getDatabaseOptions(draft.data_type),
@@ -367,7 +377,7 @@ const SchemaSheet = ({
                     )}
                   </TableCell>
                 ))}
-                <TableCell sx={{ width: 150 }}>
+                {canEdit && <TableCell sx={{ width: 150 }}>
                   {editingRowKey === getRowKey(row, idx) ? (
                     <Stack direction="row" spacing={0.5}>
                       <Button
@@ -400,7 +410,7 @@ const SchemaSheet = ({
                       >
                         Edit
                       </Button>
-                      <Button
+                      {canChangeStructure && <Button
                         data-cy="schema-remove-field-button"
                         size="small"
                         color="error"
@@ -409,10 +419,10 @@ const SchemaSheet = ({
                         sx={{ minWidth: 72, px: 1 }}
                       >
                         Remove
-                      </Button>
+                      </Button>}
                     </Stack>
                   )}
-                </TableCell>
+                </TableCell>}
               </TableRow>
             );
           })}

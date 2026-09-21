@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Table,
   TableHead,
@@ -15,8 +15,10 @@ import PopupModal from "../PopupModal/PopupModal";
 import QuickLook from "../QuickLook/QuickLook";
 import { MongoProcessor } from "../../types";
 import { useKeyDown } from "../../util";
+import { useUserContext } from "../../usercontext";
 
 interface SchemaSheetProps {
+  readOnly: boolean;
   processors: MongoProcessor[];
   setTabValue: (v: number) => void;
   setEditingProcessor: (i: number) => void;
@@ -30,9 +32,14 @@ const styles = {
   }
 };
 
-const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, setErrorMessage }: SchemaSheetProps) => {
+const SchemaOverViewSheet = ({ processors, readOnly, setTabValue, setEditingProcessor, setErrorMessage }: SchemaSheetProps) => {
+  const { hasPermission } = useUserContext();
+  const canEdit = !readOnly && hasPermission("manage_schema");
+  const canDelete = canEdit && hasPermission("manage_schema_destructive");
   const [showDeleteProcessorModal, setShowDeleteProcessorModal] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number>();
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>();
   const [previewImage, setPreviewImage] = useState<string>();
 
   const handleCycleThroughPreviewImage = (direction: string = "next") => {
@@ -76,34 +83,26 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
   }
 
   const handleClickDeleteIcon = (idx: number) => {
+    setDeleteError(undefined);
     setPendingDelete(idx);
     setShowDeleteProcessorModal(true);
   };
 
-  const handleDeleteProcessor = () => {
-    setShowDeleteProcessorModal(false);
+  const handleDeleteProcessor = async () => {
+    if (deleting) return;
     if (pendingDelete !== undefined) {
-      const processor = processors[pendingDelete];
-      const {
-        name
-      } = processor;
-      callAPI(
+      setDeleting(true);
+      setDeleteError(undefined);
+      await callAPI(
         deleteProcessorSchema,
-        [name],
-        successfulDelete,
-        failedlDelete
+        [processors[pendingDelete].name],
+        () => window.location.reload(),
+        (error: string) => setDeleteError(`Unable to delete: ${error}`)
       );
+      setDeleting(false);
     } else {
       setErrorMessage("processor idx is not found in list");
     }
-  };
-
-  const successfulDelete = (data: any) => {
-    window.location.reload();
-  };
-
-  const failedlDelete = (data: any) => {
-    setErrorMessage(`Unable to delete: ${data}`);
   };
 
   return (
@@ -119,7 +118,7 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
               {col.displayName}
             </TableCell>
           ))}
-          <TableCell sx={{ fontWeight: 600 }} align="center">Actions</TableCell>
+          {canEdit && <TableCell sx={{ fontWeight: 600 }} align="center">Actions</TableCell>}
         </TableRow>
       </TableHead>
 
@@ -146,7 +145,7 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
             {columns.map((col) => {
               let content;
               let val = row[col.key];
-              if (col.key === "img") content = <img style={{height: "16px"}} src={val}></img>;
+              if (col.key === "img") content = <img style={{height: "16px"}} src={val} alt={`${row.name} sample`} />;
               else content = val;
               return (
                 <TableCell
@@ -165,23 +164,25 @@ const SchemaOverViewSheet = ({ processors, setTabValue, setEditingProcessor, set
               );
                 
             })}
-            <TableCell onClick={(e) => e.stopPropagation()} align="center">
-              <IconButton sx={styles.iconButton} onClick={() => setEditingProcessor(idx)}>
+            {canEdit && <TableCell onClick={(e) => e.stopPropagation()} align="center">
+              <IconButton aria-label={`Edit ${row.name}`} sx={styles.iconButton} onClick={() => setEditingProcessor(idx)}>
                 <EditIcon/>
               </IconButton>
-              <IconButton sx={styles.iconButton} onClick={() => handleClickDeleteIcon(idx)}>
+              {canDelete && <IconButton aria-label={`Delete ${row.name}`} sx={styles.iconButton} onClick={() => handleClickDeleteIcon(idx)}>
                 <DeleteIcon/>
-              </IconButton>
-            </TableCell>
+              </IconButton>}
+            </TableCell>}
           </TableRow>
         ))}
       </TableBody>
       <PopupModal
         open={showDeleteProcessorModal}
-        handleClose={() => setShowDeleteProcessorModal(false)}
+        handleClose={() => { if (!deleting) setShowDeleteProcessorModal(false); }}
+        showError={!!deleteError}
+        errorText={deleteError}
         text={`Are you sure you would like to remove ${processors[pendingDelete || 0].name}?`}
         handleSave={handleDeleteProcessor}
-        buttonText='Remove'
+        buttonText={deleting ? "Removing…" : "Remove"}
         buttonColor='error'
         buttonVariant='contained'
         width={400}

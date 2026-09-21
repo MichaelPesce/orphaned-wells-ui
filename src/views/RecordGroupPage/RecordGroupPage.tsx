@@ -55,7 +55,7 @@ const RecordGroupPage = () => {
     if (hasPermission("manage_project")) {
       tempActions["Change record group name"] = handleClickChangeName;
     }
-    if (hasPermission("create_record_group")) {
+    if (hasPermission("manage_schema") && hasPermission("manage_schema_destructive")) {
       tempActions["Connect processor"] = () => setShowConnectProcessorDialog(true);
     }
     if (hasPermission("upload_document")) {

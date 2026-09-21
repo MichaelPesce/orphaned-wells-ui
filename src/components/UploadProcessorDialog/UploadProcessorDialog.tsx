@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
 import { Grid, Box, Modal, IconButton, Button, Stack, TextField } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -7,11 +6,11 @@ import { FileUploader } from "react-drag-drop-files";
 import { UploadProcessorProps } from "../../types";
 
 const UploadProcessorDialog = (props: UploadProcessorProps) => {
-  const params = useParams<{ id: string }>();
   const { onClose, handleUploadDocument, updatingProcessor } = props;
   const [ showWarning, setShowWarning ] = useState(false);
   const [ warningMessage, setWarningMessage ] = useState("");
   const [ file, setFile ] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
   const maxFileSize = 10;
   const fileTypes: string[] = ["csv", "json"];
 
@@ -22,9 +21,9 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
   const [documentType, setDocumentType] = useState(updatingProcessor?.documentType || "");
 
 
-  const disableButton = !file || !modelId || !processorId || !name || !displayName || !documentType;
+  const disableButton = saving || !file || !modelId || !processorId || !name || !displayName || !documentType;
 
-  const disableTextBoxes = !!updatingProcessor;
+  const disableTextBoxes = saving || !!updatingProcessor;
 
   const styles = {
     modalStyle: {
@@ -84,10 +83,11 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
   };
 
   const handleClose = () => {
-    onClose();
+    if (!saving) onClose();
   };
 
-  const handleClickUpload = () => {
+  const handleClickUpload = async () => {
+    if (saving) return;
     if (file === null) {
       setWarningMessage("Please upload a valid file");
       setShowWarning(true);
@@ -95,9 +95,11 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
         setShowWarning(false);
       }, 5000);
     } else {
-      handleUploadDocument(file, name, displayName, processorId, modelId, documentType);
+      setSaving(true);
+      const saved = await handleUploadDocument(file, name, displayName, processorId, modelId, documentType);
+      setSaving(false);
       setShowWarning(false);
-      onClose();
+      if (saved) onClose();
     }
   };
 
@@ -258,16 +260,6 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 onChange={(event) => setDocumentType(event.target.value)}
                 id="document-type-textbox"
               />
-              {/* <TextField
-                                disabled
-                                sx={styles.textbox}
-                                fullWidth
-                                label="Sample Image"
-                                variant="outlined"
-                                value={imageLink}
-                                onChange={(event) => setImageLink(event.target.value)}
-                                id="image-link-textbox"
-                            /> */}
             </Stack>
                         
 

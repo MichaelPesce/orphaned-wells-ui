@@ -53,7 +53,7 @@ describe("update API smoke coverage", () => {
           });
       }).then(() => cy.api("GET", "/get_schema"))
       .then(({ body }) => {
-        const processor = body[0];
+        const processor = body.processors[0];
         expect(processor, "seeded processor").to.exist;
 
         return cy.api("POST", "/update_processor", { name: processor.name }).then(({ status, body }) => {

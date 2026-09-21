@@ -6,6 +6,7 @@ import { updateProcessor, uploadSampleImage } from "../../services/app.service";
 import { callAPI } from "../../util";
 import { MongoProcessor } from "../../types";
 import ImageField from "./ImageField";
+import { useUserContext } from "../../usercontext";
 
 interface EditProcessorDialogProps {
     open: boolean;
@@ -16,7 +17,10 @@ interface EditProcessorDialogProps {
 }
 
 const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickUpdateFields }: EditProcessorDialogProps) => {
-  const [processorName, setProcessorName] = useState(processorData.name);
+  const { hasPermission } = useUserContext();
+  const canChangeStructure = hasPermission("manage_schema_destructive");
+  const processorName = processorData.name;
+  const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState(processorData.displayName);
   const [processorId, setProcessorId] = useState(processorData.processorId);
   const [modelId, setModelId] = useState(processorData.modelId);
@@ -25,7 +29,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
   const dialogHeight = "50vh";
   const dialogWidth = "40vw";
 
-  const disableSaveButton = !processorName || !processorId || !modelId || !documentType;
+  const disableSaveButton = saving || !processorName || !processorId || !modelId || !documentType;
 
 
   const styles = {
@@ -43,7 +47,9 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
     onClose();
   };
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
+    if (saving) return;
+    setSaving(true);
     let body = {
       name: processorName,
       displayName,
@@ -52,12 +58,13 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
       documentType,
       img: imageLink,
     };
-    callAPI(
+    await callAPI(
       updateProcessor,
       [body],
       updatedProcessor,
       handleError
     );
+    setSaving(false);
   };
 
   const updatedProcessor = (data: any) => {
@@ -67,7 +74,6 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
 
   const handleError = (e: string) => {
     setErrorMsg(e);
-    onClose();
   };
 
   const handleUploadSampleImage = (file: File) => {
@@ -86,8 +92,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
   };
 
   const failedUpload = (data: any) => {
-    console.log("error on upload");
-    console.log(data);
+    setErrorMsg(`Failed to upload sample image: ${data}`);
   };
 
   const handleClickUpdateFields = () => {
@@ -98,7 +103,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={saving ? undefined : handleClose}
       scroll={"paper"}
       aria-labelledby="edit-schema-dialog"
       aria-describedby="edit-schema-dialog-description"
@@ -113,6 +118,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
       <DialogTitle id="edit-schema-dialog-title"><b>Edit {processorData.name}</b></DialogTitle>
       <IconButton
         aria-label="close"
+        disabled={saving}
         onClick={handleClose}
         sx={{
           position: "absolute",
@@ -134,6 +140,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
               <TextField
                 fullWidth
                 label="Display Name"
+                disabled={saving}
                 variant="outlined"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
@@ -143,6 +150,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
               <TextField
                 fullWidth
                 label="Processor ID"
+                disabled={!canChangeStructure || saving}
                 variant="outlined"
                 value={processorId}
                 onChange={(event) => setProcessorId(event.target.value)}
@@ -152,6 +160,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
               <TextField
                 fullWidth
                 label="Model ID"
+                disabled={!canChangeStructure || saving}
                 variant="outlined"
                 value={modelId}
                 onChange={(event) => setModelId(event.target.value)}
@@ -161,6 +170,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
               <TextField
                 fullWidth
                 label="Document Type"
+                disabled={!canChangeStructure || saving}
                 variant="outlined"
                 value={documentType}
                 onChange={(event) => setDocumentType(event.target.value)}
@@ -179,13 +189,13 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
         </DialogContentText>
         <Box sx={{ p: 2 }}>
           <Stack direction="row" justifyContent="space-around">
-            <Button
+            {canChangeStructure && <Button
               variant="outlined"
               disabled={disableSaveButton}
               onClick={handleClickUpdateFields}
             >
                         Update Fields
-            </Button>
+            </Button>}
             <Button
               variant="contained"
               disabled={disableSaveButton}

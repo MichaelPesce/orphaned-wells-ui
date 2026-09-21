@@ -4,15 +4,14 @@ describe("schema UI", () => {
     cy.clearLocalStorage();
   });
 
-  it("navigates schema, edits a test-created field, validates page order, and removes it", () => {
+  it("navigates schema, edits a test-created field, validates page order, and limits destructive controls", () => {
     const fieldName = `cypress_field_${Date.now()}`;
     const fieldAlias = "Cypress Field";
     const editedAlias = "Cypress Field Edited";
 
     cy.api("GET", "/get_schema").then(({ body }) => {
-      const processor = body[0];
+      const processor = body.processors[0];
       expect(processor, "seeded processor").to.exist;
-      cy.deleteSchemaField(processor.name, fieldName);
 
       cy.visitApp("/schema");
       cy.getByCy("schema-table", { timeout: 30000 }).should("be.visible");
@@ -45,12 +44,8 @@ describe("schema UI", () => {
       cy.wait("@updateSchema").its("response.statusCode").should("eq", 200);
       cy.contains('[data-cy="schema-field-row"]', editedAlias).scrollIntoView().should("be.visible");
 
-      cy.contains('[data-cy="schema-field-row"]', fieldName).scrollIntoView().within(() => {
-        cy.getByCy("schema-remove-field-button").click();
-      });
-      cy.getByCy("popup-primary-button").click();
-      cy.wait("@updateSchema").its("response.statusCode").should("eq", 200);
-      cy.contains('[data-cy="schema-field-row"]', fieldName).should("not.exist");
+      cy.getByCy("schema-remove-field-button").should("not.exist");
+      cy.getByCy("schema-edit-name").should("not.exist");
     });
   });
 

@@ -112,6 +112,8 @@ export interface SchemaMeta {
 
 export interface SchemaOverview {
     processors: MongoProcessor[];
+    source: "database" | "repo";
+    read_only: boolean;
     name?: number;
     last_updated?: number;
 }
@@ -452,7 +454,7 @@ export interface UploadProcessorProps {
         processorId: string,
         modelId: string,
         documentType: string
-    ) => void;
+    ) => Promise<boolean>;
 }
 
 export interface UploadDirectoryProps {

@@ -230,20 +230,6 @@ Cypress.Commands.add("cleanupRecordGroupByName", (projectId, recordGroupName) =>
   });
 });
 
-Cypress.Commands.add("deleteSchemaField", (processorName, fieldName) => {
-  cy.api(
-    "POST",
-    "/update_processor_attribute",
-    {
-      processor_name: processorName,
-      field_name: fieldName,
-      updates: {},
-      operation: "delete",
-    },
-    { failOnStatusCode: false }
-  );
-});
-
 Cypress.Commands.add("enter_text", (identifier, roleOrClass, value, name) => {
   let inputTextbox;
   if (identifier === "role") {

@@ -14,6 +14,25 @@ import {
 
 Processor schemas define which fields are displayed and edited in OGRRE records. You can use the OGRRE UI to view schemas, upload new processor schemas, and edit existing processors.
 
+The Schema page identifies the active source. In repo mode, schemas come from
+the installed data-cleaning package and are read-only. In database mode, schemas
+are shared across all teams; an edit affects every record group using that schema.
+
+## Permissions
+
+With `manage_schema`, you can view schemas and, in database mode, edit aliases,
+cleaning functions, order and display metadata, add fields, and upload new schemas.
+This permission is intended for team leads and system roles.
+
+Removing fields, changing types or processor/model bindings, replacing a schema
+from a file, and deleting a schema also require `manage_schema_destructive`,
+which is restricted to `sys_admin`. Field names cannot be renamed by any role.
+Only available actions appear in the editor. If a save fails, your draft stays
+open so you can correct it or retry.
+
+Field removal can still discard record data under the current reconciliation
+behavior. Preserving retired fields is a separate, pending change.
+
 ## Navigate to the Schema tab
 
 <NavigateSchemaTab/>

@@ -432,7 +432,7 @@ describe("processorless record import workflows", () => {
     });
   });
 
-  it("connects a processor to an existing processorless record group", () => {
+  it("keeps processor connection unavailable without destructive schema permission", () => {
     const recordGroupName = uniqueName("Cypress Connect Processor");
     recordGroupsToCleanup.push(recordGroupName);
 
@@ -442,29 +442,11 @@ describe("processorless record import workflows", () => {
         cy.visitApp(`/record_group/${recordGroupId}`);
         cy.getByCy("subheader-primary-action").should("contain", "Import JSON/CSV records");
         cy.getByCy("subheader-actions").click();
-        cy.contains('[data-cy="subheader-action-item"]', "Connect processor").click();
-        cy.getByCy("connect-processor-dialog").should("be.visible");
-        cy.getByCy("connect-processor-option").first().click();
-
-        cy.intercept("POST", backendRoute(`/connect_record_group_processor/${recordGroupId}`)).as("connectProcessor");
-        cy.getByCy("connect-processor-submit").click();
-        cy.wait("@connectProcessor").then(({ request, response }) => {
-          const requestBody = parseRequestBody(request.body);
-          expect(response.statusCode).to.eq(200);
-          expect(requestBody.processorId).to.be.a("string");
-          expect(requestBody.processorId.length).to.be.greaterThan(0);
-          expect(response.body.processorId).to.eq(requestBody.processorId);
-          expect(response.body._id).to.eq(recordGroupId);
-        });
-
-        cy.getByCy("connect-processor-dialog").should("not.exist");
-        cy.getByCy("subheader-primary-action").should("contain", "Upload new record(s)");
-        cy.getByCy("subheader-actions").click();
-        cy.contains('[data-cy="subheader-action-item"]', "Connect processor").should("be.visible");
+        cy.contains('[data-cy="subheader-action-item"]', "Connect processor").should("not.exist");
+        cy.api("POST", `/connect_record_group_processor/${recordGroupId}`, { processorId: "restricted" }, { failOnStatusCode: false })
+          .its("status").should("eq", 403);
         cy.api("GET", `/get_record_group/${recordGroupId}`).then(({ body }) => {
-          expect(body.rg_data.processorId).to.be.a("string");
-          expect(body.rg_data.processorId.length).to.be.greaterThan(0);
-          expect(body.rg_data.attributes).to.be.an("array");
+          expect(body.rg_data.processorId).to.eq(null);
         });
       });
     });

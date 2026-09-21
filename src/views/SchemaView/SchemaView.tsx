@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUserContext } from "../../usercontext";
-import { Box } from "@mui/material";
+import { Alert, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Subheader from "../../components/Subheader/Subheader";
 import { callAPI } from "../../util";
@@ -25,6 +25,8 @@ const SchemaView = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [updateProcessorCSV, setUpdateProcessorCSV] = useState<MongoProcessor>();
   const [cleaningFunctions, setCleaningFunctions] = useState<string[]>([]);
+  const saving = useRef(false);
+  const canEdit = schemaData?.read_only === false && hasPermission("manage_schema");
 
 
   useEffect(() => {
@@ -45,13 +47,11 @@ const SchemaView = () => {
       fetchedCleaningFunctions,
       handleError
     );
-        
+
   }, [hasPermission, navigate]);
 
-  const fetchedSchema = (processors: MongoProcessor[]) => {
-    setSchemaData({
-      processors: processors
-    });
+  const fetchedSchema = (schema: SchemaOverview) => {
+    setSchemaData(schema);
     setLoading(false);
   };
 
@@ -101,7 +101,7 @@ const SchemaView = () => {
             return {
               ...processor,
               attributes: processor.attributes?.filter(
-                (attribute) => attribute.name !== fieldName
+                (attribute) => attribute.name !== fieldName && !attribute.name.startsWith(`${fieldName}::`)
               ),
             };
           }
@@ -129,67 +129,29 @@ const SchemaView = () => {
     });
   };
 
-  const handleAttributeChange = (
+  const handleAttributeChange = async (
     processorName: string,
     fieldName: string,
     updates: Record<string, string | number | null>,
     operation: "update" | "add" | "delete" = "update"
-  ) => {
-    const previousAttribute = schemaData?.processors
-      ?.find((processor) => processor.name === processorName)
-      ?.attributes?.find((attribute) => attribute.name === fieldName);
-
-    if (operation === "update" && !previousAttribute) return;
-
-    const previousAttributeRecord = previousAttribute as unknown as
-      | Record<string, string | number | undefined>
-      | undefined;
-    const previousValues =
-      operation === "update"
-        ? Object.keys(updates).reduce<Record<string, string | number | null>>(
-            (acc, key) => {
-              const value = previousAttributeRecord?.[key];
-              acc[key] = value ?? null;
-              return acc;
-            },
-            {}
-          )
-        : {};
-
-    updateProcessorAttributeInState(processorName, fieldName, updates, operation);
+  ): Promise<boolean> => {
+    if (!canEdit || saving.current) return false;
+    saving.current = true;
     setUpdating(true);
-    callAPI(
+    setErrorMsg(null);
+    let succeeded = false;
+    await callAPI(
       updateProcessorAttribute,
-      [
-        processorName,
-        fieldName,
-        updates,
-        operation,
-      ],
+      [processorName, fieldName, updates, operation],
       () => {
-        setUpdating(false);
+        updateProcessorAttributeInState(processorName, fieldName, updates, operation);
+        succeeded = true;
       },
-      (e: string) => {
-        if (operation === "add" || operation === "delete") {
-          callAPI(
-            getSchema,
-            [],
-            (processors: MongoProcessor[]) => {
-              fetchedSchema(processors);
-              setUpdating(false);
-            },
-            (schemaError: string) => {
-              setUpdating(false);
-              handleError(schemaError);
-            }
-          );
-        } else {
-          updateProcessorAttributeInState(processorName, fieldName, previousValues);
-          setUpdating(false);
-        }
-        setErrorMsg(`Failed to update schema field: ${e}`);
-      }
+      (error: string) => setErrorMsg(`Failed to update schema field: ${error}`)
     );
+    saving.current = false;
+    setUpdating(false);
+    return succeeded;
   };
 
   const styles = {
@@ -203,7 +165,7 @@ const SchemaView = () => {
     },
   };
 
-  const handleUploadDocument = (
+  const handleUploadDocument = async (
     file: File,
     name: string,
     displayName: string,
@@ -211,32 +173,26 @@ const SchemaView = () => {
     modelId: string,
     documentType: string
   ) => {
+    if (!canEdit || saving.current) return false;
+    saving.current = true;
     const formData = new FormData();
     formData.append("file", file, file.name);
     setUpdating(true);
-    callAPI(
+    setErrorMsg(null);
+    let succeeded = false;
+    await callAPI(
       uploadProcessorSchema,
       [formData, name, displayName, processorId, modelId, documentType],
-      successfulUpload,
-      failedUpload,
+      () => { succeeded = true; },
+      (error: string) => setErrorMsg(`Failed to upload schema: ${error}`)
     );
-  };
-
-  const successfulUpload = (data: any) => {
+    if (succeeded) {
+      await callAPI(getSchema, [], fetchedSchema, handleError);
+      setUpdateProcessorCSV(undefined);
+    }
+    saving.current = false;
     setUpdating(false);
-    setUpdateProcessorCSV(undefined);
-    callAPI(
-      getSchema,
-      [],
-      fetchedSchema,
-      handleError
-    );
-  };
-
-  const failedUpload = (data: any) => {
-    setUpdating(false);
-    setUpdateProcessorCSV(undefined);
-    setErrorMsg(`Failed to upload: ${data}`);
+    return succeeded;
   };
 
   const clickUpdateFields = (proc: MongoProcessor) => {
@@ -253,12 +209,17 @@ const SchemaView = () => {
     <Box sx={styles.outerBox}>
       <Subheader
         currentPage="Schema"
-        buttonName={"Upload Processor"}
+        buttonName={canEdit ? "Upload Processor" : undefined}
         handleClickButton={() => setShowUploadProcessor(true)}
       />
       <Box sx={styles.innerBox}>
-        <SchemaTable 
-          schema={schemaData} 
+        {schemaData && <Alert severity="info" sx={{ mb: 2 }}>
+          {schemaData.source === "repo"
+            ? "Repo schemas are read-only. These are the schemas used for processing."
+            : "Database schemas are shared by all teams. Changes affect every record group using the schema."}
+        </Alert>}
+        <SchemaTable
+          schema={schemaData}
           loading={loading}
           cleaningFunctions={cleaningFunctions}
           onAttributeChange={handleAttributeChange}
@@ -268,7 +229,7 @@ const SchemaView = () => {
         />
       </Box>
       {
-        showUploadProcessor && 
+        showUploadProcessor && canEdit &&
           <UploadProcessorDialog
             handleUploadDocument={handleUploadDocument}
             onClose={handleCloseUploadDialog}
@@ -279,7 +240,7 @@ const SchemaView = () => {
         errorMessage={errorMsg}
         setErrorMessage={setErrorMsg}
       />
-            
+
     </Box>
   );
 };
