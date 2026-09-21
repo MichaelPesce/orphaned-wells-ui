@@ -107,6 +107,8 @@ const Record = () => {
   const currentRecordIdRef = useRef<string | undefined>(params.id);
   const latestFetchRequestRef = useRef(0);
   const lockedRef = useRef(locked);
+  const attributeRevisionRef = useRef(recordData.attribute_revision);
+  attributeRevisionRef.current = recordData.attribute_revision;
   const userEmailRef = useRef(userEmail);
   const styles = {
     outerBox: {
@@ -254,12 +256,8 @@ const Record = () => {
     setErrorMsg(errorMessage);
   }, []);
 
-  const handleFailedUpdate = React.useCallback((data: any, response_status?: number) => {
-    if (response_status === 403) {
-      showError(`${data}.`);
-    } else {
-      console.error("error updating record data: ", data);
-    }
+  const handleFailedUpdate = React.useCallback((data: any) => {
+    showError(String(data));
   }, [showError]);
 
   const handleSuccessfulAttributesListUpdate = React.useCallback((data: any) => {
@@ -278,7 +276,7 @@ const Record = () => {
     if (!recordId) return;
     const showAttributesTableLoader = type === "insertField" || type === "deleteField";
     if (showAttributesTableLoader) setAttributesTableUpdating(true);
-    let body = { data, type: type };
+    let body = { data, type: type, attribute_revision: attributeRevisionRef.current };
     callAPI(
       updateRecord,
       [recordId, body],
@@ -292,7 +290,7 @@ const Record = () => {
       },
       (data, response_status) => {
         if (showAttributesTableLoader) setAttributesTableUpdating(false);
-        handleFailedUpdate(data, response_status);
+        handleFailedUpdate(data);
       }
     );
   }, [handleSuccessfulAttributesListUpdate, handleFailedUpdate]);
@@ -311,7 +309,8 @@ const Record = () => {
   const handleSuccessfulAttributeUpdate = React.useCallback((data: any) => {
     const { fieldId, v, review_status, recordId } = data;
     if (recordId && recordId !== currentRecordIdRef.current) return;
-    handleChangeAttribute(v, fieldId, review_status);
+    attributeRevisionRef.current = data.attribute_revision;
+    handleChangeAttribute(v, fieldId, review_status, data.attribute_revision);
   }, []);
 
   const insertField: insertFieldSignature = React.useCallback((fieldID, parentAttribute) => {
@@ -331,7 +330,7 @@ const Record = () => {
   }, [handleUpdateRecordAttributesList]);
 
   // Update attribute value in record data, handling both primary and sub-attributes
-  const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string) => {
+  const handleChangeAttribute = (newAttribute: Attribute, fieldID: FieldID, reviewStatus: string, attributeRevision?: string) => {
     if (lockedRef.current) return true;
     const newValue = newAttribute.value;
     const newNormalizedValue = newAttribute.normalized_value;
@@ -349,6 +348,7 @@ const Record = () => {
     setRecordData(tempRecordData => ({
       ...tempRecordData,
       review_status: reviewStatus || tempRecordData.review_status,
+      attribute_revision: attributeRevision,
       attributesList: updateAttributeAtIndexes(
         tempRecordData.attributesList,
         indexes,
@@ -472,7 +472,7 @@ const Record = () => {
     else data_update = { review_status: new_status };
     callAPI(
       updateRecord,
-      [params.id, { data: data_update, type: "review_status" }],
+      [params.id, { data: data_update, type: "review_status", attribute_revision: recordData.attribute_revision }],
       (data) => handleSuccessfulStatusUpdate(data, new_status),
       handleFailedUpdate
     );
@@ -542,6 +542,7 @@ const Record = () => {
         <DocumentContainer
           imageFiles={recordData.img_urls}
           attributesList={recordData.attributesList}
+          attribute_revision={recordData.attribute_revision}
           handleChangeValue={handleChangeValue}
           locked={locked}
           recordSchema={recordSchema || {}}

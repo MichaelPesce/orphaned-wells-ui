@@ -30,8 +30,13 @@ which is restricted to `sys_admin`. Field names cannot be renamed by any role.
 Only available actions appear in the editor. If a save fails, your draft stays
 open so you can correct it or retry.
 
-Field removal can still discard record data under the current reconciliation
-behavior. Preserving retired fields is a separate, pending change.
+Removing a field hides it from records, cleaning, filters, statistics, and
+exports while preserving its stored values. There is no restore action;
+re-adding a field does not restore its previous values. In database mode,
+newly imported fields remain visible even when they are absent from the schema.
+
+If the schema or record fields change while you are editing, saving may ask you
+to reload the record. Reload before retrying so the edit uses the current fields.
 
 ## Navigate to the Schema tab
 

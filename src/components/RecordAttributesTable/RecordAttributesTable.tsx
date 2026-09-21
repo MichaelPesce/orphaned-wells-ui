@@ -146,7 +146,7 @@ const AttributesTable = (props: AttributesTableProps) => {
               </TableHead>
               <TableBody>
                 {attributesList.map((v: Attribute, idx: number) => (
-                  <AttributeRow 
+                  v && !v.deleted && <AttributeRow
                     key={`${v.key} ${idx}`}
                     k={v.key}
                     v={v}
@@ -182,7 +182,7 @@ const AttributesTable = (props: AttributesTableProps) => {
         </TableHead>
         <TableBody ref={ref}>
           {attributesList.map((v: Attribute, idx: number) => (
-            v &&
+            v && !v.deleted &&
                         <AttributeRow 
                           key={`${v.key} ${idx}`}
                           k={v.key}
@@ -275,7 +275,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   const schemaDataType = recordSchema[schemaKey]?.google_data_type ?? recordSchema[schemaKey]?.data_type;
   const dbDataType = recordSchema[schemaKey]?.database_data_type;
   const isParent = schemaDataType?.toLowerCase() === "parent";
-  const hasSubattributes = v.subattributes?.length;
+  const hasSubattributes = v.subattributes?.some(attribute => !attribute.deleted);
 
   const thisAlias = recordSchema[schemaKey]?.alias || k;
 
@@ -327,21 +327,19 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             v: any;
             review_status?: string;
             recordId?: string;
+            attribute_revision?: string;
           } = {
             fieldId,
             v: newV,
             recordId: record_id,
+            attribute_revision: resp?.attribute_revision,
           };
     if (resp?.review_status) data.review_status = resp?.review_status;
     handleSuccessfulAttributeUpdate(data);
   };
 
-  const handleFailedUpdate = (data: any, response_status?: number) => {
-    if (response_status === 403) {
-      showError(`${data}.`);
-    } else {
-      console.error(`error updating attribute ${k}: ${data}`);
-    }
+  const handleFailedUpdate = (data: any) => {
+    showError(String(data));
   };
 
   const handleUpdateRecord = (cleanFields: boolean = true) => {
@@ -352,7 +350,8 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
             indexes: number[]};
             type: string;
             fieldToClean: any;
-          } = { data: { key: k, idx: primaryIndex, v: v, review_status: reviewStatus, isSubattribute: isSubattribute, subIndex: subIndex, indexes: thisFieldIndexes}, type: "attribute", fieldToClean: null };
+            attribute_revision?: string;
+          } = { data: { key: k, idx: primaryIndex, v: v, review_status: reviewStatus, isSubattribute: isSubattribute, subIndex: subIndex, indexes: thisFieldIndexes}, type: "attribute", fieldToClean: null, attribute_revision: props.attribute_revision };
     if (cleanFields) {
       const fieldToClean = {
         topLevelIndex: primaryIndex,
@@ -763,6 +762,7 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
   return (
     prevProps.k === nextProps.k &&
     prevProps.v === nextProps.v &&
+    prevProps.attribute_revision === nextProps.attribute_revision &&
     prevProps.idx === nextProps.idx &&
     prevProps.topLevelIdx === nextProps.topLevelIdx &&
     prevProps.record_id === nextProps.record_id &&

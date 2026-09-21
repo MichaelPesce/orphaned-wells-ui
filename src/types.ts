@@ -2,6 +2,7 @@
 objects
 */
 export interface RecordData {
+    attribute_revision?: string;
     _id: string;
     name: string;
     filename: string;
@@ -138,6 +139,7 @@ export interface RecordSchema {
 }
 
 export interface Attribute {
+    deleted?: boolean;
     name: string;
     key: string;
     value: string | boolean | number | null;
@@ -293,6 +295,7 @@ export interface RecordHistoryItem {
 }
 
 export interface HistoryAttribute {
+    deleted?: boolean;
     key?: unknown;
     value?: unknown;
     value_numeric_type?: "int" | "float" | null;
@@ -358,6 +361,7 @@ export interface HotkeySection {
 props interfaces
 */
 export interface RecordAttributesTableProps {
+    attribute_revision?: string;
     handleClickField: handleClickFieldSignature;
     handleChangeValue: handleChangeValueSignature;
     fullscreen: string | null;
@@ -556,6 +560,7 @@ export interface BottombarProps {
 }
 
 export interface DocumentContainerProps {
+    attribute_revision?: string;
     imageFiles: string[];
     attributesList: any[];
     handleChangeValue: handleChangeValueSignature;

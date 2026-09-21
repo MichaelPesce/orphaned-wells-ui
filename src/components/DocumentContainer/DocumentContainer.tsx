@@ -8,7 +8,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import KeyboardIcon from "@mui/icons-material/Keyboard";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { ImageCropper } from "../ImageCropper/ImageCropper";
-import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI, deriveAttribute, getAttributeRowId } from "../../util";
+import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI, deriveAttribute, getAttributeRowId, getActiveAttributeEntries } from "../../util";
 import AttributesTable from "../RecordAttributesTable/RecordAttributesTable";
 import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID, RecordHistoryItem, Attribute } from "../../types";
 import { DocumentContainerStyles as styles } from "../../styles";
@@ -29,23 +29,8 @@ const MIN_ZOOM = 1.0;
 const MAX_ZOOM = 3.0;
 const ZOOM_STEP = 0.25;
 
-interface FieldTraversalEntry {
-  attribute: Attribute;
-  indexes: number[];
-}
-
 const attributeIndexesMatch = (left: number[], right: number[]) => {
   return left.length === right.length && left.every((value, index) => value === right[index]);
-};
-
-const getFieldTraversalList = (attributes: Attribute[], parentIndexes: number[] = []): FieldTraversalEntry[] => {
-  return attributes.flatMap((attribute, idx) => {
-    const indexes = [...parentIndexes, idx];
-    return [
-      { attribute, indexes },
-      ...getFieldTraversalList(attribute.subattributes || [], indexes),
-    ];
-  });
 };
 
 const DocumentContainer = ({
@@ -115,44 +100,19 @@ const DocumentContainer = ({
     display: "block",
   };
   const params = useParams(); 
-  const checkForErrors = () => {
-    try {
-      if (attributesList) {
-        for (let attr of attributesList) {
-          if (attr.cleaning_error) {
-            setHasErrors(true);
-            return;
-          }
-          if (attr.subattributes) {
-            for (let subattr of attr.subattributes) {
-              if (subattr.cleaning_error) {
-                setHasErrors(true);
-                return;
-              }
-            }
-          }
-        }
-        setHasErrors(false);
-        return;
-      } else {
-        setHasErrors(false);
-        return;
-      }
-            
-    } catch (e) {
-      console.error(e);
-      setHasErrors(false);
-      return;
-    }
-        
-  };
-
   useEffect(() => {
-    checkForErrors();
-  },[attributesList]);
+    setHasErrors(getActiveAttributeEntries(attributesList || []).some(({ attribute }) => !!attribute.cleaning_error));
+  }, [attributesList]);
 
   useEffect(() => {
     attributesListRef.current = attributesList || [];
+    const selectedIndexes = displayIndexesRef.current;
+    if (selectedIndexes.length && !deriveAttribute(selectedIndexes, attributesList || [])) {
+      setDisplayPoints(null);
+      setDisplayIndexes([]);
+      setDisplayAttribute(undefined);
+      setUpdateFieldLocationID(undefined);
+    }
   }, [attributesList]);
 
   useEffect(() => {
@@ -201,7 +161,7 @@ const DocumentContainer = ({
   }, [image_whitespace]);
 
   const getNextField = (direction: string = "down", currentIndexes: number[] = displayIndexes): [FieldID, number[][] | null] => {
-    const traversalList = getFieldTraversalList(attributesList || []);
+    const traversalList = getActiveAttributeEntries(attributesList || []);
     const emptyFieldID: FieldID = {
       key: "",
       primaryIndex: -1,
@@ -292,6 +252,11 @@ const DocumentContainer = ({
       }
       setDisplayIndexes([...indexes]);
       let current_attr = deriveAttribute(indexes, attributesListRef.current);
+      if (!current_attr) {
+        setDisplayPoints(null);
+        setDisplayIndexes([]);
+        return;
+      }
       setDisplayAttribute(current_attr);
       if (coordinates !== null && coordinates !== undefined) {
         const percentage_vertices: number[][] = [];

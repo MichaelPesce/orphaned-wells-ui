@@ -19,7 +19,11 @@ const getDefaultTeamName = () => {
 };
 
 const updateRecord = (recordId, requestBody, label) => {
-  return cy.api("POST", `/update_record/${recordId}`, requestBody).then(({ status, body }) => {
+  return cy.api("POST", `/get_record/${recordId}`, {}).then(({ body }) =>
+    cy.api("POST", `/update_record/${recordId}`, {
+      ...requestBody, attribute_revision: body.recordData.attribute_revision,
+    })
+  ).then(({ status, body }) => {
     expectOk(status, label);
     return body;
   });

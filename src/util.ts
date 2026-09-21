@@ -423,7 +423,7 @@ const flattenHistoryAttributes = (
   const lines: QuerySummaryLine[] = [];
 
   attributes.forEach((attr) => {
-    if (typeof attr.key !== "string" || !attr.key) return;
+    if (attr.deleted || typeof attr.key !== "string" || !attr.key) return;
 
     const key = parentKey ? `${parentKey}::${attr.key}` : attr.key;
     lines.push({
@@ -688,55 +688,8 @@ export const convertFiltersToMongoFormat = (filters: FilterOption[]): object => 
   for (let filter of filters) {
     let nextFilter: any;
     if (filter.key === "error_status") {
-      if (filter.selectedOptions?.length == 2 || filter.selectedOptions?.length == 0) {
-      }
-      else if (filter.selectedOptions?.includes("has cleaning errors")) {
-        filterBy["$or"] = [
-          {
-            "attributesList": {
-              "$elemMatch": {
-                "$and": [
-                  {"cleaning_error": {"$ne": false}},
-                  {"cleaning_error": {"$exists": true}},
-                ]
-              }
-            }
-          },
-          {
-            "attributesList.subattributes": {
-              "$elemMatch": {
-                "$and": [
-                  {"cleaning_error": {"$ne": false}},
-                  {"cleaning_error": {"$exists": true}},
-                ]
-              }
-            }
-          },
-        ];
-      }
-      else if (filter.selectedOptions?.includes("no cleaning errors")) {
-        filterBy["$nor"] = [
-          {
-            "attributesList": {
-              "$elemMatch": {
-                "$and": [
-                  {"cleaning_error": {"$ne": false}},
-                  {"cleaning_error": {"$exists": true}},
-                ]
-              }
-            }
-          },
-          {
-            "attributesList.subattributes": {
-              "$elemMatch": {
-                "$and": [
-                  {"cleaning_error": {"$ne": false}},
-                  {"cleaning_error": {"$exists": true}},
-                ]
-              }
-            }
-          },
-        ];
+      if (filter.selectedOptions?.length === 1) {
+        filterBy.has_errors = filter.selectedOptions.includes("has cleaning errors");
       }
       continue;
     }
@@ -821,13 +774,23 @@ export const scrollToAttribute = (boxId: string, heightId: string, top: number, 
   }
 };
 
+// Keep stored indexes when skipping retired fields: these indexes are edit targets.
+export const getActiveAttributeEntries = (
+  attributes: Attribute[], parentIndexes: number[] = []
+): { attribute: Attribute; indexes: number[] }[] => attributes.flatMap((attribute, index) => {
+  if (!attribute || attribute.deleted) return [];
+  const indexes = [...parentIndexes, index];
+  return [{ attribute, indexes }, ...getActiveAttributeEntries(attribute.subattributes || [], indexes)];
+});
+
 export const deriveAttribute = (indexes: number[], attributesList: Attribute[]) => {
   let current_attr: any | undefined = undefined;
   let current_attributes_list: Attribute[] = attributesList;
-  indexes.forEach((idx) => {
+  for (const idx of indexes) {
     current_attr = current_attributes_list[idx];
+    if (!current_attr || current_attr.deleted) return undefined;
     current_attributes_list = current_attr?.subattributes || [];
-  });
+  }
   return current_attr;
 };
 

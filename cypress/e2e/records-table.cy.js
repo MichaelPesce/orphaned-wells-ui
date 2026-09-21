@@ -121,7 +121,7 @@ describe("record tables", () => {
     cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("getErrorRecords");
     setCheckboxFilterToOnly("Error Status", "no cleaning errors", ["has cleaning errors", "no cleaning errors"]);
     applyFilters();
-    cy.wait("@getErrorRecords").its("request.body.filter").should("have.property", "$nor");
+    cy.wait("@getErrorRecords").its("request.body.filter").should("have.property", "has_errors", false);
 
     cy.getByCy("filters-button").click();
     cy.getByCy("reset-filters-button").click();
