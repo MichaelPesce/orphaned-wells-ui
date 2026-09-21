@@ -95,7 +95,7 @@ const SchemaOverViewSheet = ({ processors, readOnly, setTabValue, setEditingProc
       setDeleteError(undefined);
       await callAPI(
         deleteProcessorSchema,
-        [processors[pendingDelete].name],
+        [processors[pendingDelete].name, processors[pendingDelete].schema_id],
         () => window.location.reload(),
         (error: string) => setDeleteError(`Unable to delete: ${error}`)
       );

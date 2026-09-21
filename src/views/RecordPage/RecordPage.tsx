@@ -154,14 +154,14 @@ const Record = () => {
       tempActions["Upload record image(s)"] = () => setOpenImageUploadDialog(true);
     }
     if (hasPermission("clean_record")) {
-      tempActions["Clean record"] = () => setOpenCleanPrompt(true);
+      if (recordData.has_schema) tempActions["Clean record"] = () => setOpenCleanPrompt(true);
       tempActions["Reset record"] = () => setShowResetPrompt(true);
     }
     if (hasPermission("delete")) {
       tempActions["Delete record"] = () => setOpenDeleteModal(true);
     }
     setSubheaderActions(tempActions);
-  }, [hasPermission, recordData.image_files, recordData.status]);
+  }, [hasPermission, recordData.image_files, recordData.status, recordData.has_schema]);
 
   // Process successful record fetch: set record data, schema, and breadcrumb navigation
   const handleSuccessfulFetchRecord = React.useCallback((data: any, lock_record?: boolean) => {

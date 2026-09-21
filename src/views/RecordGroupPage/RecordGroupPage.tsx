@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box } from "@mui/material";
+import { Alert, Box } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { getRecordGroup, uploadDocument, deleteRecordGroup, deleteRecordGroupRecords, updateRecordGroup, cleanRecords } from "../../services/app.service";
 import RecordsTable from "../../components/RecordsTable/RecordsTable";
@@ -50,13 +50,12 @@ const RecordGroupPage = () => {
 
   useEffect(() => {
     let tempActions = {"Upload history": () => navigate(`/admin?tab=uploads&record_group=${params.id}`)} as SubheaderActions;
-    const hasProcessor = Boolean(recordGroup.processorId);
-    const hasSchema = hasProcessor || Boolean(recordGroup.attributes?.length);
+    const hasSchema = recordGroup.has_schema === true;
     if (hasPermission("manage_project")) {
       tempActions["Change record group name"] = handleClickChangeName;
     }
     if (hasPermission("manage_schema") && hasPermission("manage_schema_destructive")) {
-      tempActions["Connect processor"] = () => setShowConnectProcessorDialog(true);
+      tempActions[recordGroup.schema_source === "database" ? "Select schema" : "Connect processor"] = () => setShowConnectProcessorDialog(true);
     }
     if (hasPermission("upload_document")) {
       tempActions["Import JSON/CSV records"] = () => setShowJsonImportDialog(true);
@@ -69,7 +68,7 @@ const RecordGroupPage = () => {
       tempActions["Delete record group"] = () => setOpenDeleteModal(true);
     }
     setSubheaderActions(tempActions);
-  }, [hasPermission, recordGroup.processorId, recordGroup.attributes]);
+  }, [hasPermission, recordGroup.has_schema, recordGroup.schema_source]);
 
   const styles = {
     outerBox: {
@@ -205,7 +204,7 @@ const RecordGroupPage = () => {
     window.location.reload();
   };
 
-  const hasProcessor = Boolean(recordGroup.processorId);
+  const hasProcessor = recordGroup.can_process === true;
   const isRecordGroupLoaded = Boolean(recordGroup._id) && recordGroup._id === params.id;
   const canUploadRecords = hasPermission("upload_document");
   const primaryButtonName = canUploadRecords
@@ -229,7 +228,10 @@ const RecordGroupPage = () => {
         previousPages={navigation}
       />
       <Box sx={styles.innerBox}>
+        {recordGroup.schema_error && <Alert severity="error" sx={{ mb: 2 }}>{recordGroup.schema_error}</Alert>}
+        {!recordGroup.schema_error && recordGroup.has_schema && !hasProcessor && <Alert severity="info" sx={{ mb: 2 }}>This record group uses {recordGroup.schema_name || "a schema"} without a processor. You can import and clean records.</Alert>}
         <RecordsTable
+          key={`${recordGroup.schema_source}:${recordGroup.active_schema_id || recordGroup.processorId || ""}:${recordGroup.has_schema}`}
           location="record_group"
           params={params}
           handleUpdate={handleUpdateRecordGroup}

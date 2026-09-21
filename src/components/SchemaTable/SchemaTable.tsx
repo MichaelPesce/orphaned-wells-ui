@@ -16,7 +16,8 @@ interface SchemaTableProps {
     processorName: string,
     fieldName: string,
     updates: Record<string, string | number | null>,
-    operation?: "update" | "add" | "delete"
+    operation?: "update" | "add" | "delete",
+    schemaId?: string
   ) => Promise<boolean>;
   setErrorMessage: (v: string | null) => void;
   clickUpdateFields: (v: MongoProcessor) => void;

@@ -21,7 +21,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
   const [documentType, setDocumentType] = useState(updatingProcessor?.documentType || "");
 
 
-  const disableButton = saving || !file || !modelId || !processorId || !name || !displayName || !documentType;
+  const disableButton = saving || (!!updatingProcessor && !file) || !name || !displayName || !documentType;
 
   const disableTextBoxes = saving || !!updatingProcessor;
 
@@ -88,7 +88,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
 
   const handleClickUpload = async () => {
     if (saving) return;
-    if (file === null) {
+    if (updatingProcessor && file === null) {
       setWarningMessage("Please upload a valid file");
       setShowWarning(true);
       setTimeout(() => {
@@ -183,7 +183,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
         </Grid>
         <Grid item xs={6}>
           <Box sx={{display: "flex", justifyContent: "center"}}>
-            <h2 style={styles.header}>{updatingProcessor ? "Update" : "Upload"} processor</h2>
+            <h2 style={styles.header}>{updatingProcessor ? "Replace schema fields" : "Create schema"}</h2>
           </Box>
         </Grid>
         <Grid item xs={3}>
@@ -195,6 +195,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                     
         <Grid item xs={12}>
                             
+          {!updatingProcessor && <p>Optionally upload a CSV or JSON schema, or create an empty schema and add fields in the editor.</p>}
           {DragDrop()}
         </Grid>
         <Grid item xs={12}>
@@ -206,7 +207,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 data-cy="processor-name-input"
                 sx={styles.textbox}
                 fullWidth
-                label="Processor Name"
+                label="Schema Name"
                 variant="outlined"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -217,7 +218,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 data-cy="processor-display-name-input"
                 sx={styles.textbox}
                 fullWidth
-                label="Processor Display Name"
+                label="Display Name"
                 variant="outlined"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
@@ -230,7 +231,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 data-cy="processor-id-input"
                 sx={styles.textbox}
                 fullWidth
-                label="Google Processor ID"
+                label="Google Processor ID (optional)"
                 variant="outlined"
                 value={processorId}
                 onChange={(event) => setProcessorId(event.target.value)}
@@ -241,7 +242,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 data-cy="processor-model-id-input"
                 sx={styles.textbox}
                 fullWidth
-                label="Primary Model ID"
+                label="Primary Model ID (optional)"
                 variant="outlined"
                 value={modelId}
                 onChange={(event) => setModelId(event.target.value)}

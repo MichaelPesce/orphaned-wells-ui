@@ -519,8 +519,12 @@ export const uploadProcessorSchema = (
   modelId: string,
   documentType: string,
   imageLink?: string,
+  schemaId?: string,
+  parserType?: string | null,
 ) => {
   const query = new URLSearchParams({ name, displayName, processorId, modelId, documentType, img: imageLink || "" });
+  if (schemaId) query.set("schema_id", schemaId);
+  if (parserType) query.set("parser_type", parserType);
   const endpoint = BACKEND_URL + `/upload_processor_schema?${query}`;
   return fetch(endpoint, {
     method: "POST",
@@ -550,17 +554,23 @@ export const updateProcessor = (updated_processor: MongoProcessor) => {
   });
 };
 
+export const createSchema = (schema: Partial<MongoProcessor>) => fetch(BACKEND_URL + "/create_schema", {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(schema),
+});
+
 export const updateProcessorAttribute = (
   processorName: string,
   fieldName: string,
   updates: Record<string, string | number | null>,
-  operation: "update" | "add" | "delete" = "update"
+  operation: "update" | "add" | "delete" = "update",
+  schemaId?: string
 ) => {
   return fetch(BACKEND_URL + "/update_processor_attribute", {
     method: "POST",
     mode: CORS_MODE,
     body: JSON.stringify({
       processor_name: processorName,
+      schema_id: schemaId,
       field_name: fieldName,
       updates,
       operation,
@@ -575,8 +585,9 @@ export const getSampleImage = (processorName: string) => {
   });
 };
 
-export const deleteProcessorSchema = (processor_name: string) => {
-  return fetch(BACKEND_URL + `/delete_processor/${encodeURIComponent(processor_name)}`, {
+export const deleteProcessorSchema = (processor_name: string, schemaId?: string) => {
+  const query = schemaId ? `?schema_id=${encodeURIComponent(schemaId)}` : "";
+  return fetch(BACKEND_URL + `/delete_processor/${encodeURIComponent(processor_name)}${query}`, {
     method: "POST",
     mode: CORS_MODE,
   });

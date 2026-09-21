@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import SchemaView from "../views/SchemaView/SchemaView";
-import { getCleaningFunctions, getSchema, updateProcessorAttribute } from "../services/app.service";
+import { createSchema, getCleaningFunctions, getSchema, updateProcessorAttribute } from "../services/app.service";
 
 const mockHasPermission = jest.fn();
 jest.mock("../usercontext", () => ({ useUserContext: () => ({ hasPermission: mockHasPermission }) }));
@@ -9,9 +9,11 @@ jest.mock("../services/app.service", () => ({
   getSchema: jest.fn(), getCleaningFunctions: jest.fn(), updateProcessorAttribute: jest.fn(),
   uploadProcessorSchema: jest.fn(), deleteProcessorSchema: jest.fn(), updateProcessor: jest.fn(),
   uploadSampleImage: jest.fn(),
+  createSchema: jest.fn(),
 }));
 
 const processor = {
+  schema_id: "aaaaaaaaaaaaaaaaaaaaaaaa",
   name: "Well schema", displayName: "Well schema", processorId: "processor", modelId: "model", documentType: "Well",
   attributes: [{ name: "depth", alias: "Depth", data_type: "Plain text", database_data_type: "float", page_order_sort: 1 }],
 };
@@ -36,7 +38,7 @@ test("repo schemas are visible and read-only even for administrators", async () 
   (getSchema as jest.Mock).mockResolvedValue(response({ processors: [processor], source: "repo", read_only: true }));
   await openFields();
   expect(screen.getByText(/Repo schemas are read-only/)).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Upload Processor" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Create schema" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Add field" })).not.toBeInTheDocument();
 });
@@ -51,7 +53,7 @@ test("safe schema editors can change aliases but cannot rename, remove, or chang
   fireEvent.change(screen.getByRole("textbox"), { target: { value: "Measured depth" } });
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await screen.findByText("Measured depth");
-  expect(updateProcessorAttribute).toHaveBeenCalledWith("Well schema", "depth", { alias: "Measured depth" }, "update");
+  expect(updateProcessorAttribute).toHaveBeenCalledWith("Well schema", "depth", { alias: "Measured depth" }, "update", processor.schema_id);
 });
 
 test("administrators get type and removal controls but field names remain immutable", async () => {
@@ -88,4 +90,16 @@ test("failed field creation keeps its dialog and entered values", async () => {
   await screen.findByText(/Failed to update schema field: Duplicate field/);
   expect(screen.getByRole("dialog")).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /Field Name/ })).toHaveValue("new_field");
+});
+
+test("schema managers can create an empty schema without processor identifiers", async () => {
+  (createSchema as jest.Mock).mockResolvedValue(response({ schema_id: "new" }));
+  render(<MemoryRouter><SchemaView /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Create schema" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Schema Name" }), { target: { value: "Imported" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "Display Name" }), { target: { value: "Imported" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "Document Type" }), { target: { value: "Well" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  await waitFor(() => expect(createSchema).toHaveBeenCalledWith({ name: "Imported", displayName: "Imported", documentType: "Well", processorId: null, modelId: null, attributes: [] }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 });

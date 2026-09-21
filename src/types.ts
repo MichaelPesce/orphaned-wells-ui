@@ -2,6 +2,7 @@
 objects
 */
 export interface RecordData {
+    has_schema?: boolean;
     attribute_revision?: string;
     _id: string;
     name: string;
@@ -44,6 +45,13 @@ export interface ProjectData {
 }
 
 export interface RecordGroup {
+    schema_id?: string | null;
+    active_schema_id?: string | null;
+    schema_source?: "database" | "repo";
+    schema_name?: string | null;
+    schema_error?: string | null;
+    has_schema?: boolean;
+    can_process?: boolean;
     _id: string;
     attributes?: any[];
     name: string;
@@ -188,10 +196,15 @@ export interface RepoProcessor {
 }
 
 export interface MongoProcessor {
+    schema_id?: string;
+    parser_type?: "custom" | "form_parser" | null;
+    can_process?: boolean;
+    created_by?: string | null;
+    created_by_team?: string | null;
     "name": string;
-    "processorId": string;
-    "modelId": string;
-    "lastUpdated": string;
+    "processorId"?: string | null;
+    "modelId"?: string | null;
+    "lastUpdated"?: string;
     "img"?: string;
     "documentType"?: string;
     "displayName"?: string;
@@ -452,7 +465,7 @@ export interface UploadProcessorProps {
     onClose: () => void;
     updatingProcessor?: MongoProcessor;
     handleUploadDocument: (
-        file: File,
+        file: File | null,
         name: string,
         displayName: string,
         processorId: string,

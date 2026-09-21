@@ -7,6 +7,7 @@ import { callAPI } from "../../util";
 import {
   getCleaningFunctions,
   getSchema,
+  createSchema,
   updateProcessorAttribute,
   uploadProcessorSchema,
 } from "../../services/app.service";
@@ -70,7 +71,8 @@ const SchemaView = () => {
     processorName: string,
     fieldName: string,
     updates: Record<string, string | number | null>,
-    operation: "update" | "add" | "delete" = "update"
+    operation: "update" | "add" | "delete" = "update",
+    schemaId?: string
   ) => {
     setSchemaData((prev) => {
       if (!prev) return prev;
@@ -78,7 +80,7 @@ const SchemaView = () => {
       return {
         ...prev,
         processors: prev.processors.map((processor) => {
-          if (processor.name !== processorName) return processor;
+          if (schemaId ? processor.schema_id !== schemaId : processor.name !== processorName) return processor;
 
           if (operation === "add") {
             const newAttribute = Object.entries(updates).reduce<SchemaField>(
@@ -133,7 +135,8 @@ const SchemaView = () => {
     processorName: string,
     fieldName: string,
     updates: Record<string, string | number | null>,
-    operation: "update" | "add" | "delete" = "update"
+    operation: "update" | "add" | "delete" = "update",
+    schemaId?: string
   ): Promise<boolean> => {
     if (!canEdit || saving.current) return false;
     saving.current = true;
@@ -142,9 +145,9 @@ const SchemaView = () => {
     let succeeded = false;
     await callAPI(
       updateProcessorAttribute,
-      [processorName, fieldName, updates, operation],
+      [processorName, fieldName, updates, operation, schemaId],
       () => {
-        updateProcessorAttributeInState(processorName, fieldName, updates, operation);
+        updateProcessorAttributeInState(processorName, fieldName, updates, operation, schemaId);
         succeeded = true;
       },
       (error: string) => setErrorMsg(`Failed to update schema field: ${error}`)
@@ -166,7 +169,7 @@ const SchemaView = () => {
   };
 
   const handleUploadDocument = async (
-    file: File,
+    file: File | null,
     name: string,
     displayName: string,
     processorId: string,
@@ -176,13 +179,14 @@ const SchemaView = () => {
     if (!canEdit || saving.current) return false;
     saving.current = true;
     const formData = new FormData();
-    formData.append("file", file, file.name);
+    if (file) formData.append("file", file, file.name);
     setUpdating(true);
     setErrorMsg(null);
     let succeeded = false;
     await callAPI(
-      uploadProcessorSchema,
-      [formData, name, displayName, processorId, modelId, documentType],
+      file ? uploadProcessorSchema : createSchema,
+      file ? [formData, name, displayName, processorId, modelId, documentType, undefined, updateProcessorCSV?.schema_id, updateProcessorCSV?.parser_type]
+        : [{ name, displayName, processorId: processorId || null, modelId: modelId || null, documentType, attributes: [] }],
       () => { succeeded = true; },
       (error: string) => setErrorMsg(`Failed to upload schema: ${error}`)
     );
@@ -209,7 +213,7 @@ const SchemaView = () => {
     <Box sx={styles.outerBox}>
       <Subheader
         currentPage="Schema"
-        buttonName={canEdit ? "Upload Processor" : undefined}
+        buttonName={canEdit ? "Create schema" : undefined}
         handleClickButton={() => setShowUploadProcessor(true)}
       />
       <Box sx={styles.innerBox}>

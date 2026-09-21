@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TextField, IconButton, Grid, Button, Dialog, DialogTitle, DialogContent, DialogContentText } from "@mui/material";
-import { Stack, Box } from "@mui/material";
+import { Stack, Box, Alert, MenuItem } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { updateProcessor, uploadSampleImage } from "../../services/app.service";
 import { callAPI } from "../../util";
@@ -21,15 +21,16 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
   const canChangeStructure = hasPermission("manage_schema_destructive");
   const processorName = processorData.name;
   const [saving, setSaving] = useState(false);
-  const [displayName, setDisplayName] = useState(processorData.displayName);
-  const [processorId, setProcessorId] = useState(processorData.processorId);
-  const [modelId, setModelId] = useState(processorData.modelId);
-  const [documentType, setDocumentType] = useState(processorData.documentType);
+  const [displayName, setDisplayName] = useState(processorData.displayName || "");
+  const [processorId, setProcessorId] = useState(processorData.processorId || "");
+  const [modelId, setModelId] = useState(processorData.modelId || "");
+  const [parserType, setParserType] = useState<string>(processorData.parser_type || "");
+  const [documentType, setDocumentType] = useState(processorData.documentType || "");
   const [imageLink, setImageLink] = useState(processorData.img);
   const dialogHeight = "50vh";
   const dialogWidth = "40vw";
 
-  const disableSaveButton = saving || !processorName || !processorId || !modelId || !documentType;
+  const disableSaveButton = saving || !processorName || !documentType;
 
 
   const styles = {
@@ -52,9 +53,9 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
     setSaving(true);
     let body = {
       name: processorName,
+      schema_id: processorData.schema_id,
       displayName,
-      processorId,
-      modelId,
+      ...(canChangeStructure ? { processorId: processorId || null, modelId: modelId || null, parser_type: parserType || null } : {}),
       documentType,
       img: imageLink,
     };
@@ -137,6 +138,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
         >
           <Grid container>
             <Grid item xs={12}>
+              <Alert severity="info" sx={{ mb: 2 }}>Processor settings are optional. Changing them keeps this schema's fields and connected record groups.</Alert>
               <TextField
                 fullWidth
                 label="Display Name"
@@ -145,17 +147,18 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
                 sx={styles.textfield}
-                id="processor-name-textbox"
+                id="schema-display-name"
               />
               <TextField
                 fullWidth
                 label="Processor ID"
+                helperText="Optional; required with Model ID for document processing."
                 disabled={!canChangeStructure || saving}
                 variant="outlined"
                 value={processorId}
                 onChange={(event) => setProcessorId(event.target.value)}
                 sx={styles.textfield}
-                id="processor-name-textbox"
+                id="schema-processor-id"
               />
               <TextField
                 fullWidth
@@ -165,8 +168,16 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
                 value={modelId}
                 onChange={(event) => setModelId(event.target.value)}
                 sx={styles.textfield}
-                id="processor-name-textbox"
+                id="schema-model-id"
               />
+              <TextField
+                select fullWidth label="Processor format" value={parserType}
+                disabled={!canChangeStructure || saving} onChange={event => setParserType(event.target.value)} sx={styles.textfield}
+              >
+                <MenuItem value="">Automatic</MenuItem>
+                <MenuItem value="custom">Custom extractor</MenuItem>
+                <MenuItem value="form_parser">Form parser</MenuItem>
+              </TextField>
               <TextField
                 fullWidth
                 label="Document Type"
@@ -175,7 +186,7 @@ const EditProcessorDialog = ({ open, onClose, setErrorMsg, processorData, clickU
                 value={documentType}
                 onChange={(event) => setDocumentType(event.target.value)}
                 sx={styles.textfield}
-                id="processor-name-textbox"
+                id="schema-document-type"
               />
               <ImageField
                 label="Sample Image"

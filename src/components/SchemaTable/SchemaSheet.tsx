@@ -30,7 +30,8 @@ interface SchemaSheetProps {
     processorName: string,
     fieldName: string,
     updates: Record<string, string | number | null>,
-    operation?: "update" | "add" | "delete"
+    operation?: "update" | "add" | "delete",
+    schemaId?: string
   ) => Promise<boolean>;
 }
 
@@ -184,13 +185,13 @@ const SchemaSheet = ({
       return;
     }
 
-    if (await onAttributeChange(processor.name, row.name, updates, "update")) stopEditingRow();
+    if (await onAttributeChange(processor.name, row.name, updates, "update", processor.schema_id)) stopEditingRow();
   };
 
   const handleDeleteRow = async () => {
     if (!processor?.name || !pendingDeleteRow?.name) return;
 
-    if (await onAttributeChange(processor.name, pendingDeleteRow.name, {}, "delete")) {
+    if (await onAttributeChange(processor.name, pendingDeleteRow.name, {}, "delete", processor.schema_id)) {
       stopEditingRow();
       setPendingDeleteRow(null);
     }
@@ -210,7 +211,7 @@ const SchemaSheet = ({
     if (!processor?.name) return false;
     const fieldName = String(updates.name || "");
     if (!fieldName) return false;
-    return onAttributeChange(processor.name, fieldName, updates, "add");
+    return onAttributeChange(processor.name, fieldName, updates, "add", processor.schema_id);
   };
 
   const renderSelect = (

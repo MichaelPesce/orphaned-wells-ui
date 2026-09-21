@@ -44,8 +44,27 @@ to reload the record. Reload before retrying so the edit uses the current fields
 
 ## Add a new processor schema
 
+In database mode, choose **Create schema**. Enter its name, display name, and
+document type. You can upload a CSV or JSON field definition, or leave the file
+empty and add fields in the editor. Processor and model IDs are optional.
+
+A schema without a processor can organize and clean imported JSON/CSV records.
+When creating a record group, select an existing shared schema or leave the
+group without one. No schema is inferred automatically.
+
 <AddProcessorSchema/>
 
 ## Edit an existing processor
+
+Administrators can add or change **Processor ID**, **Model ID**, and **Processor
+format** in the schema's edit dialog. Both IDs are needed for document processing.
+These changes preserve the schema's fields and its connected record groups.
+Different schemas can use the same processor; choose schemas by their names.
+
+On a record group, administrators can use **Select schema** to change its shared
+schema. Selecting **No schema**, then **Detach schema**, preserves the records
+while disabling schema-dependent cleaning and document processing. Detach any
+connected groups before deleting a schema. Repo mode continues to offer package
+processors through **Connect processor**.
 
 <EditProcessorSchema/>
