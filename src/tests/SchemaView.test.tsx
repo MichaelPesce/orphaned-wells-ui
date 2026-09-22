@@ -43,17 +43,32 @@ test("repo schemas are visible and read-only even for administrators", async () 
   expect(screen.queryByRole("button", { name: "Add field" })).not.toBeInTheDocument();
 });
 
-test("safe schema editors can change aliases but cannot rename, remove, or change types", async () => {
+test("schema managers can edit aliases and types but cannot rename or remove fields", async () => {
   await openFields();
   expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Edit" }));
   expect(screen.queryByRole("textbox", { name: /Field name/i })).not.toBeInTheDocument();
-  expect(screen.queryByLabelText("Data type")).not.toBeInTheDocument();
-  expect(screen.queryByLabelText("Database data type")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Data type")).toBeInTheDocument();
+  expect(screen.getByLabelText("Database data type")).toBeInTheDocument();
   fireEvent.change(screen.getByRole("textbox"), { target: { value: "Measured depth" } });
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await screen.findByText("Measured depth");
   expect(updateProcessorAttribute).toHaveBeenCalledWith("Well schema", "depth", { alias: "Measured depth" }, "update", processor.schema_id);
+});
+
+test.each([
+  { label: "Data type", option: "Number", updates: { data_type: "Number" } },
+  { label: "Database data type", option: "int", updates: { database_data_type: "int" } },
+  { label: "Data type", option: "Checkbox", updates: { data_type: "Checkbox", database_data_type: "bool" } },
+])("schema managers can save $label as $option", async ({ label, option, updates }) => {
+  await openFields();
+  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+  fireEvent.mouseDown(screen.getByLabelText(label));
+  fireEvent.click(screen.getByRole("option", { name: option }));
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(updateProcessorAttribute).toHaveBeenCalledWith("Well schema", "depth", updates, "update", processor.schema_id));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument());
+  expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
 });
 
 test("administrators get type and removal controls but field names remain immutable", async () => {

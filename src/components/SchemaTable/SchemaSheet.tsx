@@ -90,7 +90,7 @@ const SchemaSheet = ({
 }: SchemaSheetProps) => {
   const { hasPermission } = useUserContext();
   const canEdit = !readOnly && hasPermission("manage_schema");
-  const canChangeStructure = canEdit && hasPermission("manage_schema_destructive");
+  const canRemove = canEdit && hasPermission("manage_schema_destructive");
   const { attributes = [] } = processor || {};
   const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
@@ -336,7 +336,7 @@ const SchemaSheet = ({
                         true,
                         "schema-edit-cleaning_function"
                       )
-                    ) : isEditing && canChangeStructure && col.key === "data_type" ? (
+                    ) : isEditing && col.key === "data_type" ? (
                       renderSelect(
                         "Data type",
                         draft.data_type,
@@ -345,7 +345,7 @@ const SchemaSheet = ({
                         false,
                         "schema-edit-data_type"
                       )
-                    ) : isEditing && canChangeStructure && col.key === "database_data_type" ? (
+                    ) : isEditing && col.key === "database_data_type" ? (
                       renderSelect(
                         "Database data type",
                         draft.database_data_type,
@@ -411,7 +411,7 @@ const SchemaSheet = ({
                       >
                         Edit
                       </Button>
-                      {canChangeStructure && <Button
+                      {canRemove && <Button
                         data-cy="schema-remove-field-button"
                         size="small"
                         color="error"

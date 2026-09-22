@@ -21,10 +21,12 @@ are shared across all teams; an edit affects every record group using that schem
 ## Permissions
 
 With `manage_schema`, you can view schemas and, in database mode, edit aliases,
-cleaning functions, order and display metadata, add fields, and upload new schemas.
+cleaning functions, data types, database data types, order and display metadata,
+add fields, and upload new schemas. Type combinations must be valid, and fields
+with children must retain the Parent data type.
 This permission is intended for team leads and system roles.
 
-Removing fields, changing types or processor/model bindings, replacing a schema
+Removing fields, changing processor/model bindings, replacing a schema
 from a file, and deleting a schema also require `manage_schema_destructive`,
 which is restricted to `sys_admin`. Field names cannot be renamed by any role.
 Only available actions appear in the editor. If a save fails, your draft stays
