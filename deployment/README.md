@@ -95,6 +95,36 @@ Set these values in `deployment/.env` to point the backend at a different MongoD
 
 ## MongoDB Seed Data
 
+### Schema roles and permissions
+
+Startup and sample-dump restore do not migrate schema permissions. The bundled
+dump does not yet grant `manage_schema` to `team_lead` or
+`manage_schema_destructive` to `sys_admin`. After starting an updated backend,
+preview, apply, then verify the role migration:
+
+```sh
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions --apply
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions
+```
+
+Run these from the frontend repository. The commands use the running backend's
+database configuration, including any cloud database override; review the preview
+before applying. The final output should be `[]`. For the E2E stack, use
+`deployment/.env.e2e` in place of `deployment/.env`. Repeat after restoring the
+seed dump because restore replaces the role definitions. Existing Docker volumes
+are not updated merely by editing the sample dump or restarting containers.
+
+The migration grants safe schema management to team leads and all system roles,
+and destructive schema management only to `sys_admin`. It preserves other
+permissions and user role assignments. Refresh the app after migrating.
+
+The development and E2E defaults use `REQUIRE_AUTH=false`. Destructive schema
+actions intentionally remain disabled in that mode, even after migrating roles.
+To test them, enable authentication and sign in with the `sys_admin` system role.
+
+### Restore the sample dump
+
 The sample dump lives at `deployment/mongo-dumps/sample_mongodump`. MongoDB restores it automatically the first time the `mongodb_data` volume is created.
 
 To reset and reinitialize from the dump:

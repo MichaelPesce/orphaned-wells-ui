@@ -127,6 +127,72 @@ export interface SchemaOverview {
     last_updated?: number;
 }
 
+export interface RepoSchemaSource {
+    package: string;
+    version: string;
+    collaborator: string;
+}
+
+export interface SchemaImportGroup {
+    id: string;
+    name: string;
+    team?: string;
+}
+
+export interface SchemaImportDiff {
+    added: string[];
+    retired: string[];
+    changed: { name: string; before: SchemaField; after: SchemaField }[];
+    metadata: { name: string; before: unknown; after: unknown }[];
+}
+
+export interface SchemaImportDecision {
+    action: "keep" | "replace";
+    schema_id: string;
+}
+
+export interface SchemaImportRequest {
+    mode: "add" | "replace";
+    selected: string[];
+    decisions: Record<string, SchemaImportDecision>;
+}
+
+export interface SchemaImportEntry {
+    source_id: string;
+    name: string;
+    action: "added" | "updated" | "unchanged" | "kept" | "conflict";
+    schema_id?: string;
+    groups: SchemaImportGroup[];
+    diff?: SchemaImportDiff;
+    candidates: { schema_id: string; name: string; diff: SchemaImportDiff; groups: SchemaImportGroup[] }[];
+}
+
+export interface SchemaImportPreview {
+    import_id: string;
+    source: RepoSchemaSource;
+    mode: "add" | "replace";
+    status: "preview" | "applying" | "partial" | "complete";
+    entries: SchemaImportEntry[];
+    removed: { schema_id: string; name: string; groups: SchemaImportGroup[] }[];
+    affected_groups: SchemaImportGroup[];
+    detached_groups: SchemaImportGroup[];
+    counts: Record<SchemaImportEntry["action"] | "removed" | "detached", number>;
+    can_apply: boolean;
+    errors: string[];
+    error?: string | null;
+    destructive: boolean;
+    next_step: number;
+    total_steps: number;
+}
+
+export interface RepoSchemaImportSource {
+    source: RepoSchemaSource;
+    schemas: { source_id: string; name: string; field_count?: number; error?: string }[];
+    pending_import?: SchemaImportPreview | null;
+    busy: boolean;
+    error?: string;
+}
+
 export interface SchemaField {
     name: string;
     alias?: string;

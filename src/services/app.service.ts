@@ -3,6 +3,7 @@ import {
   ChangeTeamRequest,
   DirectoryUploadRequest,
   MongoProcessor,
+  SchemaImportRequest,
   RoleCategory,
   UpdateRolePermissionsRequest,
   UpdateUserRolesRequest,
@@ -11,6 +12,16 @@ import {
 let BACKEND_URL = process.env.REACT_APP_BACKEND_URL as string;
 const CORS_MODE: RequestMode = "cors";
 const JSON_HEADERS = { "Content-Type": "application/json" };
+
+export const getRepoSchemaImport = () => fetch(BACKEND_URL + "/get_repo_schema_import", { mode: CORS_MODE });
+
+export const previewRepoSchemaImport = (request: SchemaImportRequest) => fetch(BACKEND_URL + "/preview_repo_schema_import", {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(request),
+});
+
+export const applyRepoSchemaImport = (importId: string) => fetch(BACKEND_URL + "/apply_repo_schema_import", {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify({ import_id: importId }),
+});
 
 export const getProjects = () => {
   return fetch(BACKEND_URL + "/get_projects", {

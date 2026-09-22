@@ -44,6 +44,39 @@ to reload the record. Reload before retrying so the edit uses the current fields
 
 ## Add a new processor schema
 
+### Import schemas from the installed package
+
+In database mode, open the Schema page menu and choose **Import repo schemas**.
+The dialog shows the installed `ogrre_data_cleaning` version and collaborator.
+It reads that installed package; it does not fetch from GitHub.
+
+1. **Choose** the schemas and either **Add to existing schemas** or **Replace
+   the schema catalog**. Invalid definitions show an error and cannot be selected.
+2. **Review** added, changed, and removed schemas. Expand comparisons and affected
+   record groups to see the shared effects across teams. Resolve each conflict
+   with **Keep existing** or **Use repo version**, choosing an existing schema
+   when several match. Choose **Update preview** after changing a decision.
+3. **Apply** only after checking the final counts and detachment warning.
+
+Schema managers can add new definitions and keep conflicting existing ones.
+Replacing a definition or the catalog requires an administrator. Activating a
+previously missing legacy group binding also requires administrator permission.
+Replace removes definitions outside the selected set and leaves their groups
+without schemas. Records and stored fields are preserved; schema-dependent
+cleaning and document processing become unavailable for detached groups.
+
+Matched schemas keep their IDs, internal names, and group references. Imported
+definitions are ordinary shared database schemas; later package updates do not
+change them automatically. Creator/team information records provenance, not
+ownership restrictions.
+
+If the catalog or group bindings change after preview, review a fresh preview.
+If applying stops partway through, completed changes remain saved. Reopen
+**Import repo schemas**, choose **Review saved import**, then **Resume import**.
+Other schema and group-configuration changes wait until that import finishes.
+
+### Create or upload a schema
+
 In database mode, choose **Create schema**. Enter its name, display name, and
 document type. You can upload a CSV or JSON field definition, or leave the file
 empty and add fields in the editor. Processor and model IDs are optional.

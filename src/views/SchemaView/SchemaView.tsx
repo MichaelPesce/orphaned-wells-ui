@@ -15,11 +15,13 @@ import SchemaTable from "../../components/SchemaTable/SchemaTable";
 import { SchemaOverview, MongoProcessor, SchemaField } from "../../types";
 import UploadProcessorDialog from "../../components/UploadProcessorDialog/UploadProcessorDialog";
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
+import SchemaImportDialog from "../../components/SchemaImportDialog/SchemaImportDialog";
 
 const SchemaView = () => {
   const navigate = useNavigate();
   const { hasPermission} = useUserContext();
   const [showUploadProcessor, setShowUploadProcessor] = useState(false);
+  const [showRepoImport, setShowRepoImport] = useState(false);
   const [schemaData, setSchemaData] = useState<SchemaOverview>();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -215,6 +217,7 @@ const SchemaView = () => {
         currentPage="Schema"
         buttonName={canEdit ? "Create schema" : undefined}
         handleClickButton={() => setShowUploadProcessor(true)}
+        actions={canEdit ? { "Import repo schemas": () => setShowRepoImport(true) } : undefined}
       />
       <Box sx={styles.innerBox}>
         {schemaData && <Alert severity="info" sx={{ mb: 2 }}>
@@ -244,6 +247,7 @@ const SchemaView = () => {
         errorMessage={errorMsg}
         setErrorMessage={setErrorMsg}
       />
+      {showRepoImport && canEdit && <SchemaImportDialog onClose={() => setShowRepoImport(false)} onApplied={() => callAPI(getSchema, [], fetchedSchema, handleError)} />}
 
     </Box>
   );
