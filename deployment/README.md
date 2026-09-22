@@ -97,23 +97,29 @@ Set these values in `deployment/.env` to point the backend at a different MongoD
 
 ### Schema roles and permissions
 
-Startup and sample-dump restore do not migrate schema permissions. The bundled
-dump does not yet grant `manage_schema` to `team_lead` or
-`manage_schema_destructive` to `sys_admin`. After starting an updated backend,
-preview, apply, then verify the role migration:
+The bundled dump and `docs/static/downloads/InitializeMongoDB.py` grant
+`manage_schema` to team leads and all system roles, and
+`manage_schema_destructive` only to `sys_admin`. Fresh Docker databases and
+restores of the updated dump need no schema-permission migration.
+
+Existing volumes retain their stored roles when containers restart. To update
+those roles while preserving the database's data, run the migration using an
+updated backend:
 
 ```sh
 docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions
-docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions --apply
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec backend python -m ogrre.migrate_schema_permissions --apply
 docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions
 ```
 
 Run these from the frontend repository. The commands use the running backend's
-database configuration, including any cloud database override; review the preview
-before applying. The final output should be `[]`. For the E2E stack, use
-`deployment/.env.e2e` in place of `deployment/.env`. Repeat after restoring the
-seed dump because restore replaces the role definitions. Existing Docker volumes
-are not updated merely by editing the sample dump or restarting containers.
+database configuration, including any cloud database override. Each command
+shows the hosts, database name, configured collaborator, and proposed changes
+without URI credentials or query options. The apply command needs interactive
+input: verify the target and preview, then enter `y` to confirm. Any other answer
+or end of input cancels. The final command should report `No changes needed.`
+with an empty changes list. For the E2E stack, use `deployment/.env.e2e` in place
+of `deployment/.env`.
 
 The migration grants safe schema management to team leads and all system roles,
 and destructive schema management only to `sys_admin`. It preserves other
