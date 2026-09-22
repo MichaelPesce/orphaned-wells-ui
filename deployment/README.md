@@ -113,6 +113,12 @@ Statistics tolerate malformed attribute arrays and entries. Opening a record
 prepares only that record. Missing schemas do not prevent browsing; failed API
 requests display an error with Retry in the frontend.
 
+The backend also preserves indexed `dateCreated` sorting for All Records by
+hiding retired attributes after metadata filtering, ranking, and pagination.
+Update/rebuild the backend to get this fix; the frontend API and Compose settings
+are unchanged. Existing databases can keep their `dateCreated` index, and no
+`allowDiskUse` setting or schema migration is needed.
+
 Schema retirement/replacement runs as an explicit mutation, and saved package
 imports can resume their reconciliation steps. For a repo-package update or old
 retirement definitions that have not been applied, use the optional bounded
