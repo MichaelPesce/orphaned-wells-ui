@@ -56,3 +56,32 @@ https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server
 cd <orphaned-wells-ui-path>
 npm start
 ```
+
+## CI branch pairing
+
+Push and pull-request runs of **App Tests** test the triggering frontend commit
+against `main` in `CATALOG-Historic-Records/orphaned-wells-ui-server`. E2E tests
+build that backend from source instead of using the published Docker image.
+
+For coordinated changes, select **Actions → App Tests → Run workflow**. Choose
+the frontend branch in the branch selector, set `backend_ref` to the backend
+branch, tag, or commit, and optionally change `backend_repository` to a fork
+(`owner/repository`). Both inputs have defaults; leaving them unchanged tests
+against the upstream backend's `main`. These overrides apply only to that run;
+later push/PR runs still use `main`.
+
+From this repository, the equivalent CLI invocation for matching branches is:
+
+```sh
+gh workflow run tests.yml --ref db-schemas -f backend_ref=db-schemas
+```
+
+Add `-f backend_repository=OWNER/orphaned-wells-ui-server` to select a fork.
+Public repositories use the normal Actions token. A private counterpart requires
+the optional `CHECKOUT_TOKEN` secret with read access to both repositories.
+
+GitHub requires the workflow's `workflow_dispatch` trigger to exist on the
+repository's default branch before manual runs are available. Land these CI
+changes there once; subsequent branch pairings require no workflow edits.
+The backend's **Checks** workflow provides the corresponding `frontend_ref`
+and `frontend_repository` inputs.
