@@ -6,6 +6,19 @@ on:
   pull_request:
     branches: [main]
 
+  workflow_dispatch:
+    inputs:
+      backend_ref:
+        description: Backend branch, tag, or commit to test against.
+        type: string
+        required: false
+        default: main
+      backend_repository:
+        description: Backend repository (owner/name); override to test a fork.
+        type: string
+        required: false
+        default: CATALOG-Historic-Records/orphaned-wells-ui-server
+
 jobs:
   component-tests:
     name: Component testing
@@ -23,6 +36,13 @@ jobs:
     name: E2E testing
     needs: component-tests
     uses: ./.github/workflows/frontend-tests-dispatch.yml
+    permissions:
+      contents: read
     with:
       checkout_repository: ${{ github.repository }}
       checkout_ref: ${{ github.sha }}
+      backend_mode: source
+      backend_repository: ${{ inputs.backend_repository || 'CATALOG-Historic-Records/orphaned-wells-ui-server' }}
+      backend_ref: ${{ inputs.backend_ref || 'main' }}
+    secrets:
+      checkout_token: ${{ secrets.CHECKOUT_TOKEN }}

@@ -2,6 +2,8 @@
 objects
 */
 export interface RecordData {
+    has_schema?: boolean;
+    attribute_revision?: string;
     _id: string;
     name: string;
     filename: string;
@@ -43,6 +45,14 @@ export interface ProjectData {
 }
 
 export interface RecordGroup {
+    has_records?: boolean;
+    schema_id?: string | null;
+    active_schema_id?: string | null;
+    schema_source?: "database" | "repo";
+    schema_name?: string | null;
+    schema_error?: string | null;
+    has_schema?: boolean;
+    can_process?: boolean;
     _id: string;
     attributes?: any[];
     name: string;
@@ -112,8 +122,76 @@ export interface SchemaMeta {
 
 export interface SchemaOverview {
     processors: MongoProcessor[];
+    source: "database" | "repo";
+    read_only: boolean;
     name?: number;
     last_updated?: number;
+}
+
+export interface RepoSchemaSource {
+    package: string;
+    version: string;
+    collaborator: string;
+}
+
+export interface SchemaImportGroup {
+    id: string;
+    name: string;
+    team?: string;
+}
+
+export interface SchemaImportDiff {
+    added: string[];
+    retired: string[];
+    changed: { name: string; before: SchemaField; after: SchemaField }[];
+    metadata: { name: string; before: unknown; after: unknown }[];
+}
+
+export interface SchemaImportDecision {
+    action: "keep" | "replace";
+    schema_id: string;
+}
+
+export interface SchemaImportRequest {
+    mode: "add" | "replace";
+    selected: string[];
+    decisions: Record<string, SchemaImportDecision>;
+}
+
+export interface SchemaImportEntry {
+    source_id: string;
+    name: string;
+    action: "added" | "updated" | "unchanged" | "kept" | "conflict";
+    schema_id?: string;
+    groups: SchemaImportGroup[];
+    diff?: SchemaImportDiff;
+    candidates: { schema_id: string; name: string; diff: SchemaImportDiff; groups: SchemaImportGroup[] }[];
+}
+
+export interface SchemaImportPreview {
+    import_id: string;
+    source: RepoSchemaSource;
+    mode: "add" | "replace";
+    status: "preview" | "applying" | "partial" | "complete";
+    entries: SchemaImportEntry[];
+    removed: { schema_id: string; name: string; groups: SchemaImportGroup[] }[];
+    affected_groups: SchemaImportGroup[];
+    detached_groups: SchemaImportGroup[];
+    counts: Record<SchemaImportEntry["action"] | "removed" | "detached", number>;
+    can_apply: boolean;
+    errors: string[];
+    error?: string | null;
+    destructive: boolean;
+    next_step: number;
+    total_steps: number;
+}
+
+export interface RepoSchemaImportSource {
+    source: RepoSchemaSource;
+    schemas: { source_id: string; name: string; field_count?: number; error?: string }[];
+    pending_import?: SchemaImportPreview | null;
+    busy: boolean;
+    error?: string;
 }
 
 export interface SchemaField {
@@ -131,11 +209,37 @@ export interface SchemaField {
     page_order_sort?: number;
 }
 
+export interface SchemaGenerationPreview {
+    preview_id: string;
+    mode: "generate" | "extend";
+    status: "preview";
+    schema_id: string | null;
+    schema_name: string | null;
+    name: string;
+    documentType: string;
+    fields: SchemaField[];
+    field_notes: Record<string, string[]>;
+    warnings: string[];
+    sampled_records: number;
+    examined_records: number;
+    record_limit: number;
+    sample_capped: boolean;
+    oversized_records: number;
+}
+
+export interface SchemaGenerationRequest {
+    preview_id: string;
+    fields: SchemaField[];
+    name?: string;
+    documentType?: string;
+}
+
 export interface RecordSchema {
     [key: string]: SchemaField;
 }
 
 export interface Attribute {
+    deleted?: boolean;
     name: string;
     key: string;
     value: string | boolean | number | null;
@@ -184,10 +288,15 @@ export interface RepoProcessor {
 }
 
 export interface MongoProcessor {
+    schema_id?: string;
+    parser_type?: "custom" | "form_parser" | null;
+    can_process?: boolean;
+    created_by?: string | null;
+    created_by_team?: string | null;
     "name": string;
-    "processorId": string;
-    "modelId": string;
-    "lastUpdated": string;
+    "processorId"?: string | null;
+    "modelId"?: string | null;
+    "lastUpdated"?: string;
     "img"?: string;
     "documentType"?: string;
     "displayName"?: string;
@@ -291,6 +400,7 @@ export interface RecordHistoryItem {
 }
 
 export interface HistoryAttribute {
+    deleted?: boolean;
     key?: unknown;
     value?: unknown;
     value_numeric_type?: "int" | "float" | null;
@@ -356,6 +466,7 @@ export interface HotkeySection {
 props interfaces
 */
 export interface RecordAttributesTableProps {
+    attribute_revision?: string;
     handleClickField: handleClickFieldSignature;
     handleChangeValue: handleChangeValueSignature;
     fullscreen: string | null;
@@ -446,13 +557,13 @@ export interface UploadProcessorProps {
     onClose: () => void;
     updatingProcessor?: MongoProcessor;
     handleUploadDocument: (
-        file: File,
+        file: File | null,
         name: string,
         displayName: string,
         processorId: string,
         modelId: string,
         documentType: string
-    ) => void;
+    ) => Promise<boolean>;
 }
 
 export interface UploadDirectoryProps {
@@ -554,6 +665,7 @@ export interface BottombarProps {
 }
 
 export interface DocumentContainerProps {
+    attribute_revision?: string;
     imageFiles: string[];
     attributesList: any[];
     handleChangeValue: handleChangeValueSignature;

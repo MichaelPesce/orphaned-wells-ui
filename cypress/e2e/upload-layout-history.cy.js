@@ -12,7 +12,7 @@ const setup = () => {
   cy.intercept("POST", "**/check_auth", {body: {user_data: {email: "uploader@example.com", name: "Test uploader", permissions: ["upload_document"], default_team: "default", collaborator: "isgs"}, environment: "test"}});
   cy.intercept("GET", "**/fetch_teams", {body: []});
   cy.intercept("GET", "**/processing_jobs/scopes", {body: scopes});
-  cy.intercept("GET", `**/get_record_group/${group}`, {body: {rg_data: {_id: group, name: "Upload layout test", processorId: "processor", attributes: []}, project: {_id: "project", name: "Test project"}}});
+  cy.intercept("GET", `**/get_record_group/${group}`, {body: {rg_data: {_id: group, name: "Upload layout test", processorId: "processor", has_schema: true, can_process: true}, project: {_id: "project", name: "Test project"}}});
   cy.intercept("POST", "**/get_records/**", {body: {records: [], record_count: 0, has_active_processing_jobs: false}});
   cy.intercept("GET", "**/check_processor_status/**", {body: 1});
   cy.intercept("POST", "**/check_if_records_exist/**", {body: []});

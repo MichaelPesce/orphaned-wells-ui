@@ -16,8 +16,13 @@ import { MongoOverview, HowToSetupMongo, InitializeDatabase, MongoEnvironmentVar
 
 <InitializeDatabase/>
 
+The initialization script grants `manage_schema` to team leads and all system
+roles, and `manage_schema_destructive` only to the `sys_admin` role. These defaults
+apply to newly initialized databases. For an existing database, use the backend's
+`python -m ogrre.migrate_schema_permissions --apply` command instead; review its
+database target and proposed changes, then enter `y` to confirm.
+
 ## Environment variables for OGRRE
 
 <MongoEnvironmentVariables/>
-
 

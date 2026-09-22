@@ -53,6 +53,7 @@ ROLES = [
             "system_administration",
             "developer",
             "manage_schema",
+            "manage_schema_destructive",
             "update_coordinates",
         ],
         "includes": [
@@ -96,6 +97,7 @@ ROLES = [
             "review_record",
             "add_user",
             "clean_record",
+            "manage_schema",
             "update_coordinates",
         ],
         "includes": [

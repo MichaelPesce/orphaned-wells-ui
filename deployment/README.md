@@ -93,7 +93,49 @@ DB_PASSWORD=
 
 Set these values in `deployment/.env` to point the backend at a different MongoDB instance. Existing `.env` files are not regenerated from `.env.example`, so add any missing keys manually after pulling deployment changes.
 
+`SCHEMA_INFERENCE_MAX_RECORDS` sets the maximum record sample for explicit schema
+generation and extension (default 1,000; range 1–10,000). Add it to an existing
+`deployment/.env` and recreate the backend container to change it. Fixed byte,
+field-count, nesting, and query-time limits also apply. The backend creates the
+sampling index on startup; no record rewrite or schema generation runs at startup.
+
 ## MongoDB Seed Data
+
+### Schema roles and permissions
+
+The bundled dump and `docs/static/downloads/InitializeMongoDB.py` grant
+`manage_schema` to team leads and all system roles, and
+`manage_schema_destructive` only to `sys_admin`. Fresh Docker databases and
+restores of the updated dump need no schema-permission migration.
+
+Existing volumes retain their stored roles when containers restart. To update
+those roles while preserving the database's data, run the migration using an
+updated backend:
+
+```sh
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec backend python -m ogrre.migrate_schema_permissions --apply
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions
+```
+
+Run these from the frontend repository. The commands use the running backend's
+database configuration, including any cloud database override. Each command
+shows the hosts, database name, configured collaborator, and proposed changes
+without URI credentials or query options. The apply command needs interactive
+input: verify the target and preview, then enter `y` to confirm. Any other answer
+or end of input cancels. The final command should report `No changes needed.`
+with an empty changes list. For the E2E stack, use `deployment/.env.e2e` in place
+of `deployment/.env`.
+
+The migration grants safe schema management to team leads and all system roles,
+and destructive schema management only to `sys_admin`. It preserves other
+permissions and user role assignments. Refresh the app after migrating.
+
+The development and E2E defaults use `REQUIRE_AUTH=false`. Destructive schema
+actions intentionally remain disabled in that mode, even after migrating roles.
+To test them, enable authentication and sign in with the `sys_admin` system role.
+
+### Restore the sample dump
 
 The sample dump lives at `deployment/mongo-dumps/sample_mongodump`. MongoDB restores it automatically the first time the `mongodb_data` volume is created.
 

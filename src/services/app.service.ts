@@ -3,6 +3,8 @@ import {
   ChangeTeamRequest,
   DirectoryUploadRequest,
   MongoProcessor,
+  SchemaImportRequest,
+  SchemaGenerationRequest,
   RoleCategory,
   UpdateRolePermissionsRequest,
   UpdateUserRolesRequest,
@@ -11,6 +13,24 @@ import {
 let BACKEND_URL = process.env.REACT_APP_BACKEND_URL as string;
 const CORS_MODE: RequestMode = "cors";
 const JSON_HEADERS = { "Content-Type": "application/json" };
+
+export const previewRecordGroupSchema = (groupId: string, mode: "generate" | "extend") => fetch(`${BACKEND_URL}/record_groups/${groupId}/schema/preview`, {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify({ mode }),
+});
+
+export const applyRecordGroupSchema = (groupId: string, request: SchemaGenerationRequest) => fetch(`${BACKEND_URL}/record_groups/${groupId}/schema/apply`, {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(request),
+});
+
+export const getRepoSchemaImport = () => fetch(BACKEND_URL + "/get_repo_schema_import", { mode: CORS_MODE });
+
+export const previewRepoSchemaImport = (request: SchemaImportRequest) => fetch(BACKEND_URL + "/preview_repo_schema_import", {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(request),
+});
+
+export const applyRepoSchemaImport = (importId: string) => fetch(BACKEND_URL + "/apply_repo_schema_import", {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify({ import_id: importId }),
+});
 
 export const getProjects = () => {
   return fetch(BACKEND_URL + "/get_projects", {
@@ -519,11 +539,13 @@ export const uploadProcessorSchema = (
   modelId: string,
   documentType: string,
   imageLink?: string,
+  schemaId?: string,
+  parserType?: string | null,
 ) => {
-  let endpoint = BACKEND_URL + `/upload_processor_schema/?name=${name}&displayName=${displayName}&processorId=${processorId}&modelId=${modelId}&documentType=${documentType}`;
-  let img = imageLink;
-  if (imageLink === undefined) img = "";
-  endpoint+= `&img=${img}`;
+  const query = new URLSearchParams({ name, displayName, processorId, modelId, documentType, img: imageLink || "" });
+  if (schemaId) query.set("schema_id", schemaId);
+  if (parserType) query.set("parser_type", parserType);
+  const endpoint = BACKEND_URL + `/upload_processor_schema?${query}`;
   return fetch(endpoint, {
     method: "POST",
     mode: CORS_MODE,
@@ -535,7 +557,7 @@ export const uploadSampleImage = (
   data: FormData,
   name: string,
 ) => {
-  let endpoint = BACKEND_URL + `/upload_sample_image/${name}`;
+  const endpoint = BACKEND_URL + `/upload_sample_image/${encodeURIComponent(name)}`;
   return fetch(endpoint, {
     method: "POST",
     mode: CORS_MODE,
@@ -552,17 +574,23 @@ export const updateProcessor = (updated_processor: MongoProcessor) => {
   });
 };
 
+export const createSchema = (schema: Partial<MongoProcessor>) => fetch(BACKEND_URL + "/create_schema", {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(schema),
+});
+
 export const updateProcessorAttribute = (
   processorName: string,
   fieldName: string,
   updates: Record<string, string | number | null>,
-  operation: "update" | "add" | "delete" = "update"
+  operation: "update" | "add" | "delete" = "update",
+  schemaId?: string
 ) => {
   return fetch(BACKEND_URL + "/update_processor_attribute", {
     method: "POST",
     mode: CORS_MODE,
     body: JSON.stringify({
       processor_name: processorName,
+      schema_id: schemaId,
       field_name: fieldName,
       updates,
       operation,
@@ -577,8 +605,9 @@ export const getSampleImage = (processorName: string) => {
   });
 };
 
-export const deleteProcessorSchema = (processor_name: string) => {
-  return fetch(BACKEND_URL + `/delete_processor/${processor_name}`, {
+export const deleteProcessorSchema = (processor_name: string, schemaId?: string) => {
+  const query = schemaId ? `?schema_id=${encodeURIComponent(schemaId)}` : "";
+  return fetch(BACKEND_URL + `/delete_processor/${encodeURIComponent(processor_name)}${query}`, {
     method: "POST",
     mode: CORS_MODE,
   });

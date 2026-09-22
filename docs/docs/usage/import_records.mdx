@@ -63,6 +63,11 @@ imported attributes. JSON can also preserve `raw_text`, `normalized_value`,
 `normalized_vertices`, and nested `subattributes`. Use JSON when you need this
 metadata; attaching an image later does not generate it.
 
+If a JSON package supplies a new schema, applying it requires database schema
+mode and `manage_schema`. Replacing an existing group schema also requires
+`manage_schema_destructive`. Importing records alone does not replace a schema;
+omit the optional schema definition when you only want to append records.
+
 ### CSV
 
 Use a header row followed by one row per record. A `file` column provides the
@@ -153,8 +158,9 @@ coordinate metadata in the imported data.
 
 ## Connect a processor afterwards
 
-Connecting a processor requires `create_record_group` permission and a configured
-processor available to your team. An administrator can follow
+Connecting or replacing a processor requires both `manage_schema` and
+`manage_schema_destructive`, and a configured processor in the active catalog.
+An administrator can follow
 [Connecting processors](../install/connect_processors.mdx) if none is available.
 
 1. Return to the record group.

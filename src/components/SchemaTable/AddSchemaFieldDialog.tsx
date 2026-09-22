@@ -19,7 +19,7 @@ interface AddSchemaFieldDialogProps {
   attributes: SchemaField[];
   cleaningFunctions: string[];
   onClose: () => void;
-  onAddField: (updates: Record<string, string | number | null>) => Promise<void> | void;
+  onAddField: (updates: Record<string, string | number | null>) => Promise<boolean>;
 }
 
 const DATA_TYPE_OPTIONS = ["Checkbox", "Plain text", "Datetime", "Parent"];
@@ -68,6 +68,7 @@ const AddSchemaFieldDialog = ({
   onAddField,
 }: AddSchemaFieldDialogProps) => {
   const [draft, setDraft] = useState<Record<string, string>>(getInitialDraft(attributes));
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -101,10 +102,12 @@ const AddSchemaFieldDialog = ({
     };
 
   const handleSubmit = async () => {
+    if (saving) return;
     if (!draft.name || !draft.data_type || !draft.database_data_type) return;
     if (getPageOrderSortInvalid(draft.page_order_sort)) return;
 
-    await onAddField({
+    setSaving(true);
+    const saved = await onAddField({
       name: draft.name,
       alias: draft.alias || null,
       cleaning_function: draft.cleaning_function || null,
@@ -112,17 +115,18 @@ const AddSchemaFieldDialog = ({
       database_data_type: draft.database_data_type,
       page_order_sort: Number(draft.page_order_sort),
     });
-    onClose();
+    setSaving(false);
+    if (saved) onClose();
   };
 
   const addFieldDisabled =
-    !draft.name ||
+    saving || !draft.name ||
     !draft.data_type ||
     !draft.database_data_type ||
     getPageOrderSortInvalid(draft.page_order_sort);
 
   return (
-    <Dialog data-cy="add-schema-field-dialog" open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog data-cy="add-schema-field-dialog" open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="sm">
       <DialogTitle>Add Field</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
@@ -161,6 +165,7 @@ const AddSchemaFieldDialog = ({
           <FormControl fullWidth>
             <Select
               data-cy="add-schema-data-type"
+              inputProps={{ "aria-label": "Data type" }}
               value={draft.data_type}
               displayEmpty
               onChange={handleSelectChange("data_type")}
@@ -175,6 +180,7 @@ const AddSchemaFieldDialog = ({
           <FormControl fullWidth>
             <Select
               data-cy="add-schema-database-data-type"
+              inputProps={{ "aria-label": "Database data type" }}
               value={draft.database_data_type}
               displayEmpty
               onChange={handleSelectChange("database_data_type")}
@@ -207,7 +213,7 @@ const AddSchemaFieldDialog = ({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button data-cy="add-schema-cancel" onClick={onClose}>Cancel</Button>
+        <Button data-cy="add-schema-cancel" disabled={saving} onClick={onClose}>Cancel</Button>
         <Button data-cy="add-schema-submit" variant="contained" onClick={handleSubmit} disabled={addFieldDisabled}>
           Add Field
         </Button>

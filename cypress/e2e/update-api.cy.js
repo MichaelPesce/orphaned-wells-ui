@@ -19,7 +19,11 @@ const getDefaultTeamName = () => {
 };
 
 const updateRecord = (recordId, requestBody, label) => {
-  return cy.api("POST", `/update_record/${recordId}`, requestBody).then(({ status, body }) => {
+  return cy.api("POST", `/get_record/${recordId}`, {}).then(({ body }) =>
+    cy.api("POST", `/update_record/${recordId}`, {
+      ...requestBody, attribute_revision: body.recordData.attribute_revision,
+    })
+  ).then(({ status, body }) => {
     expectOk(status, label);
     return body;
   });
@@ -53,7 +57,7 @@ describe("update API smoke coverage", () => {
           });
       }).then(() => cy.api("GET", "/get_schema"))
       .then(({ body }) => {
-        const processor = body[0];
+        const processor = body.processors[0];
         expect(processor, "seeded processor").to.exist;
 
         return cy.api("POST", "/update_processor", { name: processor.name }).then(({ status, body }) => {

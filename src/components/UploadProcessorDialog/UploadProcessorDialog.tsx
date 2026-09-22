@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
 import { Grid, Box, Modal, IconButton, Button, Stack, TextField } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
@@ -7,11 +6,11 @@ import { FileUploader } from "react-drag-drop-files";
 import { UploadProcessorProps } from "../../types";
 
 const UploadProcessorDialog = (props: UploadProcessorProps) => {
-  const params = useParams<{ id: string }>();
   const { onClose, handleUploadDocument, updatingProcessor } = props;
   const [ showWarning, setShowWarning ] = useState(false);
   const [ warningMessage, setWarningMessage ] = useState("");
   const [ file, setFile ] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
   const maxFileSize = 10;
   const fileTypes: string[] = ["csv", "json"];
 
@@ -22,9 +21,9 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
   const [documentType, setDocumentType] = useState(updatingProcessor?.documentType || "");
 
 
-  const disableButton = !file || !modelId || !processorId || !name || !displayName || !documentType;
+  const disableButton = saving || (!!updatingProcessor && !file) || !name || !displayName || !documentType;
 
-  const disableTextBoxes = !!updatingProcessor;
+  const disableTextBoxes = saving || !!updatingProcessor;
 
   const styles = {
     modalStyle: {
@@ -84,20 +83,23 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
   };
 
   const handleClose = () => {
-    onClose();
+    if (!saving) onClose();
   };
 
-  const handleClickUpload = () => {
-    if (file === null) {
+  const handleClickUpload = async () => {
+    if (saving) return;
+    if (updatingProcessor && file === null) {
       setWarningMessage("Please upload a valid file");
       setShowWarning(true);
       setTimeout(() => {
         setShowWarning(false);
       }, 5000);
     } else {
-      handleUploadDocument(file, name, displayName, processorId, modelId, documentType);
+      setSaving(true);
+      const saved = await handleUploadDocument(file, name, displayName, processorId, modelId, documentType);
+      setSaving(false);
       setShowWarning(false);
-      onClose();
+      if (saved) onClose();
     }
   };
 
@@ -181,7 +183,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
         </Grid>
         <Grid item xs={6}>
           <Box sx={{display: "flex", justifyContent: "center"}}>
-            <h2 style={styles.header}>{updatingProcessor ? "Update" : "Upload"} processor</h2>
+            <h2 style={styles.header}>{updatingProcessor ? "Replace schema fields" : "Create schema"}</h2>
           </Box>
         </Grid>
         <Grid item xs={3}>
@@ -193,6 +195,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                     
         <Grid item xs={12}>
                             
+          {!updatingProcessor && <p>Optionally upload a CSV or JSON schema, or create an empty schema and add fields in the editor.</p>}
           {DragDrop()}
         </Grid>
         <Grid item xs={12}>
@@ -204,7 +207,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 data-cy="processor-name-input"
                 sx={styles.textbox}
                 fullWidth
-                label="Processor Name"
+                label="Schema Name"
                 variant="outlined"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -215,7 +218,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 data-cy="processor-display-name-input"
                 sx={styles.textbox}
                 fullWidth
-                label="Processor Display Name"
+                label="Display Name"
                 variant="outlined"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
@@ -228,7 +231,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 data-cy="processor-id-input"
                 sx={styles.textbox}
                 fullWidth
-                label="Google Processor ID"
+                label="Google Processor ID (optional)"
                 variant="outlined"
                 value={processorId}
                 onChange={(event) => setProcessorId(event.target.value)}
@@ -239,7 +242,7 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 data-cy="processor-model-id-input"
                 sx={styles.textbox}
                 fullWidth
-                label="Primary Model ID"
+                label="Primary Model ID (optional)"
                 variant="outlined"
                 value={modelId}
                 onChange={(event) => setModelId(event.target.value)}
@@ -258,16 +261,6 @@ const UploadProcessorDialog = (props: UploadProcessorProps) => {
                 onChange={(event) => setDocumentType(event.target.value)}
                 id="document-type-textbox"
               />
-              {/* <TextField
-                                disabled
-                                sx={styles.textbox}
-                                fullWidth
-                                label="Sample Image"
-                                variant="outlined"
-                                value={imageLink}
-                                onChange={(event) => setImageLink(event.target.value)}
-                                id="image-link-textbox"
-                            /> */}
             </Stack>
                         
 

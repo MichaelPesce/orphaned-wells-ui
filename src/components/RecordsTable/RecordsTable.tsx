@@ -20,7 +20,7 @@ import LastPageIcon from "@mui/icons-material/LastPage";
 import PublishedWithChangesOutlinedIcon from "@mui/icons-material/PublishedWithChangesOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
-import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES, DEFAULT_RECORDS_TABLE_PAGE_SIZE } from "../../util";
+import { formatDate, average, formatConfidence, callAPI, convertFiltersToMongoFormat, getActiveAttributeEntries, TABLE_ATTRIBUTES, ISGS_TABLE_ATTRIBUTES, OSAGE_TABLE_ATTRIBUTES, DEFAULT_RECORDS_TABLE_PAGE_SIZE } from "../../util";
 import { styles } from "../../styles";
 import RecordNotesDialog from "../RecordNotesDialog/RecordNotesDialog";
 import TableFilters from "../TableFilters/TableFilters";
@@ -175,11 +175,11 @@ const RecordsTable = (props: RecordsTableProps) => {
     localStorage.setItem("appliedFilters", JSON.stringify(newAppliedFilters));
   };
 
-  const calculateAverageConfidence = (attributes: Array<{ confidence?: number }>) => {
+  const calculateAverageConfidence = (attributes: RecordData["attributesList"]) => {
     let confidences: number[] = [];
     try {
-      for (let attr of attributes) {
-        if (attr?.confidence) confidences.push(attr?.confidence);
+      for (const { attribute: attr } of getActiveAttributeEntries(attributes || [])) {
+        if (typeof attr.confidence === "number") confidences.push(attr.confidence);
       }
       return formatConfidence(average(confidences));
     } catch (e) {
@@ -187,10 +187,10 @@ const RecordsTable = (props: RecordsTableProps) => {
     }
   };
 
-  const calculateLowestConfidence = (attributes: Array<{ confidence?: number }>) => {
+  const calculateLowestConfidence = (attributes: RecordData["attributesList"]) => {
     let lowestConfidence = 1;
-    for (let attr of attributes) {
-      if (attr?.confidence && attr?.confidence < lowestConfidence) {
+    for (const { attribute: attr } of getActiveAttributeEntries(attributes || [])) {
+      if (typeof attr.confidence === "number" && attr.confidence < lowestConfidence) {
         lowestConfidence = attr.confidence;
       }
     }

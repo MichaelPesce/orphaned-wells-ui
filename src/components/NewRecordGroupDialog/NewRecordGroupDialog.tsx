@@ -1,270 +1,65 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  TextField,
-  IconButton,
-  Grid,
-  Button,
-  Tooltip,
-} from "@mui/material";
-import { Dialog, DialogTitle, DialogContent, DialogContentText } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import { Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from "@mui/material";
 import { addRecordGroup, getProcessors } from "../../services/app.service";
 import { callAPI, convertToMongoProcessor } from "../../util";
-import { MongoProcessor, MongoProcessor as Processor } from "../../types";
-import ErrorBar from "../ErrorBar/ErrorBar";
+import { MongoProcessor } from "../../types";
+import SchemaOptions, { schemaSelectionKey } from "../ConnectProcessorDialog/SchemaOptions";
 
 interface NewRecordGroupDialogProps {
-    open: boolean;
-    onClose: () => void;
-    project_id: string;
+  open: boolean;
+  onClose: () => void;
+  project_id: string;
 }
 
-const NewRecordGroupDialog = ({ open, onClose, project_id }: NewRecordGroupDialogProps) => {
+export default function NewRecordGroupDialog({ open, onClose, project_id }: NewRecordGroupDialogProps) {
   const navigate = useNavigate();
-  const [recordGroupName, setRecordGroupName] = useState("");
-  const [recordGroupDescription, setRecordGroupDescription] = useState("");
-  const [processors, setProcessors] = useState<Processor[]>([]);
-  const [selectedProcessor, setSelectedProcessor] = useState<Processor>({} as Processor);
-  const [disableCreateButton, setDisableCreateButton] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const dialogHeight = "85vh";
-  const dialogWidth = "60vw";
-  const defaultProcessorPath = `${process.env.PUBLIC_URL}/img/Default Extractor.png`;
-
-  const descriptionElementRef = useRef<HTMLDivElement | null>(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [schemas, setSchemas] = useState<MongoProcessor[]>([]);
+  const [selected, setSelected] = useState<MongoProcessor>();
+  const [databaseMode, setDatabaseMode] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string>();
   useEffect(() => {
-    if (open) {
-      const { current: descriptionElement } = descriptionElementRef;
-      if (descriptionElement !== null) {
-        descriptionElement.focus();
-      }
-    }
+    if (!open) return;
+    let active = true;
+    setLoading(true);
+    setSelected(undefined);
+    setError(undefined);
+    callAPI(getProcessors, [], data => {
+      if (!active) return;
+      setDatabaseMode(data.USE_DB_PROCESSORS);
+      setSchemas(data.processor_list.map(convertToMongoProcessor));
+      setLoading(false);
+    }, message => { if (active) { setError(String(message)); setLoading(false); } });
+    return () => { active = false; };
   }, [open]);
 
-  useEffect(() => {
-    const canCreate = recordGroupName.trim() !== "";
-    setDisableCreateButton(!canCreate);
-  }, [recordGroupName]);
-
-  useEffect(() => {
-    if (open) {
-      callAPI(
-        getProcessors,
-        [],
-        handleSuccessGetProcessors,
-        (e: Error) => console.error("error on getting processors ", e)
-      );
-    }
-  }, [open]);
-
-  const styles = {
-    dialogPaper: {
-      minHeight: dialogHeight,
-      maxHeight: dialogHeight,
-      minWidth: dialogWidth,
-      maxWidth: dialogWidth,
-    },
-    recordGroupName: {
-      marginBottom: 2
-    },
-    processorGridItem: {
-      paddingX: 1,
-      paddingBottom: 5
-    },
-    processorTextBox: {
-      display: "flex",
-      justifyContent: "center",
-    },
-    processorImageBox: {
-      display: "flex",
-      justifyContent: "center",
-      cursor: "pointer",
-    },
-    processorImage: {
-      maxHeight: "20vh"
-    }
+  const create = async () => {
+    setSaving(true);
+    setError(undefined);
+    const binding = databaseMode ? { schema_id: selected?.schema_id || null } : { processorId: selected?.processorId || null };
+    await callAPI(addRecordGroup, [{ name: name.trim(), description, project_id, ...binding,
+      documentType: selected?.documentType || selected?.name || "Unspecified" }],
+    id => navigate(`/record_group/${id}`), message => setError(String(message)));
+    setSaving(false);
   };
-
-  const handleSuccessGetProcessors = (
-    processor_data: { processor_list: Processor[] | MongoProcessor[]; USE_DB_PROCESSOR: boolean }
-  ) => {
-    let newProcessors: Processor[] = [];
-    processor_data?.processor_list.forEach((p) => newProcessors.push(convertToMongoProcessor(p)));
-    setProcessors(newProcessors);
-  };
-
-  const handleClose = () => {
-    onClose();
-  };
-
-  const handleSelectProcessor = (processorData: Processor) => {
-    if (selectedProcessor["processorId"] === processorData["processorId"]) setSelectedProcessor({ } as Processor);
-    else {
-      setSelectedProcessor(processorData);
-    }
-  };
-
-  const getImageStyle = (processorId: string): React.CSSProperties => {
-    let styling: React.CSSProperties = { ...styles.processorImage };
-    if (selectedProcessor["processorId"] === processorId) {
-      styling["border"] = "1px solid #2196F3";
-    }
-    return styling;
-  };
-
-  const handleCreateRecordGroup = () => {
-    let body: any = {
-      name: recordGroupName,
-      description: recordGroupDescription,
-      history: [],
-      project_id: project_id,
-    };
-    if (selectedProcessor["processorId"]) {
-      body.documentType = selectedProcessor.documentType || selectedProcessor["name"];
-      body.processorId = selectedProcessor["processorId"];
-    } else {
-      body.documentType = "Unspecified";
-      body.processorId = null;
-      body.source_type = "processorless";
-      body.attributes = [];
-    }
-    callAPI(
-      addRecordGroup,
-      [body],
-      handleSuccessfulRecordGroupCreation,
-      (e: string) => setErrorMsg(e)
-      // (e: Error) => console.error('error on recordGroup add ', e)
-    );
-  };
-
-  const handleSuccessfulRecordGroupCreation = (new_id: string) => {
-    setTimeout(() => {
-      navigate("/record_group/"+new_id);
-    }, 500);
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      data-cy="new-record-group-dialog"
-      scroll={"paper"}
-      aria-labelledby="new-dg-dialog"
-      aria-describedby="new-dg-dialog-description"
-      PaperProps={{
-        sx: styles.dialogPaper
-      }}
-    >
-      <DialogTitle id="new-dg-dialog-title">New Record Group</DialogTitle>
-      <IconButton
-        aria-label="close"
-        onClick={handleClose}
-        sx={{
-          position: "absolute",
-          right: 0,
-          top: 8,
-        }}
-      >
-        <CloseIcon />
-      </IconButton>
-      <DialogContent dividers={true}>
-        <DialogContentText
-          id="scroll-dialog-description"
-          ref={descriptionElementRef}
-          tabIndex={-1}
-          aria-labelledby="new-dg-dialog-content-text"
-          component={"span"}
-        >
-          <Grid container>
-            <Grid item xs={5}>
-              <TextField
-                data-cy="record-group-name-input"
-                fullWidth
-                label="Record Group Name"
-                variant="outlined"
-                value={recordGroupName}
-                onChange={(event) => setRecordGroupName(event.target.value)}
-                sx={styles.recordGroupName}
-                id="dg-name-textbox"
-              />
-              <TextField
-                data-cy="record-group-description-input"
-                fullWidth
-                label="Description"
-                variant="outlined"
-                value={recordGroupDescription}
-                onChange={(event) => setRecordGroupDescription(event.target.value)}
-                multiline
-                rows={4}
-              />
-            </Grid>
-
-            <Grid item xs={2}></Grid>
-            <Grid item xs={5}></Grid>
-
-            <Grid item xs={12}>
-              <h4>
-                                Select document type processor
-              </h4>
-              <p>
-                                Select from following document types of well completion records, or create the record group without selecting a processor.
-              </p>
-            </Grid>
-            <Grid item xs={12}>
-              <Grid container>
-                {processors.map((processorData, idx) => {
-                  if (processorData.processorId && processorData.modelId)
-                    return (
-                      <Grid key={idx} item xs={4} sx={styles.processorGridItem}>
-                        <p style={styles.processorTextBox}>
-                          {idx + 1}. {processorData["name"]}
-                        </p>
-                        <Box sx={styles.processorImageBox} onClick={() => handleSelectProcessor(processorData)}>
-                          <Tooltip title={processorData.documentType}>
-                            <img 
-                              data-cy="processor-option"
-                              data-processor-name={processorData.name}
-                              alt={processorData.name}
-                              id={`processor_${idx}`}
-                              src={`${process.env.PUBLIC_URL}/img/${processorData["name"]}.png`}
-                              style={getImageStyle(processorData["processorId"] || "")}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = defaultProcessorPath;
-                              }}
-                            />
-                          </Tooltip>
-                        </Box>
-                      </Grid>
-                    );
-                  return null;
-                })}
-              </Grid>
-            </Grid>
-          </Grid>
-        </DialogContentText>
-        <Button
-          data-cy="create-record-group-button"
-          variant="contained"
-          sx={{
-            position: "absolute",
-            right: 10,
-            bottom: 10,
-          }}
-          disabled={disableCreateButton}
-          onClick={handleCreateRecordGroup}
-        >
-                    Create Record Group
-        </Button>
-      </DialogContent>
-      <ErrorBar
-        errorMessage={errorMsg}
-        setErrorMessage={setErrorMsg}
-      />
-    </Dialog>
-  );
-};
-
-export default NewRecordGroupDialog;
+  return <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="md" data-cy="new-record-group-dialog">
+    <DialogTitle>New Record Group</DialogTitle>
+    <DialogContent dividers><Stack spacing={2}>
+      {error && <Alert severity="error">{error}</Alert>}
+      <TextField label="Record Group Name" value={name} onChange={event => setName(event.target.value)} disabled={saving} data-cy="record-group-name-input" />
+      <TextField label="Description" value={description} onChange={event => setDescription(event.target.value)} disabled={saving} multiline rows={3} data-cy="record-group-description-input" />
+      <Typography>{databaseMode ? "Select a shared schema (optional)" : "Select a processor (optional)"}</Typography>
+      {loading ? <CircularProgress aria-label="Loading schemas" /> : <SchemaOptions schemas={schemas}
+        selected={selected ? schemaSelectionKey(selected) : ""} onSelect={schema => setSelected(selected && schemaSelectionKey(selected) === schemaSelectionKey(schema) ? undefined : schema)}
+        disabled={saving} databaseMode={databaseMode} selector="processor-option" />}
+      <Typography variant="body2">You can import JSON/CSV records without a processor. Document processing requires a processor ID and model ID.</Typography>
+    </Stack></DialogContent>
+    <DialogActions><Button disabled={saving} onClick={onClose}>Cancel</Button>
+      <Button variant="contained" onClick={create} disabled={saving || loading || !name.trim()} data-cy="create-record-group-button">{saving ? "Creating…" : "Create Record Group"}</Button>
+    </DialogActions>
+  </Dialog>;
+}
