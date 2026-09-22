@@ -93,6 +93,12 @@ DB_PASSWORD=
 
 Set these values in `deployment/.env` to point the backend at a different MongoDB instance. Existing `.env` files are not regenerated from `.env.example`, so add any missing keys manually after pulling deployment changes.
 
+`SCHEMA_INFERENCE_MAX_RECORDS` sets the maximum record sample for explicit schema
+generation and extension (default 1,000; range 1–10,000). Add it to an existing
+`deployment/.env` and recreate the backend container to change it. Fixed byte,
+field-count, nesting, and query-time limits also apply. The backend creates the
+sampling index on startup; no record rewrite or schema generation runs at startup.
+
 ## MongoDB Seed Data
 
 ### Schema roles and permissions

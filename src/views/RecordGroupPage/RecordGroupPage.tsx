@@ -7,6 +7,7 @@ import Subheader from "../../components/Subheader/Subheader";
 import UploadDocumentsModal from "../../components/UploadDocumentsModal/UploadDocumentsModal";
 import JsonImportDialog from "../../components/JsonImportDialog/JsonImportDialog";
 import ConnectProcessorDialog from "../../components/ConnectProcessorDialog/ConnectProcessorDialog";
+import SchemaGenerationDialog from "../../components/SchemaGenerationDialog/SchemaGenerationDialog";
 import PopupModal from "../../components/PopupModal/PopupModal";
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
 import DeleteRecordGroupRecordsDialog from "./DeleteRecordGroupRecordsDialog";
@@ -23,6 +24,8 @@ const RecordGroupPage = () => {
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [showJsonImportDialog, setShowJsonImportDialog] = useState(false);
   const [showConnectProcessorDialog, setShowConnectProcessorDialog] = useState(false);
+  const [showSchemaGeneration, setShowSchemaGeneration] = useState(false);
+  const [schemaRefresh, setSchemaRefresh] = useState(0);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openDeleteRecordsModal, setOpenDeleteRecordsModal] = useState(false);
   const [openCleanPrompt, setOpenCleanPrompt] = useState(false);
@@ -60,6 +63,9 @@ const RecordGroupPage = () => {
     if (hasPermission("upload_document")) {
       tempActions["Import JSON/CSV records"] = () => setShowJsonImportDialog(true);
     }
+    if (hasPermission("manage_schema") && recordGroup.schema_source === "database" && recordGroup.has_records && !recordGroup.schema_error) {
+      tempActions[hasSchema ? "Add fields to schema" : "Generate schema"] = () => setShowSchemaGeneration(true);
+    }
     if (hasPermission("clean_record") && hasSchema) {
       tempActions["Clean records"] = () => setOpenCleanPrompt(true);
     }
@@ -68,7 +74,7 @@ const RecordGroupPage = () => {
       tempActions["Delete record group"] = () => setOpenDeleteModal(true);
     }
     setSubheaderActions(tempActions);
-  }, [hasPermission, recordGroup.has_schema, recordGroup.schema_source]);
+  }, [hasPermission, recordGroup.has_schema, recordGroup.schema_source, recordGroup.has_records, recordGroup.schema_error]);
 
   const styles = {
     outerBox: {
@@ -231,7 +237,7 @@ const RecordGroupPage = () => {
         {recordGroup.schema_error && <Alert severity="error" sx={{ mb: 2 }}>{recordGroup.schema_error}</Alert>}
         {!recordGroup.schema_error && recordGroup.has_schema && !hasProcessor && <Alert severity="info" sx={{ mb: 2 }}>This record group uses {recordGroup.schema_name || "a schema"} without a processor. You can import and clean records.</Alert>}
         <RecordsTable
-          key={`${recordGroup.schema_source}:${recordGroup.active_schema_id || recordGroup.processorId || ""}:${recordGroup.has_schema}`}
+          key={`${recordGroup.schema_source}:${recordGroup.active_schema_id || recordGroup.processorId || ""}:${recordGroup.has_schema}:${schemaRefresh}`}
           location="record_group"
           params={params}
           handleUpdate={handleUpdateRecordGroup}
@@ -263,6 +269,11 @@ const RecordGroupPage = () => {
         onConnected={handleSuccessfulProcessorConnection}
         setErrorMsg={setErrorMsg}
       />
+      {showSchemaGeneration && <SchemaGenerationDialog group={recordGroup} onClose={() => setShowSchemaGeneration(false)} onApplied={updated => {
+        setRecordGroup(updated);
+        setShowSchemaGeneration(false);
+        setSchemaRefresh(previous => previous + 1);
+      }} />}
       <PopupModal
         open={openDeleteModal}
         handleClose={() => setOpenDeleteModal(false)}

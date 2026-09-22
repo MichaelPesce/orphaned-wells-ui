@@ -4,6 +4,7 @@ import {
   DirectoryUploadRequest,
   MongoProcessor,
   SchemaImportRequest,
+  SchemaGenerationRequest,
   RoleCategory,
   UpdateRolePermissionsRequest,
   UpdateUserRolesRequest,
@@ -12,6 +13,14 @@ import {
 let BACKEND_URL = process.env.REACT_APP_BACKEND_URL as string;
 const CORS_MODE: RequestMode = "cors";
 const JSON_HEADERS = { "Content-Type": "application/json" };
+
+export const previewRecordGroupSchema = (groupId: string, mode: "generate" | "extend") => fetch(`${BACKEND_URL}/record_groups/${groupId}/schema/preview`, {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify({ mode }),
+});
+
+export const applyRecordGroupSchema = (groupId: string, request: SchemaGenerationRequest) => fetch(`${BACKEND_URL}/record_groups/${groupId}/schema/apply`, {
+  method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(request),
+});
 
 export const getRepoSchemaImport = () => fetch(BACKEND_URL + "/get_repo_schema_import", { mode: CORS_MODE });
 

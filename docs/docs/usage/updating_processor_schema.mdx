@@ -40,6 +40,31 @@ newly imported fields remain visible even when they are absent from the schema.
 If the schema or record fields change while you are editing, saving may ask you
 to reload the record. Reload before retrying so the edit uses the current fields.
 
+## Generate a schema from imported records
+
+In database mode, open a record group containing records and use its actions
+menu to choose **Generate schema**. This requires `manage_schema` and a group
+without an attached schema.
+
+The preview samples up to 1,000 records by default. It shows suggested fields,
+types, ordering, sample coverage, and uncertain type assumptions. Use **Edit**
+and **Save** on a field to adjust its suggestion. Choose a schema name and
+document type, then select **Create and attach schema** to confirm. Record values
+stay unchanged. The new schema is shared across the database and has no processor;
+an administrator can add processor identifiers later through the schema editor.
+
+For a group that already has a schema, choose **Add fields to schema** to review
+new fields found in its records. Confirm **Add fields to shared schema** to add
+them for every group using that schema. Existing fields and retired paths are
+preserved. Uploading records never expands a schema automatically, and fields
+outside the sample remain visible in records.
+
+Oversized records and fields beyond sampling limits may be skipped, with warnings
+in the preview. Blank CSV columns that were not stored cannot be inferred. A
+preview expires after 30 minutes; refresh it if the group, schema, or sampled
+records change. If a save is interrupted, keep the dialog open and use **Retry
+save** to retry the same changes.
+
 ## Navigate to the Schema tab
 
 <NavigateSchemaTab/>

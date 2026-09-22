@@ -45,6 +45,7 @@ export interface ProjectData {
 }
 
 export interface RecordGroup {
+    has_records?: boolean;
     schema_id?: string | null;
     active_schema_id?: string | null;
     schema_source?: "database" | "repo";
@@ -206,6 +207,31 @@ export interface SchemaField {
     model_enabled?: string;
     occurrence?: string;
     page_order_sort?: number;
+}
+
+export interface SchemaGenerationPreview {
+    preview_id: string;
+    mode: "generate" | "extend";
+    status: "preview";
+    schema_id: string | null;
+    schema_name: string | null;
+    name: string;
+    documentType: string;
+    fields: SchemaField[];
+    field_notes: Record<string, string[]>;
+    warnings: string[];
+    sampled_records: number;
+    examined_records: number;
+    record_limit: number;
+    sample_capped: boolean;
+    oversized_records: number;
+}
+
+export interface SchemaGenerationRequest {
+    preview_id: string;
+    fields: SchemaField[];
+    name?: string;
+    documentType?: string;
 }
 
 export interface RecordSchema {

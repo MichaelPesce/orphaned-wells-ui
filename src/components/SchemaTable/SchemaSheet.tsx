@@ -24,6 +24,9 @@ import { useUserContext } from "../../usercontext";
 
 interface SchemaSheetProps {
   readOnly: boolean;
+  allowAdd?: boolean;
+  allowRemove?: boolean;
+  onEditingChange?: (editing: boolean) => void;
   processor?: MongoProcessor;
   cleaningFunctions?: string[];
   onAttributeChange: (
@@ -84,18 +87,25 @@ const getDraftFromRow = (row: SchemaField): DraftState => ({
 
 const SchemaSheet = ({
   readOnly,
+  allowAdd = true,
+  allowRemove = true,
+  onEditingChange,
   processor,
   cleaningFunctions = [],
   onAttributeChange,
 }: SchemaSheetProps) => {
   const { hasPermission } = useUserContext();
   const canEdit = !readOnly && hasPermission("manage_schema");
-  const canRemove = canEdit && hasPermission("manage_schema_destructive");
+  const canRemove = canEdit && allowRemove && hasPermission("manage_schema_destructive");
   const { attributes = [] } = processor || {};
   const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [pendingDeleteRow, setPendingDeleteRow] = useState<SchemaField | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+
+  useEffect(() => {
+    onEditingChange?.(editingRowKey !== null);
+  }, [editingRowKey, onEditingChange]);
 
   useEffect(() => {
     setEditingRowKey(null);
@@ -275,11 +285,11 @@ const SchemaSheet = ({
             {canEdit && <TableCell sx={{ fontWeight: 600, width: 170 }}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <span>Actions</span>
-                <Tooltip title="Add field">
+                {allowAdd && <Tooltip title="Add field">
                   <IconButton aria-label="Add field" data-cy="schema-add-field-button" size="small" onClick={handleOpenAddDialog}>
                     <AddIcon fontSize="small" />
                   </IconButton>
-                </Tooltip>
+                </Tooltip>}
               </Stack>
             </TableCell>}
           </TableRow>
@@ -287,7 +297,7 @@ const SchemaSheet = ({
 
         <TableBody>
           {attributes.map((row, idx) => {
-            const isEditing = editingRowKey === getRowKey(row, idx) && draft;
+            const isEditing = canEdit && editingRowKey === getRowKey(row, idx) && draft;
             const pageOrderSortInvalid = !!isEditing && getPageOrderSortInvalid(draft.page_order_sort);
 
             return (
