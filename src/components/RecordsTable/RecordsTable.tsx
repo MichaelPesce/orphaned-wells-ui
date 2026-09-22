@@ -88,7 +88,7 @@ const RecordsTable = (props: RecordsTableProps) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const tableDisabled = disabled || deletingDisplayedRecords;
   const tableDisabledMessage = disabledMessage || "Deleting records...";
-  const {records, setRecords, recordCount, loading, error: recordsError} = useRecordsTableData({
+  const {records, setRecords, recordCount, loading, error: recordsError, retry} = useRecordsTableData({
     location, scopeId: params.id, currentPage, pageSize, filters: filterBy, sort: sorted,
     refreshKey, pollWhileIdle, paused: tableDisabled,
   });
@@ -443,7 +443,9 @@ const RecordsTable = (props: RecordsTableProps) => {
 
   return (
     <React.Fragment>
-      {recordsError && <Alert severity="warning">{recordsError}</Alert>}
+      {recordsError && <Alert severity="warning" action={
+        <Button color="inherit" disabled={tableDisabled || loading} onClick={retry}>Retry</Button>
+      }>{recordsError}</Alert>}
       <TableContainer
         component={Paper}
         sx={{ position: "relative" }}

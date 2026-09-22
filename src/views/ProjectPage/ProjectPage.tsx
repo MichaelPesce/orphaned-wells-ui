@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Box } from "@mui/material";
+import { Alert, Box, Button } from "@mui/material";
 import Subheader from "../../components/Subheader/Subheader";
 import RecordGroupsTable from "../../components/RecordGroupsTable/RecordGroupsTable";
 import NewRecordGroupDialog from "../../components/NewRecordGroupDialog/NewRecordGroupDialog";
@@ -11,7 +11,7 @@ import RecordsTable from "../../components/RecordsTable/RecordsTable";
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
 import { useUserContext } from "../../usercontext";
 import { getRecordGroups, updateProject, deleteProject } from "../../services/app.service";
-import { callAPI, DEFAULT_FILTER_OPTIONS } from "../../util";
+import { callAPI, DEFAULT_FILTER_OPTIONS, getApiErrorMessage } from "../../util";
 import { JsonImportResponse, ProjectData, SubheaderActions } from "../../types";
 
 const Project = () => {
@@ -21,7 +21,8 @@ const Project = () => {
   const [projectData, setProjectData] = useState({} as ProjectData);
   const [projectName, setProjectName] = useState("");
   const [record_groups, setRecordGroups] = useState<any[]>([]);
-  const [unableToConnect, setUnableToConnect] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [showNewRecordGroupDialog, setShowNewRecordGroupDialog] = useState(false);
   const [showJsonImportDialog, setShowJsonImportDialog] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -33,11 +34,30 @@ const Project = () => {
   const tabs = ["Record Groups", "All Records"];
 
   useEffect(() => {
-    if (tabs[currentTab] === "Record Groups") {
-      setLoading(true);
-      callAPI(getRecordGroups, [params.id], handleFetchedRecordGroups, handleError);
-    }
-  }, [currentTab]);
+    setProjectData({} as ProjectData);
+    setProjectName("");
+    setRecordGroups([]);
+    setCurrentTab(0);
+  }, [params.id]);
+
+  useEffect(() => {
+    if (currentTab !== 0 || !params.id) return;
+    let cancelled = false;
+    setLoading(true);
+    setLoadError("");
+    callAPI(getRecordGroups, [params.id], (data) => {
+      if (cancelled) return;
+      setRecordGroups(data.record_groups);
+      setProjectData(data.project);
+      setProjectName(data.project.name);
+      setLoading(false);
+    }, (error) => {
+      if (cancelled) return;
+      setLoading(false);
+      setLoadError(getApiErrorMessage(error, "Unable to load this project."));
+    });
+    return () => { cancelled = true; };
+  }, [currentTab, params.id, loadAttempt]);
 
   useEffect(() => {
     let filterOptions = [];
@@ -61,19 +81,6 @@ const Project = () => {
     };
     setFilters(tempFilters);
   },[record_groups]);
-
-  const handleFetchedRecordGroups = (data: any) => {
-    setRecordGroups(data.record_groups);
-    setProjectData(data.project);
-    setProjectName(data.project.name);
-    setLoading(false);
-  };
-
-  const handleError = (e: Error) => {
-    console.error(e);
-    setLoading(false);
-    setUnableToConnect(true);
-  };
 
   const styles = {
     outerBox: {
@@ -196,7 +203,17 @@ const Project = () => {
         actions={Object.keys(projectActions).length ? projectActions : null}
       />
       <Box sx={styles.innerBox}>
-        {!unableToConnect ? 
+        {loadError && (
+          <Alert severity="error" sx={{ mb: 2 }} action={
+            <Button color="inherit" onClick={() => {
+              setCurrentTab(0);
+              setLoadAttempt(attempt => attempt + 1);
+            }}>Retry</Button>
+          }>
+            {loadError}
+          </Alert>
+        )}
+        {!loadError || projectData._id === params.id ?
           <div>
             <ProjectTabs options={tabs} value={currentTab} setValue={setCurrentTab}/>
             {

@@ -11,7 +11,7 @@ import SchemaGenerationDialog from "../../components/SchemaGenerationDialog/Sche
 import PopupModal from "../../components/PopupModal/PopupModal";
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
 import DeleteRecordGroupRecordsDialog from "./DeleteRecordGroupRecordsDialog";
-import { callAPI, convertFiltersToMongoFormat } from "../../util";
+import { callAPI, convertFiltersToMongoFormat, getApiErrorMessage } from "../../util";
 import { RecordGroup, ProjectData, PreviousPages, SubheaderActions, FilterOption, JsonImportResponse } from "../../types";
 import { useUserContext } from "../../usercontext";
 
@@ -191,9 +191,9 @@ const RecordGroupPage = () => {
     );
   };
 
-  const handleAPIErrorResponse = (e: string) => {
+  const handleAPIErrorResponse = (e: unknown) => {
     setDeletingRecords(false);
-    setErrorMsg(e);
+    setErrorMsg(getApiErrorMessage(e, "Unable to complete the request."));
   };
 
   const runCleaningFunctions = () => {
@@ -234,7 +234,7 @@ const RecordGroupPage = () => {
         previousPages={navigation}
       />
       <Box sx={styles.innerBox}>
-        {recordGroup.schema_error && <Alert severity="error" sx={{ mb: 2 }}>{recordGroup.schema_error}</Alert>}
+        {recordGroup.schema_error && <Alert severity="warning" sx={{ mb: 2 }}>The schema is unavailable. Existing records can still be viewed and edited. {recordGroup.schema_error}</Alert>}
         {!recordGroup.schema_error && recordGroup.has_schema && !hasProcessor && <Alert severity="info" sx={{ mb: 2 }}>This record group uses {recordGroup.schema_name || "a schema"} without a processor. You can import and clean records.</Alert>}
         <RecordsTable
           key={`${recordGroup.schema_source}:${recordGroup.active_schema_id || recordGroup.processorId || ""}:${recordGroup.has_schema}:${schemaRefresh}`}

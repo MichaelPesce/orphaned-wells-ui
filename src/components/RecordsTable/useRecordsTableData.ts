@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getRecords } from "../../services/app.service";
 import { FilterOption, RecordData, RecordsResponse } from "../../types";
-import { callAPI, convertFiltersToMongoFormat } from "../../util";
+import { callAPI, convertFiltersToMongoFormat, getApiErrorMessage } from "../../util";
 
 interface RecordsQuery {
   location: string;
@@ -23,6 +23,7 @@ export const useRecordsTableData = ({
   const [recordCount, setRecordCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const lastQuery = useRef("");
   const query = JSON.stringify({location, scopeId, currentPage, pageSize, filters, sort});
 
@@ -57,16 +58,26 @@ export const useRecordsTableData = ({
             data.records.some((record) => ["queued", "processing"].includes(record.status))) {
           schedule();
         }
-      }, (_, status) => {
+      }, (failure, status) => {
         if (cancelled) return;
         setLoading(false);
-        setError(status === 403 ? "You do not have access to these records." : "Unable to refresh records. Retrying shortly.");
-        if (status !== 401 && status !== 403) schedule();
+        const message = getApiErrorMessage(failure, status === 403
+          ? "You do not have access to these records." : "Unable to refresh records.");
+        const retryAutomatically = status === undefined || status >= 500 || status === 408 || status === 429;
+        const retryMessage = `${message}${/[.!?]$/.test(message) ? "" : "."} Retrying shortly.`;
+        setError(retryAutomatically ? retryMessage : message);
+        if (retryAutomatically) schedule();
       });
     };
     load();
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [query, refreshKey, pollWhileIdle, paused]);
+  }, [query, refreshKey, pollWhileIdle, paused, retryAttempt]);
 
-  return {records, setRecords, recordCount, loading, error};
+  const retry = () => {
+    setLoading(true);
+    setError("");
+    setRetryAttempt(attempt => attempt + 1);
+  };
+
+  return {records, setRecords, recordCount, loading, error, retry};
 };
