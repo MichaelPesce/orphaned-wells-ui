@@ -133,6 +133,17 @@ const resetRecordFilters = () => {
   cy.getByCy("close-filters-button").click();
 };
 
+const watchRecordQuery = (recordGroupId, filter, alias) => {
+  cy.intercept("POST", backendRoute("/get_records/record_group*"), (request) => {
+    const body = parseRequestBody(request.body);
+    // Table reloads must not satisfy a wait for a different filter query.
+    if (body.id === recordGroupId && Cypress._.isEqual(body.filter, filter)) {
+      request.alias = alias;
+      request.continue();
+    }
+  });
+};
+
 const createProcessorlessRecordGroup = (projectId, name) => {
   return cy.api("POST", "/add_record_group", {
     name,
@@ -365,7 +376,7 @@ describe("processorless record import workflows", () => {
           const deletedRecord = firstImportRecords[firstImportRecords.length - 1];
           const deletedRecordNumber = firstRecordNumbers[firstRecordNumbers.length - 1];
 
-          cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("filterRecordNumberRows");
+          watchRecordQuery(recordGroupId, { name: deletedRecord.name }, "filterRecordNumberRows");
           filterRecordsByName(deletedRecord.name);
           cy.wait("@filterRecordNumberRows").then(({ request, response }) => {
             expect(request.body.filter.name).to.eq(deletedRecord.name);
@@ -376,7 +387,7 @@ describe("processorless record import workflows", () => {
           cy.contains('[data-cy="record-row"]', deletedRecord.name).should("be.visible");
 
           cy.intercept("POST", backendRoute(`/delete_record_group_records/${recordGroupId}`)).as("deleteFilteredRecordNumberRows");
-          cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("reloadAfterFilteredDelete");
+          watchRecordQuery(recordGroupId, { name: deletedRecord.name }, "reloadAfterFilteredDelete");
           cy.getByCy("subheader-actions").click();
           cy.contains('[data-cy="subheader-action-item"]', "Delete records").click();
           cy.findByRole("dialog", { name: /delete records/i }).should("be.visible");
@@ -392,12 +403,14 @@ describe("processorless record import workflows", () => {
           });
           cy.contains('[data-cy="record-row"]', deletedRecord.name).should("not.exist");
 
-          cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("reloadAfterFilterReset");
+          watchRecordQuery(recordGroupId, {}, "reloadAfterFilterReset");
           resetRecordFilters();
-          cy.wait("@reloadAfterFilterReset").then(({ response }) => {
+          cy.wait("@reloadAfterFilterReset").then(({ request, response }) => {
+            expect(parseRequestBody(request.body).filter, "reset request filters").to.deep.eq({});
             expect(response.statusCode).to.eq(200);
             expect(response.body.record_count).to.eq(firstImportRecords.length - 1);
           });
+          cy.getByCy("record-row").should("have.length", firstImportRecords.length - 1);
 
           cy.getByCy("subheader-primary-action").should("contain", "Import JSON/CSV records").click();
           cy.getByCy("json-import-dialog").should("be.visible");
@@ -409,7 +422,7 @@ describe("processorless record import workflows", () => {
           });
 
           cy.intercept("POST", backendRoute(`/import_record_file_records/${recordGroupId}`)).as("secondRecordNumberImport");
-          cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/**`).as("reloadAfterSecondImport");
+          watchRecordQuery(recordGroupId, {}, "reloadAfterSecondImport");
           cy.getByCy("json-import-submit").click();
           cy.wait("@secondRecordNumberImport").then(({ response }) => {
             expect(response.statusCode).to.eq(200);

@@ -88,13 +88,19 @@ describe("project and record group management", () => {
 
   it("creates and deletes a record group without selecting a processor", () => {
     const recordGroupName = uniqueName("Cypress Processorless Record Group");
+    let bindingKey;
 
     cy.fixture("seeded-data").then((seed) => cy.findProjectByName(seed.projectName)).then((project) => {
       cy.cleanupRecordGroupByName(project._id, recordGroupName);
 
       cy.visitApp(`/project/${project._id}`);
+      cy.intercept("GET", `${Cypress.env("backendURL")}/get_processors`).as("processorMode");
       cy.getByCy("subheader-primary-action").click();
       cy.getByCy("new-record-group-dialog").should("be.visible");
+      cy.wait("@processorMode").then(({ response }) => {
+        expect(response.statusCode).to.eq(200);
+        bindingKey = response.body.USE_DB_PROCESSORS ? "schema_id" : "processorId";
+      });
       cy.contains("Create without processor").should("not.exist");
       cy.getByCy("record-group-name-input").find("input").type(recordGroupName);
       cy.getByCy("record-group-description-input").find("textarea").first().type("Created without a processor by Cypress E2E.");
@@ -105,8 +111,7 @@ describe("project and record group management", () => {
         const body = parseRequestBody(request.body);
         expect(response.statusCode).to.eq(200);
         expect(body.name).to.eq(recordGroupName);
-        expect(body.processorId).to.eq(null);
-        expect(body.source_type).to.eq("processorless");
+        expect(body).to.have.property(bindingKey, null);
       });
 
       cy.getByCy("subheader-title", { timeout: 10000 }).should("contain", recordGroupName);
@@ -114,8 +119,9 @@ describe("project and record group management", () => {
         const recordGroupId = pathname.split("/").pop();
         cy.api("GET", `/get_record_group/${recordGroupId}`).then(({ body }) => {
           expect(body.rg_data.name).to.eq(recordGroupName);
-          expect(body.rg_data.processorId).to.eq(null);
-          expect(body.rg_data.source_type).to.eq("processorless");
+          expect(body.rg_data).to.have.property(bindingKey, null);
+          expect(body.rg_data.has_schema).to.eq(false);
+          expect(body.rg_data.can_process).to.eq(false);
         });
       });
 
