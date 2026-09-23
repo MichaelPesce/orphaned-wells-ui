@@ -204,18 +204,18 @@ variable "gke_backends" {
     "__COLLABORATOR__" = {
       # Only set this when the bucket cannot use the default "__COLLABORATOR___uploads" name.
       upload_bucket_name   = "existing-bucket-name"
-      replicas             = 1
+      replicas             = 2
       cpu_request          = "1"
-      memory_request       = "6Gi"
+      memory_request       = "4Gi"
       cpu_limit            = "1"
-      memory_limit         = "6Gi"
+      memory_limit         = "4Gi"
       persistent_disk_size = "20Gi"
     }
   }
 }
 `}</CollaboratorCodeBlock>
 
-The default collaborator API target is 2 replicas with 1 CPU and 6 GiB memory
+The default collaborator API target is 2 replicas with 1 CPU and 4 GiB memory
 per pod. Processing workers retain 1850m CPU and 12 GiB. Use overrides when the
 collaborator needs different sizing, such as a smaller temporary test deployment.
 
