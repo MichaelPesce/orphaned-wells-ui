@@ -24,6 +24,12 @@ const mockDownload = (alias = "downloadRecords") => {
   }).as(alias);
 };
 
+const openRecordGroupExportDialog = () => {
+  cy.getByCy("records-export-button").should("be.enabled").click();
+  cy.getByCy("export-dialog").should("be.visible");
+  return cy.getByCy("download-button").should("be.enabled");
+};
+
 describe("upload and export workflows", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
@@ -130,9 +136,10 @@ describe("upload and export workflows", () => {
   it("exports JSON, CSV, selected columns, and selected project record groups", () => {
     cy.findSeededEntities().then(({ seed, project, recordGroup }) => {
       cy.visitApp(`/record_group/${recordGroup._id}`);
+      cy.getByCy("subheader-title", { timeout: 10000 }).should("contain", seed.recordGroupName);
 
       mockDownload("jsonExport");
-      cy.getByCy("records-export-button").click();
+      openRecordGroupExportDialog();
       cy.getByCy("download-button").click();
       cy.wait("@jsonExport").then(({ request }) => {
         expect(request.url).to.include("export_json=true");
@@ -143,7 +150,7 @@ describe("upload and export workflows", () => {
       }).should("exist");
 
       mockDownload("csvExport");
-      cy.getByCy("records-export-button").click();
+      openRecordGroupExportDialog();
       cy.contains('[data-cy="export-type-option"]', "json").click();
       cy.contains('[data-cy="export-type-option"]', "csv").click();
       cy.getByCy("download-button").click();
@@ -153,7 +160,7 @@ describe("upload and export workflows", () => {
       });
 
       mockDownload("selectedColumnExport");
-      cy.getByCy("records-export-button").click();
+      openRecordGroupExportDialog();
       cy.getByCy("export-column-label")
         .first()
         .invoke("attr", "data-column")
