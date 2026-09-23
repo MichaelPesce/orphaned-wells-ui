@@ -138,6 +138,7 @@ jobs:
           set_env deployment/.env.e2e SESSION_COOKIE_DOMAIN ""
           set_env deployment/.env.e2e SESSION_COOKIE_SECURE false
           set_env deployment/.env.e2e SESSION_COOKIE_SAMESITE lax
+          set_env deployment/.env.e2e USE_DB_PROCESSORS false
 
       - name: Start docker containers
         run: npm run docker:e2e
@@ -167,7 +168,7 @@ jobs:
           "${compose[@]}" exec -T backend python -m pip install --no-cache-dir --upgrade --force-reinstall /tmp/python-package-under-test
           "${compose[@]}" restart backend
 
-      - name: Wait for docker app health
+      - name: Wait for package-mode app health
         run: |
           for i in {1..180}; do
             if curl -fsS http://localhost:8002/docs >/dev/null && curl -fsS http://localhost:3001 >/dev/null; then
@@ -183,7 +184,43 @@ jobs:
       - name: Seed E2E database
         run: npm run docker:e2e:seed
 
-      - name: Run E2E tests
+      - name: Test package-mode loading
+        run: npm run e2e:schema-modes
+
+      - name: Switch backend to database schema mode
+        run: |
+          sed -i 's/^USE_DB_PROCESSORS=.*/USE_DB_PROCESSORS=true/' deployment/.env.e2e
+          npm run docker:e2e:recreate-backend
+
+      - name: Reinstall Python package after backend recreation
+        if: ${{ inputs.install_python_package }}
+        env:
+          PYTHON_PACKAGE_PATH: ${{ inputs.python_package_path }}
+        run: |
+          compose=(docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml)
+          "${compose[@]}" exec -T backend rm -rf /tmp/python-package-under-test
+          "${compose[@]}" cp "${PYTHON_PACKAGE_PATH}" backend:/tmp/python-package-under-test
+          "${compose[@]}" exec -T backend python -m pip install --no-cache-dir --upgrade --force-reinstall /tmp/python-package-under-test
+          "${compose[@]}" restart backend
+
+      - name: Wait for database-mode backend health
+        run: |
+          for i in {1..180}; do
+            response="$(curl -fsS http://localhost:8002/get_processors 2>/dev/null || true)"
+            if [[ "$response" == *'"USE_DB_PROCESSORS":true'* ]]; then
+              exit 0
+            fi
+            docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml ps
+            sleep 2
+          done
+
+          docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml logs --no-color --tail=200 backend
+          exit 1
+
+      - name: Restore E2E database for full suite
+        run: npm run docker:e2e:seed
+
+      - name: Run full database-mode E2E tests
         run: npm run e2e:ci
 
       - name: Collect backend logs

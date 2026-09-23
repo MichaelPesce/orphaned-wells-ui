@@ -44,13 +44,19 @@ const actions = {
     createEnvFile: true,
     validateBackendMode: false,
   },
+  "recreate-backend": {
+    description: "Recreate the E2E backend with the current environment",
+    composeArgs: ["up", "-d", "--force-recreate", "--no-deps", "backend"],
+    createEnvFile: true,
+    validateBackendMode: true,
+  },
 };
 
 const [actionName, ...extraArgs] = process.argv.slice(2);
 const action = actions[actionName];
 
 if (!action) {
-  console.error("Usage: node deployment/scripts/docker-e2e-stack.cjs <start|stop|down|clean|seed> [docker compose args]");
+  console.error("Usage: node deployment/scripts/docker-e2e-stack.cjs <start|stop|down|clean|seed|recreate-backend> [docker compose args]");
   process.exit(1);
 }
 
@@ -107,7 +113,7 @@ switch (backendMode) {
 }
 
 const credentialOverrideFile =
-  actionName === "start"
+  actionName === "start" || actionName === "recreate-backend"
     ? createStorageCredentialOverrideFile(childEnv, deploymentDir, backendPath)
     : null;
 if (credentialOverrideFile) {

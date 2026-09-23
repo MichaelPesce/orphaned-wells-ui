@@ -12,6 +12,8 @@ The Cypress suite is a reusable test contract for the frontend against a running
 The current suite covers:
 
 - Core navigation from projects to record groups to records.
+- Project, record group, record, All Records, and schema loading in both package
+  and database schema modes.
 - Project and record group creation, editing, and cleanup.
 - Record review actions, defective marking, and record-to-record navigation.
 - Record notes creation, editing, and deletion.
@@ -66,6 +68,7 @@ Local npm scripts set E2E-safe defaults before launching Cypress. They read port
 | `CYPRESS_AUTH_MODE` | Auth behavior for the run. |
 | `CYPRESS_TEAM` | Optional default team used by mocked users. |
 | `CYPRESS_COLLABORATOR` | Collaborator context. Defaults to `isgs`. |
+| `CYPRESS_USE_DB_PROCESSORS` | Expected backend schema mode. Local scripts derive it from `USE_DB_PROCESSORS` in the E2E environment. |
 | `CYPRESS_RESET_DB` | Restores the sample database before specs that call `cy.resetSeedData`. Local E2E scripts default this to `true`. |
 | `CYPRESS_DB_SEED_COMMAND` | Seed command used when reset is enabled. Local E2E scripts default this to `node deployment/scripts/docker-e2e-stack.cjs seed`. |
 
@@ -82,11 +85,19 @@ BACKEND_MODE=auto
 DB_CONNECTION=mongodb://mongodb:27017
 DB_NAME=isgs_e2e
 REQUIRE_AUTH=false
+USE_DB_PROCESSORS=false
 ```
 
 Use a disposable E2E database name. Do not point full workflow tests at a database containing hand-curated local, staging, or production data.
 
 `REQUIRE_AUTH=false` keeps the backend API reachable to Cypress and the app. Cypress still mocks `/check_auth` by default so protected frontend routes consistently render instead of redirecting to `/login`.
+
+The shared CI workflow first runs `npm run e2e:schema-modes` with
+`USE_DB_PROCESSORS=false`. That focused contract verifies project, record group,
+record, All Records, record-detail, and schema loading against the real package
+catalog. CI then recreates only the backend with `USE_DB_PROCESSORS=true` and
+runs the full suite, including database schema management. This gives both modes
+loading coverage without duplicating every browser test.
 
 ## Mocking policy
 

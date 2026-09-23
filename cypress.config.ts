@@ -64,6 +64,7 @@ export default defineConfig({
     authMode: process.env.CYPRESS_AUTH_MODE || (parseBoolean(process.env.BYPASS_AUTH) ? "disabled" : "mock"),
     team: process.env.CYPRESS_TEAM || process.env.REACT_APP_TEAM || "",
     collaborator: process.env.CYPRESS_COLLABORATOR || process.env.REACT_APP_COLLABORATOR || "isgs",
+    useDbProcessors: parseBoolean(process.env.CYPRESS_USE_DB_PROCESSORS),
     resetDb: parseBoolean(process.env.CYPRESS_RESET_DB),
     dbSeedCommand: process.env.CYPRESS_DB_SEED_COMMAND || "",
     BYPASS_AUTH: process.env.BYPASS_AUTH

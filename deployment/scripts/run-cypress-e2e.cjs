@@ -21,13 +21,14 @@ const commands = {
   full: ["run"],
   ci: ["run", "--browser", "chrome"],
   smoke: ["run", "--spec", "cypress/e2e/smoke.cy.js,cypress/e2e/auth-gates.cy.js"],
+  "schema-modes": ["run", "--browser", "chrome", "--spec", "cypress/e2e/schema-mode-loading.cy.js"],
 };
 
 const [commandName = "full", ...extraArgs] = process.argv.slice(2);
 const cypressArgs = commands[commandName];
 
 if (!cypressArgs) {
-  console.error("Usage: node deployment/scripts/run-cypress-e2e.cjs <open|run|full|ci|smoke> [cypress args]");
+  console.error("Usage: node deployment/scripts/run-cypress-e2e.cjs <open|run|full|ci|smoke|schema-modes> [cypress args]");
   process.exit(1);
 }
 
@@ -44,6 +45,7 @@ setDefault("CYPRESS_BASE_URL", `http://localhost:${e2eEnv.FRONTEND_HOST_PORT || 
 setDefault("CYPRESS_BACKEND_URL", `http://localhost:${e2eEnv.BACKEND_HOST_PORT || "8002"}`);
 setDefault("CYPRESS_AUTH_MODE", "mock");
 setDefault("CYPRESS_COLLABORATOR", e2eEnv.REACT_APP_COLLABORATOR || e2eEnv.COLLABORATOR || "isgs");
+setDefault("CYPRESS_USE_DB_PROCESSORS", e2eEnv.USE_DB_PROCESSORS || "false");
 setDefault("CYPRESS_RESET_DB", "true");
 setDefault("CYPRESS_DB_SEED_COMMAND", "node deployment/scripts/docker-e2e-stack.cjs seed");
 
@@ -51,6 +53,7 @@ console.log(`Using Cypress base URL: ${childEnv.CYPRESS_BASE_URL}`);
 console.log(`Using Cypress backend URL: ${childEnv.CYPRESS_BACKEND_URL}`);
 console.log(`Using Cypress auth mode: ${childEnv.CYPRESS_AUTH_MODE}`);
 console.log(`Using Cypress collaborator: ${childEnv.CYPRESS_COLLABORATOR}`);
+console.log(`Using database processors: ${childEnv.CYPRESS_USE_DB_PROCESSORS}`);
 console.log(`Using Cypress DB reset: ${childEnv.CYPRESS_RESET_DB}`);
 
 const result = spawnSync(cypressBin, [...cypressArgs, ...extraArgs], {
