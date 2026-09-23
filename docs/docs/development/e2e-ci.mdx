@@ -65,7 +65,13 @@ The command runs from the frontend repository root.
 
 ## Backend source or image
 
-CI sets `BACKEND_MODE=image` so the frontend workflow validates against the configured backend image. Local runs can leave `BACKEND_MODE=auto` to use a sibling backend checkout when one exists.
+CI builds the backend from source. Push/PR runs use backend `main`; manually
+dispatched App Tests runs accept `backend_repository` and `backend_ref` to test
+coordinated frontend/backend changes. Local runs can leave `BACKEND_MODE=auto`
+to use a sibling backend checkout or set `BACKEND_MODE=source` explicitly.
+Use an updated checkout when testing lightweight loading and missing-schema
+fallbacks. Image-mode runs require a newly published backend image with those
+changes; restarting an old image does not update its code.
 
 For source-backed CI runs, make sure backend-only runtime dependencies, including any required processor or data-cleaning packages, are available before starting the Docker stack.
 

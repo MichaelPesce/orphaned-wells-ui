@@ -99,6 +99,43 @@ generation and extension (default 1,000; range 1–10,000). Add it to an existin
 field-count, nesting, and query-time limits also apply. The backend creates the
 sampling index on startup; no record rewrite or schema generation runs at startup.
 
+### Lightweight record loading and schema maintenance
+
+Deploy the frontend and backend changes together. With a sibling backend checkout,
+use `BACKEND_MODE=source npm run docker:start` to build and run the current backend
+with the current frontend. In image mode, publish/select a backend image containing
+the same changes, pull that image, and recreate the backend; a previously cached
+image does not contain local backend fixes. No new environment variables or seed
+database reset are required for lightweight loading.
+
+Project/table requests and statistics do not reconcile entire record groups.
+Statistics tolerate malformed attribute arrays and entries. Opening a record
+prepares only that record. Missing schemas do not prevent browsing; failed API
+requests display an error with Retry in the frontend.
+
+The backend also preserves indexed `dateCreated` sorting for All Records by
+hiding retired attributes after metadata filtering, ranking, and pagination.
+Update/rebuild the backend to get this fix; the frontend API and Compose settings
+are unchanged. Existing databases can keep their `dateCreated` index, and no
+`allowDiskUse` setting or schema migration is needed.
+
+Schema retirement/replacement runs as an explicit mutation, and saved package
+imports can resume their reconciliation steps. For a repo-package update or old
+retirement definitions that have not been applied, use the optional bounded
+maintenance command in the updated backend container:
+
+```sh
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.reconcile_schema_records RECORD_GROUP_ID
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec backend python -m ogrre.reconcile_schema_records RECORD_GROUP_ID --batch-size 100 --apply
+```
+
+The commands use the running backend's database configuration, including cloud
+overrides. Verify the displayed database, collaborator, and group before confirming
+an apply. Repeat batches until `complete` is true and `remaining` is zero. Lists
+use stored retirement flags until maintenance completes. Do not add this command
+to container startup or page-loading hooks. Neither this command nor
+`migrate_schema_bindings` is required just to browse existing data.
+
 ## MongoDB Seed Data
 
 ### Schema roles and permissions

@@ -18,6 +18,22 @@ The Schema page identifies the active source. In repo mode, schemas come from
 the installed data-cleaning package and are read-only. In database mode, schemas
 are shared across all teams; an edit affects every record group using that schema.
 
+If a schema is unavailable, you can still open its project and record group,
+view and edit existing records, and export their active fields. The stored schema
+connection is preserved, including when changing collaborators makes a package
+processor unavailable. A warning on the record group explains the missing schema.
+Cleaning and document processing remain unavailable until the required schema
+or processor is available. An administrator can repair or detach the connection.
+
+If a project or records request fails for another reason, the page displays the
+error with a **Retry** action. Record tables also retry temporary connection and
+server failures automatically.
+
+Loading a project or record table does not check and rewrite each record against
+its schema. Statistics count stored data and skip malformed attribute entries;
+total and reviewed counts still include those records. Opening a record prepares
+only that record for editing.
+
 ## Permissions
 
 With `manage_schema`, you can view schemas and, in database mode, edit aliases,
@@ -36,6 +52,14 @@ Removing a field hides it from records, cleaning, filters, statistics, and
 exports while preserving its stored values. There is no restore action;
 re-adding a field does not restore its previous values. In database mode,
 newly imported fields remain visible even when they are absent from the schema.
+New records do not get entries for deleted schema fields. If an older import
+supplies a value for a retired field, only that supplied value is kept as retired.
+
+Field removal and schema replacement apply retirement during the explicit save.
+Wait for that operation to finish before treating retirement as complete. Large
+changes can take time; project and record tables remain independent of this work.
+Alias, order, and cleaning-function edits do not scan records. Lists use stored
+attributes; opening a record applies its current display settings.
 
 If the schema or record fields change while you are editing, saving may ask you
 to reload the record. Reload before retrying so the edit uses the current fields.
@@ -101,6 +125,10 @@ If the catalog or group bindings change after preview, review a fresh preview.
 If applying stops partway through, completed changes remain saved. Reopen
 **Import repo schemas**, choose **Review saved import**, then **Resume import**.
 Other schema and group-configuration changes wait until that import finishes.
+Import progress includes applying the final schema definitions to affected
+records. An administrator can use the backend's bounded schema-maintenance command
+after a package update or to finish retirement left unapplied by an older release;
+this is not required to open existing projects or records.
 
 ### Create or upload a schema
 

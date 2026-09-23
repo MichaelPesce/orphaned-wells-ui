@@ -798,6 +798,16 @@ export const getAttributeRowId = (indexes: number[]) => {
   return `attribute-row-${indexes.join("-")}`;
 };
 
+export const getApiErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error === "string" && error.trim()) return error;
+  if (error && typeof error === "object") {
+    const { detail, message } = error as { detail?: unknown; message?: unknown };
+    if (typeof detail === "string" && detail.trim()) return detail;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
+};
+
 export const callAPI = async (
   apiFunc: (...args: any[]) => Promise<Response>, 
   apiParams: any[], 

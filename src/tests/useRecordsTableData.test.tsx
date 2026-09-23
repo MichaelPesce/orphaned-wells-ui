@@ -58,7 +58,7 @@ test("keeps the last rows through a transient failure and recovers on the next p
   const {result, unmount} = renderHook(() => useRecordsTableData(query));
   await waitFor(() => expect(result.current.loading).toBe(false));
   await act(async () => { jest.advanceTimersByTime(5000); });
-  expect(result.current.error).toContain("Unable to refresh");
+  expect(result.current.error).toBe("Connection lost. Retrying shortly.");
   expect(result.current.records[0].status).toBe("processing");
   await act(async () => { jest.advanceTimersByTime(5000); });
   expect(result.current.error).toBe("");
@@ -81,4 +81,31 @@ test("discovers submissions while the dialog is open and keeps polling after it 
   const callsAtClose = (getRecords as jest.Mock).mock.calls.length;
   await act(async () => { jest.advanceTimersByTime(5000); });
   expect(getRecords).toHaveBeenCalledTimes(callsAtClose + 1);
+});
+
+test("shows backend error details without repeatedly retrying a rejected request", async () => {
+  (getRecords as jest.Mock)
+    .mockResolvedValueOnce({ status: 409, json: async () => ({ detail: "The schema changed. Reload and retry." }) })
+    .mockResolvedValueOnce(response([row("digitized")]));
+  const { result } = renderHook(() => useRecordsTableData(query));
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  expect(result.current.error).toBe("The schema changed. Reload and retry.");
+  await act(async () => { jest.advanceTimersByTime(20000); });
+  expect(getRecords).toHaveBeenCalledTimes(1);
+  act(() => result.current.retry());
+  await waitFor(() => expect(result.current.records).toHaveLength(1));
+  expect(result.current.error).toBe("");
+  expect(result.current.loading).toBe(false);
+});
+
+test("preserves the backend message while automatically retrying a temporary server failure", async () => {
+  (getRecords as jest.Mock)
+    .mockResolvedValueOnce({ status: 503, json: async () => ({ detail: "Database temporarily unavailable." }) })
+    .mockResolvedValueOnce(response([row("digitized")]));
+  const { result } = renderHook(() => useRecordsTableData(query));
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  expect(result.current.error).toBe("Database temporarily unavailable. Retrying shortly.");
+  await act(async () => { jest.advanceTimersByTime(5000); });
+  expect(result.current.records).toHaveLength(1);
+  expect(result.current.error).toBe("");
 });
