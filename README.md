@@ -61,7 +61,9 @@ npm start
 
 Push and pull-request runs of **App Tests** test the triggering frontend commit
 against `main` in `CATALOG-Historic-Records/orphaned-wells-ui-server`. E2E tests
-build that backend from source instead of using the published Docker image.
+build that backend from source instead of using the published Docker image. The
+workflow checks project, record, and schema loading in package mode before
+restarting the backend in database mode for the full browser suite.
 
 For coordinated changes, select **Actions → App Tests → Run workflow**. Choose
 the frontend branch in the branch selector, set `backend_ref` to the backend

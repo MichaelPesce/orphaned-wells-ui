@@ -94,7 +94,7 @@ DB_NAME=isgs
 DB_USERNAME=
 DB_PASSWORD=
 REQUIRE_AUTH=false
-USE_DB_PROCESSORS=true
+USE_DB_PROCESSORS=false
 STORAGE_BACKEND=local
 LOCAL_STORAGE_URL_BASE=http://localhost:8001/local-storage
 DOCUMENT_AI_BACKEND=google
@@ -102,7 +102,7 @@ DOCUMENT_AI_BACKEND=google
 
 Set `DB_CONNECTION`, `DB_NAME`, `DB_USERNAME`, and `DB_PASSWORD` in `deployment/.env` to use a different MongoDB instance. Existing `.env` files are not regenerated from `.env.example`, so add missing keys manually after pulling deployment changes.
 
-With the default Docker settings, authentication is disabled and files are stored in the backend Docker volume. This is suitable for local development and CI, but not for production.
+With the default Docker settings, authentication is disabled, files are stored in the backend Docker volume, and schemas come from the installed `ogrre_data_cleaning` package in read-only mode. Set `USE_DB_PROCESSORS=true` explicitly to use editable, database-backed schemas. These defaults are suitable for local development and CI, but not for production.
 
 If you enable Google Cloud integrations, add the relevant project, bucket, service-account, and OAuth values in `deployment/.env`. See [Create Google service-account keys](gcp_setup#create-google-service-account-keys) for the storage and Document AI runtime keys used by local Docker.
 

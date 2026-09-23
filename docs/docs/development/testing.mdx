@@ -46,6 +46,7 @@ REACT_APP_BACKEND_URL=http://localhost:8002
 DB_NAME=isgs_e2e
 REACT_APP_COLLABORATOR=isgs
 REQUIRE_AUTH=false
+USE_DB_PROCESSORS=false
 ```
 
 This keeps E2E database mutations separate from the normal local development stack.
@@ -70,6 +71,13 @@ Run the lightweight smoke and auth-gate checks:
 npm run e2e:smoke
 ```
 
+Run the focused project, record, and schema loading checks for the schema mode
+configured in `deployment/.env.e2e`:
+
+```console
+npm run e2e:schema-modes
+```
+
 Run the full E2E suite:
 
 ```console
@@ -82,7 +90,7 @@ Run the CI browser configuration:
 npm run e2e:ci
 ```
 
-The local `e2e:open`, `e2e:run`, `e2e:smoke`, `e2e:full`, and `e2e:ci` scripts derive Cypress defaults from the E2E Docker environment:
+The local `e2e:open`, `e2e:run`, `e2e:smoke`, `e2e:schema-modes`, `e2e:full`, and `e2e:ci` scripts derive Cypress defaults from the E2E Docker environment:
 
 | Cypress value | Local default |
 | --- | --- |
@@ -90,6 +98,7 @@ The local `e2e:open`, `e2e:run`, `e2e:smoke`, `e2e:full`, and `e2e:ci` scripts d
 | `CYPRESS_BACKEND_URL` | `http://localhost:<BACKEND_HOST_PORT>` from `deployment/.env.e2e`, default `http://localhost:8002` |
 | `CYPRESS_AUTH_MODE` | `mock` |
 | `CYPRESS_COLLABORATOR` | `REACT_APP_COLLABORATOR` or `COLLABORATOR`, default `isgs` |
+| `CYPRESS_USE_DB_PROCESSORS` | `USE_DB_PROCESSORS` from `deployment/.env.e2e`, default `false` |
 | `CYPRESS_RESET_DB` | `true` |
 | `CYPRESS_DB_SEED_COMMAND` | `node deployment/scripts/docker-e2e-stack.cjs seed` |
 
@@ -111,9 +120,12 @@ Run a quick pass:
 npm run e2e:smoke
 ```
 
-Run the full suite:
+The full suite includes database schema creation and editing tests. Set
+`USE_DB_PROCESSORS=true` in `deployment/.env.e2e`, recreate the backend, and then
+run it:
 
 ```console
+npm run docker:e2e:recreate-backend
 npm run e2e:full
 ```
 

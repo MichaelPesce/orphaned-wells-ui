@@ -5,9 +5,11 @@ description: Continuous integration setup for the Cypress E2E suite.
 
 # E2E CI
 
-The frontend repository includes `.github/workflows/frontend-tests-dispatch.yml` for reusable frontend validation. The workflow runs unit tests, starts the isolated Docker E2E stack, verifies service health, and runs Cypress with CI-oriented settings.
+The frontend repository includes `.github/workflows/frontend-tests-dispatch.yml` for reusable frontend validation. The workflow runs unit tests, starts the isolated Docker E2E stack, verifies service health, tests loading in both schema modes, and runs Cypress with CI-oriented settings.
 
-CI uses the same E2E harness as local development: `npm run docker:e2e` plus `npm run e2e:ci`. The CI command uses the local Cypress wrapper with Chrome enabled.
+CI uses the same E2E harness as local development. It runs
+`npm run e2e:schema-modes` in package mode, recreates the backend, and then runs
+`npm run e2e:ci` in database mode. Both Cypress commands use Chrome in CI.
 
 ## Workflow shape
 
@@ -17,11 +19,13 @@ The CI job should:
 2. Install Node dependencies with `npm ci`.
 3. Run unit tests with `npm test -- --watchAll=false --runInBand`.
 4. Create `deployment/.env.e2e` from `deployment/.env.e2e.example`.
-5. Start the isolated E2E Docker stack with `npm run docker:e2e`.
+5. Start the isolated E2E Docker stack with `USE_DB_PROCESSORS=false`.
 6. Wait for `http://localhost:8002/docs` and `http://localhost:3001`.
-7. Run `npm run e2e:ci`.
-8. Upload Cypress screenshots and videos when a run fails.
-9. Stop and remove the E2E stack with `npm run docker:e2e:clean`.
+7. Run the focused schema-mode loading contract.
+8. Recreate the backend with `USE_DB_PROCESSORS=true`.
+9. Verify the backend reports database mode and run the full E2E suite.
+10. Upload Cypress screenshots, videos, and backend logs.
+11. Stop and remove the E2E stack with `npm run docker:e2e:clean`.
 
 ## CI Cypress environment
 
@@ -32,6 +36,7 @@ CYPRESS_BASE_URL=http://localhost:3001
 CYPRESS_BACKEND_URL=http://localhost:8002
 CYPRESS_AUTH_MODE=mock
 CYPRESS_COLLABORATOR=isgs
+CYPRESS_USE_DB_PROCESSORS=<USE_DB_PROCESSORS from deployment/.env.e2e>
 CYPRESS_RESET_DB=true
 CYPRESS_DB_SEED_COMMAND=node deployment/scripts/docker-e2e-stack.cjs seed
 ```
@@ -42,10 +47,14 @@ The backend should run with:
 REQUIRE_AUTH=false
 REACT_APP_BACKEND_URL=http://localhost:8002
 DB_NAME=isgs_e2e
+USE_DB_PROCESSORS=false
 ```
 
 This keeps the full workflow suite focused on application behavior instead of external authentication setup.
 The backend auth flag allows real API requests, while Cypress mocks the frontend `/check_auth` response to prevent login redirects during protected-route reloads.
+The package-mode pass verifies loading only. The workflow switches explicitly to
+`USE_DB_PROCESSORS=true` before the full suite so database schema mutation tests
+still run once.
 
 ## Database reset
 
