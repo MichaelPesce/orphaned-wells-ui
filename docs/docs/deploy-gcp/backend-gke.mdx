@@ -126,19 +126,19 @@ the upload dialog after a refresh. Compare API and worker memory, CPU, throttlin
 temporary storage, OOM/restarts, duration, and API latency separately using their
 `app.kubernetes.io/component=api` and `processor` labels.
 
-Staging now targets 1 CPU / 4 GiB for the API, with one replica and two Uvicorn
-workers. Its processing workers retain 1 CPU / 6 GiB. Production targets two
-API replicas at 1 CPU / 4 GiB each, while its processing workers retain
-1850m CPU / 12 GiB.
+Staging now targets a 500m CPU / 1 GiB request and a 1 CPU / 2 GiB limit for
+the API, with one replica and two Uvicorn workers. Its processing workers
+retain 1 CPU / 6 GiB. Production targets two API replicas at 1 CPU / 4 GiB
+each, while its processing workers retain 1850m CPU / 12 GiB.
 Include single-file/ZIP uploads, record-image uploads, imports, rotation, and
 exports in load checks because those workflows still execute in the API.
 Use peak measurements and response times under load to validate production sizing;
 an idle usage snapshot is insufficient.
 
 Apply Terraform, refresh `K8S_DEPLOY_TARGETS`, and deploy the affected environments
-with the updated workflow. The sizing change updates production API output
-requests and limits from 1 CPU / 6 GiB to 1 CPU / 4 GiB. Applying and exporting
-the outputs does not resize running pods. Verify admitted pod
+with the updated workflow. The sizing change updates staging API output from a
+1 CPU / 4 GiB request and limit to a 500m CPU / 1 GiB request and 1 CPU / 2 GiB
+limit. Applying and exporting the outputs does not resize running pods. Verify admitted pod
 resources after deployment because Autopilot can adjust requests:
 
 ```bash
@@ -147,25 +147,27 @@ kubectl -n uow-staging get pods -l app.kubernetes.io/component=api \
 kubectl -n uow-staging top pods -l app.kubernetes.io/component=api
 ```
 
-Deploy production environments one at a time at 1 CPU / 4 GiB per API pod,
-preserving two replicas and all processing-worker settings. Change API requests
-and limits together and compare peak usage, throttling, and latency after each
-deployment.
+If reducing production later, deploy production environments one at a time at
+1 CPU / 4 GiB per API pod, preserving two replicas and all processing-worker
+settings. Change API requests and limits together and compare peak usage,
+throttling, and latency after each deployment.
 
-To restore staging to its previous allocation, merge this entry into the existing
+To restore staging to its previous API allocation, merge this entry into the existing
 `gke_backend_overrides` map in `terraform.tfvars`, apply, refresh the deploy-target
 secret, and redeploy staging:
 
 ```hcl
 gke_backend_overrides = {
   staging = {
-    memory_request = "6Gi"
-    memory_limit   = "6Gi"
+    cpu_request    = "1"
+    memory_request = "4Gi"
+    cpu_limit      = "1"
+    memory_limit   = "4Gi"
   }
 }
 ```
 
-Remove the override when resuming validation at `4Gi`. To restore a production
+Remove the override when resuming validation at the smaller staging target. To restore a production
 API to its previous memory allocation, set `memory_request` and `memory_limit`
 to `6Gi` under that environment in `gke_backend_overrides`, then apply, refresh
 the secret, and redeploy it. The backend
@@ -354,5 +356,5 @@ kubectl top nodes
 - Google-managed certificates require DNS to point at the GKE load balancer before they become active.
 - The rendered manifest in `deployment/kubernetes/rendered/backend.yaml` is an ephemeral artifact. Do not commit it.
 - The Kubernetes Deployment uses pod-local `emptyDir` volumes for `/logs` and `/data`. Production document storage should continue using the Terraform-managed Google Cloud Storage upload bucket.
-- Collaborator APIs target two replicas at 1 CPU and 4 GiB memory each; their processing workers retain 1850m CPU and 12 GiB. Staging targets one API replica at 1 CPU and 4 GiB; its workers retain 1 CPU and 6 GiB.
+- Collaborator APIs target two replicas at 1 CPU and 4 GiB memory each; their processing workers retain 1850m CPU and 12 GiB. Staging targets one API replica with a 500m CPU / 1 GiB request and 1 CPU / 2 GiB limit; its workers retain 1 CPU and 6 GiB.
 - Worker Jobs have independent CPU, memory, scratch-storage, deadline, retention, and maximum-active-job settings. GitHub Actions supplies these generated settings from `K8S_DEPLOY_TARGETS`; do not place `PROCESSING_JOB_*` values in collaborator runtime-env secrets.

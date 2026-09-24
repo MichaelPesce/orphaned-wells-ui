@@ -135,16 +135,17 @@ Terraform keys bucket resources by bucket name, so collaborators can intentional
 ## GKE resource sizing
 
 Collaborator APIs target 2 replicas with 1 CPU and 4 GiB memory per pod.
-Staging targets 1 API replica
-with 1 CPU and 4 GiB memory, using two Uvicorn workers. These values set both
-requests and limits. Processing-worker resources are configured separately.
+Staging targets 1 API replica with a 500m CPU / 1 GiB request and a
+1 CPU / 2 GiB limit, using two Uvicorn workers. Processing-worker resources
+are configured separately.
 
 Changing these values in Terraform does not update running Kubernetes pods by itself. Apply Terraform, update `K8S_DEPLOY_TARGETS`, then redeploy the affected backend environments.
 
 For an otherwise up-to-date workspace, the reduction changes only the
-`kubernetes_deploy_targets` output. Production API `memory_request` and
-`memory_limit` go from `6Gi` to `4Gi`; CPU stays at `1`, production replicas
-stay at `2`, and worker settings stay unchanged. It requires no infrastructure
+`kubernetes_deploy_targets` output. Staging API `cpu_request` goes from `1` to
+`500m`, `memory_request` goes from `4Gi` to `1Gi`, and `memory_limit` goes
+from `4Gi` to `2Gi`; `cpu_limit` stays at `1`, production targets stay
+unchanged, and worker settings stay unchanged. It requires no infrastructure
 resources to be added, changed, or destroyed. Review any other plan changes separately. An older
 `K8S_DEPLOY_TARGETS` secret continues to select the old sizes until refreshed;
 explicit target values take precedence over workflow defaults. Applying and
@@ -152,8 +153,7 @@ exporting these outputs does not resize live pods; a backend deployment
 activates the target for that environment.
 
 Follow the [staging validation and rollback steps](./backend-gke.mdx#capacity-failure-recovery-and-resource-sizing)
-and deploy production environments one at a time at 1 CPU / 4 GiB, keeping two
-API replicas and existing worker settings. Validate production behavior before
+before considering production changes. Validate production behavior before
 considering further API reductions. Use `gke_backend_overrides` for
 environment-specific adjustments or rollback.
 
