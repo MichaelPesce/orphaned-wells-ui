@@ -82,8 +82,6 @@ export const DownloadProvider = ({ children }: { children: React.ReactNode }) =>
         link.click();
         document.body.removeChild(link);
 
-      } catch (err) {
-        console.error("Download error:", err);
       } finally {
         setIsDownloading(false);
       }

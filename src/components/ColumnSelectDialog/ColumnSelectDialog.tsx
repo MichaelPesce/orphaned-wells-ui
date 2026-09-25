@@ -173,6 +173,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
   };
 
   const handleGetTotalBytes = () => {
+    setErrorMsg(null);
     const exportCols = getExportColumnsList();
     if (exportTypes.image_files || exportTypes.embedded_pdf_files) {
       const body = {
@@ -206,8 +207,12 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       filter: convertFiltersToMongoFormat(appliedFilters),
       document_types: documentTypes || [],
     };
-    await downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
-    handleClose();
+    try {
+      await downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
+      handleClose();
+    } catch (error) {
+      handleFailedExport(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const handleFailedExport = (e: string) => {
