@@ -99,7 +99,6 @@ const RecordsTable = (props: RecordsTableProps) => {
 
   useEffect(() => {
     if (isDownloading) {
-      setOpenColumnSelect(false);
       // If downloda is bigger than 10mb
       if ((estimatedTotalBytes || 0) > 10000000 && (progress || 0) < 0.01) setShowDownloadMessage(true);
     } else {
@@ -555,7 +554,7 @@ const RecordsTable = (props: RecordsTableProps) => {
           onClose={handleCloseNotesModal}
         />
         {
-          openColumnSelect && !isDownloading && (
+          openColumnSelect && (
             <ColumnSelectDialog
               open={openColumnSelect}
               onClose={() => setOpenColumnSelect(false)}
