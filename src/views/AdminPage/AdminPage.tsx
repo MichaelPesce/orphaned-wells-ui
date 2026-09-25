@@ -5,6 +5,7 @@ import Subheader from "../../components/Subheader/Subheader";
 import PopupModal from "../../components/PopupModal/PopupModal";
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
 import ChangeRoleDialog from "../../components/ChangeRoleDialog/ChangeRoleDialog";
+import { useNavigate } from "react-router-dom";
 import { getUsers, addUser, deleteUser } from "../../services/app.service";
 import { useUserContext } from "../../usercontext";
 import { callAPI } from "../../util";
@@ -16,6 +17,7 @@ import UploadHistoryPanel from "../../components/UploadHistory/UploadHistoryPane
 type AdminSection = "users" | "roles" | "uploads";
 
 const AdminPage = () => {
+  const navigate = useNavigate();
   const { user, hasPermission, handleSuccessfulAuthentication } = useUserContext();
   const compactTabs = useMediaQuery(useTheme().breakpoints.down("sm"));
   const [users, setUsers] = useState<User[]>([]);
@@ -61,6 +63,11 @@ const AdminPage = () => {
   }, [handleAuthSuccess, handleAuthError]);
 
   useEffect(() => {
+    const hasAccess = hasPermission("manage_team");
+    if(!hasAccess) {
+      navigate("/");
+      return;
+    }
     if (activeSection === "users") fetchUsers();
   }, [fetchUsers, activeSection]);
 
