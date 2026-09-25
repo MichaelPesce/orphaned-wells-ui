@@ -9,7 +9,7 @@ const scopes = [
 ];
 const job = (id, status = "completed") => ({job_id: id, record_group_id: group, project_id: project, project_name: "Illinois records", record_group_name: "Well completion reports", status, created_at: 1789380600, completed_at: status === "completed" ? 1789380900 : undefined, request_user: {email: "uploader@example.com"}, input: {upload_session_id: id, bucket_name: "test-bucket", prefix: "directory/"}, file_count: 1, summary: {total_succeeded: status === "completed" ? 1 : 0, total_failed: status === "error" ? 1 : 0, total_skipped_duplicates: 0}});
 const setup = () => {
-  cy.intercept("POST", "**/check_auth", {body: {user_data: {email: "uploader@example.com", name: "Test uploader", permissions: ["upload_document"], default_team: "default", collaborator: "isgs"}, environment: "test"}});
+  cy.intercept("POST", "**/check_auth", {body: {user_data: {email: "uploader@example.com", name: "Test uploader", permissions: ["manage_team", "upload_document"], default_team: "default", collaborator: "isgs"}, environment: "test"}});
   cy.intercept("GET", "**/fetch_teams", {body: []});
   cy.intercept("GET", "**/processing_jobs/scopes", {body: scopes});
   cy.intercept("GET", `**/get_record_group/${group}`, {body: {rg_data: {_id: group, name: "Upload layout test", processorId: "processor", has_schema: true, can_process: true}, project: {_id: "project", name: "Test project"}}});
@@ -188,8 +188,8 @@ describe("upload dialog layout and history", () => {
     cy.get('[role="tabpanel"]').should(($panel) => expect($panel[0].getBoundingClientRect().right).to.be.at.most(390));
     cy.screenshot("admin-upload-history-mobile", {capture: "fullPage"});
   });
-  it("keeps history accessible after a Users error and reports history errors with retry", () => {
-    cy.intercept("GET", "**/get_users", {statusCode: 403, body: {detail: "Not authorized"}});
+  it("keeps upload history accessible after a Users API error and reports history errors with retry", () => {
+    cy.intercept("GET", "**/get_users", {statusCode: 503, body: {detail: "Users temporarily unavailable"}});
     let failed = true;
     cy.intercept("POST", "**/processing_jobs/history", (request) => request.reply(failed ? {statusCode: 503, body: {detail: "History temporarily unavailable"}} : {body: {active_jobs: [], active_count: 0, jobs: [], count: 0}}));
     cy.visit("/admin");
