@@ -135,7 +135,7 @@ exports in load checks because those workflows still execute in the API.
 Use peak measurements and response times under load to validate production sizing;
 an idle usage snapshot is insufficient.
 
-Apply Terraform, refresh `K8S_DEPLOY_TARGETS`, and deploy the affected environments
+Approve Terraform apply and deploy the affected environments
 with the updated workflow. The sizing change updates staging API output from a
 1 CPU / 4 GiB request and limit to a 500m CPU / 1 GiB request and 1 CPU / 2 GiB
 limit. Applying and exporting the outputs does not resize running pods. Verify admitted pod
@@ -206,7 +206,13 @@ Other required access:
 
 ## Prepare deployment targets
 
-Apply Terraform first:
+With `ENABLE_TERRAFORM_CI=true`, merge Terraform changes to `main` and approve the
+saved plan. Staging waits for successful apply; updated deploy workflows read
+targets live from the existing remote workspace. See [Terraform CI setup](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/blob/main/deployment/ci/README.md)
+for WIF, Environment protection, and collaborator-branch rollout requirements.
+The existing deployment JSON key remains in use for phase one.
+
+The commands below are for the disabled rollout fallback. Apply Terraform first:
 
 ```bash
 cd orphaned-wells-ui-server/deployment/terraform
@@ -226,9 +232,9 @@ gh secret set K8S_DEPLOY_TARGETS \
   --body "$(terraform output -json kubernetes_deploy_targets | jq -c .)"
 ```
 
-The `host` field controls the Kubernetes Ingress host and the Google-managed certificate domain. The `storage_bucket_name` field controls the runtime `STORAGE_BUCKET_NAME` written to `Secret/backend-runtime-env`. DNS or bucket changes in Terraform are not enough by themselves; update `K8S_DEPLOY_TARGETS` and redeploy the backend.
+The `host` field controls the Kubernetes Ingress host and the Google-managed certificate domain. The `storage_bucket_name` field controls the runtime `STORAGE_BUCKET_NAME` written to `Secret/backend-runtime-env`. After Terraform changes these values, redeploy the backend. Refresh `K8S_DEPLOY_TARGETS` first only when automation is disabled.
 
-Resource target changes work the same way: Terraform updates the desired values in `kubernetes_deploy_targets`, the backend repository secret `K8S_DEPLOY_TARGETS` copies those values into GitHub Actions, and the next backend deployment renders and applies them to Kubernetes.
+Resource target changes work the same way: Terraform updates `kubernetes_deploy_targets`, and the next backend deployment reads, renders, and applies those values to Kubernetes.
 
 ## Required backend secrets
 

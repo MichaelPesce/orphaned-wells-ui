@@ -32,8 +32,9 @@ and `kubernetes_deploy_targets`. CA currently uses this setting. Change it to
 
 ## Prerequisites
 
-- Terraform 1.x.
+- Terraform at the backend's pinned `.terraform-version` (1.13.5).
 - Google Cloud SDK.
+- `gke-gcloud-auth-plugin`, installed with `gcloud components install gke-gcloud-auth-plugin`.
 - `jq` for output export and state verification commands.
 - GitHub CLI `gh` for updating GitHub Actions secrets from the command line.
 - Access to the target GCP project.
@@ -80,13 +81,84 @@ Terraform. Those accounts are intentionally limited to backend runtime tasks.
 
 ## Plan and apply
 
+With backend repository variable `ENABLE_TERRAFORM_CI=true`, infrastructure
+changes go through PRs and merged `main`. Trusted same-repository Terraform PRs
+receive a cloud plan; fork PRs receive credential-free checks. After merge, the
+staging workflow creates a fresh saved plan, waits for the `terraform-apply`
+Environment's required reviewers, applies the approved plan, and deploys using
+live outputs. Backend-only changes skip planning when infrastructure is current.
+
+The initial setup requires WIF, separate plan/apply service accounts, a private
+plan bucket, the existing workspace, and the protected GitHub Environment.
+Follow the backend [Terraform CI setup and rollout guide](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/blob/main/deployment/ci/README.md).
+The feature is disabled by default. Phase one keeps `DEPLOYMENT_SERVICE_KEY_JSON`
+for Kubernetes deployment; Terraform CI uses WIF without a service-account key.
+
+### Manual plan
+
+Manual planning and applying remain supported alongside CI. Both use the same
+shared remote workspace. A staging workflow applies this shared Terraform
+configuration; it does not isolate infrastructure changes to staging.
+
+Continue in `orphaned-wells-ui-server/deployment/terraform` after authenticating
+as described above. Use the pinned Terraform CLI and the Kubernetes
+authentication plugin:
+
 ```bash
-terraform init
+gcloud components install gke-gcloud-auth-plugin
+terraform version
+terraform init -input=false -lockfile=readonly
 terraform workspace select ogrre
 terraform workspace show
-terraform plan
-terraform apply
+terraform fmt -check -recursive
+terraform validate
+terraform plan -input=false -lock-timeout=5m
 ```
+
+Confirm the CLI matches `.terraform-version` and the workspace is `ogrre`.
+A speculative plan can run with CI enabled; it may wait for the state lock.
+Keep locking enabled. Local `terraform.tfvars` files load automatically, while
+CI uses committed defaults. Incorporate required production overrides into
+reviewed shared configuration so local and CI plans agree.
+
+### Manual apply
+
+Use the reviewed infrastructure configuration from current `main` and coordinate
+with other operators. If CI is enabled, pause the deployment entry points and
+wait for all active or approval-waiting runs to finish. Leave
+`ENABLE_TERRAFORM_CI=true` while pausing workflows, so deployment cannot fall
+back to stale secret-based targets. The backend guide provides the exact
+[pause and resume commands](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/blob/main/deployment/ci/README.md#manual-plan-and-apply).
+
+Save and review the plan outside the repository:
+
+```bash
+OGRRE_PLAN_DIR="$(mktemp -d)"
+chmod 700 "$OGRRE_PLAN_DIR"
+terraform plan -input=false -lock-timeout=5m -out="$OGRRE_PLAN_DIR/manual.tfplan"
+terraform show -no-color "$OGRRE_PLAN_DIR/manual.tfplan"
+```
+
+After reviewing the changes, apply that exact plan:
+
+```bash
+terraform apply -input=false -lock-timeout=5m "$OGRRE_PLAN_DIR/manual.tfplan"
+terraform output -json kubernetes_deploy_targets | jq .
+rm -f "$OGRRE_PLAN_DIR/manual.tfplan"
+rmdir "$OGRRE_PLAN_DIR"
+```
+
+A saved-plan apply executes without another approval prompt. Keep the plan
+private; it can contain sensitive values. Generate a new plan if the state or
+desired configuration changed during review.
+
+If CI is enabled, resume the staging workflow first and dispatch it with
+`force_terraform_plan=true`. Approve the new reconciliation plan, normally with
+no resource changes if the local inputs match `main`. This restores CI's
+readiness record after the manual state write. Resume other deployment
+workflows after that run succeeds; never edit the readiness record by hand.
+If CI is disabled, refresh the fallback target secret before backend deployment
+using the next section's commands.
 
 ## Existing namespace migration
 
@@ -112,7 +184,14 @@ terraform plan -var='enable_gke=false'
 
 ## Export GKE deployment targets
 
-After apply, export the Kubernetes deployment target map and store it as the backend repository secret. The `gh` command requires a GitHub account with permission to edit repository Actions secrets:
+Enabled CI selects the existing workspace and reads `kubernetes_deploy_targets`
+live. It does not use `K8S_DEPLOY_TARGETS`. Deployments stop when current `main`
+infrastructure has not been successfully applied; later backend-only commits
+cannot bypass that check. Collaborator application promotion still follows its
+existing branch workflow.
+
+Only while `ENABLE_TERRAFORM_CI` is disabled, export the target map and store it
+as the fallback backend repository secret:
 
 ```bash
 terraform workspace select ogrre
@@ -122,7 +201,9 @@ gh secret set K8S_DEPLOY_TARGETS \
   --body "$(terraform output -json kubernetes_deploy_targets | jq -c .)"
 ```
 
-Re-export it any time Terraform changes hostnames, static IP names, namespaces, upload bucket names, resource requests, or cluster metadata.
+Refresh this fallback after target changes while automation is disabled. Once
+enabled and verified across all active collaborator branches, the secret can
+be removed. Keep the deployment credential for phase one.
 
 Keep the backend repository deployment docs and these frontend docs in sync when changing Kubernetes or Terraform behavior. The source of truth lives in `orphaned-wells-ui-server`, but this docs site is the operator-facing deployment guide.
 
@@ -139,17 +220,16 @@ Staging targets 1 API replica with a 500m CPU / 1 GiB request and a
 1 CPU / 2 GiB limit, using two Uvicorn workers. Processing-worker resources
 are configured separately.
 
-Changing these values in Terraform does not update running Kubernetes pods by itself. Apply Terraform, update `K8S_DEPLOY_TARGETS`, then redeploy the affected backend environments.
+Changing these values in Terraform does not update running Kubernetes pods by itself. Approve the Terraform apply, then deploy the affected backend environments. Refresh `K8S_DEPLOY_TARGETS` only for the disabled rollout fallback.
 
 For an otherwise up-to-date workspace, the reduction changes only the
 `kubernetes_deploy_targets` output. Staging API `cpu_request` goes from `1` to
 `500m`, `memory_request` goes from `4Gi` to `1Gi`, and `memory_limit` goes
 from `4Gi` to `2Gi`; `cpu_limit` stays at `1`, production targets stay
 unchanged, and worker settings stay unchanged. It requires no infrastructure
-resources to be added, changed, or destroyed. Review any other plan changes separately. An older
-`K8S_DEPLOY_TARGETS` secret continues to select the old sizes until refreshed;
-explicit target values take precedence over workflow defaults. Applying and
-exporting these outputs does not resize live pods; a backend deployment
+resources to be added, changed, or destroyed. Review any other plan changes separately.
+Explicit target values take precedence over workflow defaults. Applying
+these outputs does not resize live pods; a backend deployment
 activates the target for that environment.
 
 Follow the [staging validation and rollback steps](./backend-gke.mdx#capacity-failure-recovery-and-resource-sizing)
