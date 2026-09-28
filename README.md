@@ -87,3 +87,19 @@ repository's default branch before manual runs are available. Land these CI
 changes there once; subsequent branch pairings require no workflow edits.
 The backend's **Checks** workflow provides the corresponding `frontend_ref`
 and `frontend_repository` inputs.
+
+## Export regression tests
+
+With the isolated E2E stack running and seeded, run:
+
+```sh
+npm run e2e:run -- --spec cypress/e2e/export.cy.js
+```
+
+These tests create and remove their own projects and record groups through the
+backend API. JSON and CSV downloads use the real export endpoint with images
+disabled, then open the ZIPs with the test-only `fflate` dependency and verify
+record values, selected fields, and record-group scope. Failure tests inject an
+HTTP 500 response and retry against the real backend from both the record-group
+and project tables. No cloud storage or document processor calls are required.
+The full CI browser suite includes this spec.

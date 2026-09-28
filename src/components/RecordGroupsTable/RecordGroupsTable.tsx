@@ -222,7 +222,7 @@ const RecordGroupsTable = ({ record_groups, sortRecordGroups, projectId, handleU
           </TableBody>
         </Table>
         {
-          openColumnSelect && !isDownloading && (
+          openColumnSelect && (
             <ColumnSelectDialog
               open={openColumnSelect}
               onClose={() => setOpenColumnSelect(false)}

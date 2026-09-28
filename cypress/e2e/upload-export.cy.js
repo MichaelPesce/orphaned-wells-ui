@@ -1,5 +1,3 @@
-const path = require("path");
-
 const openRecordGroupUploadModal = () => {
   cy.intercept("GET", `${Cypress.env("backendURL")}/check_processor_status/**`, {
     statusCode: 200,
@@ -14,23 +12,7 @@ const openRecordGroupUploadModal = () => {
   });
 };
 
-const mockDownload = (alias = "downloadRecords") => {
-  cy.intercept("POST", `${Cypress.env("backendURL")}/download_records/**`, {
-    statusCode: 200,
-    headers: {
-      "content-type": "application/zip",
-    },
-    body: "mock zip content",
-  }).as(alias);
-};
-
-const openRecordGroupExportDialog = () => {
-  cy.getByCy("records-export-button").should("be.enabled").click();
-  cy.getByCy("export-dialog").should("be.visible");
-  return cy.getByCy("download-button").should("be.enabled");
-};
-
-describe("upload and export workflows", () => {
+describe("upload workflows", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
   });
@@ -131,73 +113,5 @@ describe("upload and export workflows", () => {
     // cy.getByCy("gcs-start-batch-button").click();
     // cy.wait("@startBatch").its("response.statusCode").should("eq", 200);
     // cy.contains("Job ID: cypress-job-1").should("be.visible");
-  });
-
-  it("exports JSON, CSV, selected columns, and selected project record groups", () => {
-    cy.findSeededEntities().then(({ seed, project, recordGroup }) => {
-      cy.visitApp(`/record_group/${recordGroup._id}`);
-      cy.getByCy("subheader-title", { timeout: 10000 }).should("contain", seed.recordGroupName);
-
-      mockDownload("jsonExport");
-      openRecordGroupExportDialog();
-      cy.getByCy("download-button").click();
-      cy.wait("@jsonExport").then(({ request }) => {
-        expect(request.url).to.include("export_json=true");
-        expect(request.url).to.include("export_csv=false");
-      });
-      cy.readFile(path.join(Cypress.config("downloadsFolder"), `${seed.recordGroupName}.zip`), {
-        timeout: 10000,
-      }).should("exist");
-
-      mockDownload("csvExport");
-      openRecordGroupExportDialog();
-      cy.contains('[data-cy="export-type-option"]', "json").click();
-      cy.contains('[data-cy="export-type-option"]', "csv").click();
-      cy.getByCy("download-button").click();
-      cy.wait("@csvExport").then(({ request }) => {
-        expect(request.url).to.include("export_json=false");
-        expect(request.url).to.include("export_csv=true");
-      });
-
-      mockDownload("selectedColumnExport");
-      openRecordGroupExportDialog();
-      cy.getByCy("export-column-label")
-        .first()
-        .invoke("attr", "data-column")
-        .then((columnName) => {
-          expect(columnName, "selected export column").to.be.a("string");
-          cy.getByCy("export-column-option").first().find("input").should("be.checked");
-          cy.getByCy("export-select-all-columns").click({ force: true });
-          cy.contains("User Notes").click({ force: true });
-          cy.getByCy("export-column-option").first().find("input").should("not.be.checked");
-          cy.getByCy("export-column-option").first().click({ force: true });
-          cy.getByCy("export-column-option").first().find("input").should("be.checked");
-          cy.getByCy("download-button").click();
-          cy.wait("@selectedColumnExport").its("request.body.columns").should("deep.eq", [columnName]);
-        });
-
-      cy.visitApp(`/project/${project._id}`);
-      cy.contains('[data-cy="record-group-row"]', seed.recordGroupName)
-        .find('[data-cy="record-group-select"]')
-        .click();
-      cy.intercept("GET", `${Cypress.env("backendURL")}/get_column_data/documentType/**`, {
-        statusCode: 200,
-        body: {
-          columns: ['record_notes', "Oil"],
-          obj: {
-            name: seed.projectName,
-            settings: {},
-          },
-        },
-      }).as("selectedRecordGroupsColumns");
-      mockDownload("selectedRecordGroupsExport");
-      cy.getByCy("record-groups-export-button").click();
-      cy.wait("@selectedRecordGroupsColumns").its("response.statusCode").should("eq", 200);
-      cy.getByCy("download-button").click();
-      cy.wait("@selectedRecordGroupsExport").then(({ request }) => {
-        expect(request.body.document_types).to.be.an("array");
-        expect(request.url).to.include("download_records/documentType");
-      });
-    });
   });
 });
