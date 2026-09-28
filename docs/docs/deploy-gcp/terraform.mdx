@@ -82,14 +82,23 @@ Terraform. Those accounts are intentionally limited to backend runtime tasks.
 ## Plan and apply
 
 With backend repository variable `ENABLE_TERRAFORM_CI=true`, infrastructure
-changes go through PRs and merged `main`. Trusted same-repository Terraform PRs
-receive a cloud plan; fork PRs receive credential-free checks. After merge, the
+changes go through PRs and merged `main`. Terraform PRs from forks run
+credential-free checks, then automatically queue an upstream cloud plan behind
+the `terraform-plan` Environment's required reviewers. Add yourself or your
+maintainer team and leave **Prevent self-review** unchecked to approve your own
+plan. The workflow captures the PR and commit automatically and rejects a changed
+revision after approval. This approval permits planning only; normal PR merge
+approval remains separate. Kubernetes-only and documentation-only changes do not
+request a cloud-plan approval. After merge, the
 staging workflow creates a fresh saved plan, waits for the `terraform-apply`
 Environment's required reviewers, applies the approved plan, and deploys using
 live outputs. Backend-only changes skip planning when infrastructure is current.
 
 The initial setup requires WIF, separate plan/apply service accounts, a private
-plan bucket, the existing workspace, and the protected GitHub Environment.
+plan bucket, the existing workspace, and both protected GitHub Environments:
+`terraform-plan` and `terraform-apply`. Both allow only the upstream `main` branch;
+the fork-plan workflow itself runs from upstream `main`. Apply self-review is a
+separate setting and can remain restricted.
 Follow the backend [Terraform CI setup and rollout guide](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/blob/main/deployment/ci/README.md).
 The feature is disabled by default. Phase one keeps `DEPLOYMENT_SERVICE_KEY_JSON`
 for Kubernetes deployment; Terraform CI uses WIF without a service-account key.
