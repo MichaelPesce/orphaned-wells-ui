@@ -220,7 +220,9 @@ per pod. Processing workers retain 1850m CPU and 12 GiB. Use overrides when the
 collaborator needs different sizing, such as a smaller temporary test deployment.
 
 With `ENABLE_TERRAFORM_CI=true`, merge the shared configuration changes to `main`
-and approve the Terraform plan in GitHub. Required collaborator overrides must
+and review the Terraform plan in GitHub. New collaborator resources or outputs
+require apply approval; an already-current configuration can finish through
+automatic no-change verification. Required collaborator overrides must
 be tracked in `variables.tf`, not left in a local `terraform.tfvars` file.
 For the disabled rollout fallback, run Terraform locally:
 
@@ -359,7 +361,7 @@ Confirm the collaborator deployment has:
 - Processor metadata and schemas for the collaborator.
 - Storage runtime service-account access to the collaborator upload bucket if using `STORAGE_BACKEND=google`.
 - Document AI runtime service-account access to the collaborator processors, plus batch input/output bucket access if using `DOCUMENT_AI_BACKEND=google`.
-- Deployment/Terraform service-account access for the backend and frontend deployment workflows.
+- Deployment service-account access for the backend and frontend deployment workflows, with separate WIF identities for Terraform CI.
 - Frontend OAuth sign-in and backend authorization working together.
 
 ## Common pitfalls

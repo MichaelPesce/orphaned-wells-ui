@@ -206,8 +206,9 @@ Other required access:
 
 ## Prepare deployment targets
 
-With `ENABLE_TERRAFORM_CI=true`, merge Terraform changes to `main` and approve the
-saved plan. Staging waits for successful apply; updated deploy workflows read
+With `ENABLE_TERRAFORM_CI=true`, merge Terraform changes to upstream `main`.
+Plans with changes require approval; verified no-change plans complete
+automatically without applying. Staging waits for successful reconciliation; updated deploy workflows read
 targets live from the existing remote workspace. See [Terraform CI setup](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/blob/main/deployment/ci/README.md)
 for WIF, Environment protection, and collaborator-branch rollout requirements.
 The existing deployment JSON key remains in use for phase one.
@@ -246,7 +247,7 @@ The GKE deployment workflows require:
 - `DEPLOYMENT_SERVICE_KEY_JSON`
 - `STORAGE_SERVICE_KEY_JSON`
 - `DOCUMENT_AI_SERVICE_KEY_JSON`
-- `K8S_DEPLOY_TARGETS`
+- `K8S_DEPLOY_TARGETS` only for the disabled Terraform CI rollout fallback
 - One runtime env secret per currently enabled collaborator: `STAGING_ENV`, `ISGS_ENV`, `NEWTS_ENV`, `OSAGE_ENV`, and `RRC_ENV`. `CA_ENV` may remain configured for future use, but CA cannot deploy while `enable_kubernetes_workloads = false`.
 
 `DEPLOYMENT_SERVICE_KEY_JSON` is used only by GitHub Actions to authenticate to

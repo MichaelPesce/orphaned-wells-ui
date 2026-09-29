@@ -63,10 +63,12 @@ cd orphaned-wells-ui-server/deployment/terraform
 
 gcloud auth login
 gcloud config set project <PROJECT_ID>
+unset GOOGLE_APPLICATION_CREDENTIALS GOOGLE_AUTHORIZED_USER_CREDENTIALS CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE
 gcloud auth application-default login
 ```
 
-Or use the deployment and Terraform service-account key for this shell only:
+Alternatively, use a separately authorized Terraform platform account for this
+shell only. The GitHub deployment account is not the Terraform apply identity:
 
 ```bash
 cd orphaned-wells-ui-server/deployment/terraform
@@ -81,27 +83,80 @@ Terraform. Those accounts are intentionally limited to backend runtime tasks.
 
 ## Plan and apply
 
-With backend repository variable `ENABLE_TERRAFORM_CI=true`, infrastructure
-changes go through PRs and merged `main`. Terraform PRs from forks run
-credential-free checks, then automatically queue an upstream cloud plan behind
-the `terraform-plan` Environment's required reviewers. Add yourself or your
-maintainer team and leave **Prevent self-review** unchecked to approve your own
-plan. The workflow captures the PR and commit automatically and rejects a changed
-revision after approval. This approval permits planning only; normal PR merge
-approval remains separate. Kubernetes-only and documentation-only changes do not
-request a cloud-plan approval. After merge, the
-staging workflow creates a fresh saved plan, waits for the `terraform-apply`
-Environment's required reviewers, applies the approved plan, and deploys using
-live outputs. Backend-only changes skip planning when infrastructure is current.
+Terraform PRs targeting upstream `main`, including fork PRs, run **Deployment
+checks**: formatting and `terraform init -backend=false` / `terraform validate`.
+These checks receive no cloud credentials, OIDC permission, or remote state.
+They do not run a live plan or request an Environment approval. Normal PR
+reviews remain required. GitHub may separately require permission to start an
+ordinary fork CI run, according to the repository's Actions policy.
 
-The initial setup requires WIF, separate plan/apply service accounts, a private
-plan bucket, the existing workspace, and both protected GitHub Environments:
-`terraform-plan` and `terraform-apply`. Both allow only the upstream `main` branch;
-the fork-plan workflow itself runs from upstream `main`. Apply self-review is a
-separate setting and can remain restricted.
-Follow the backend [Terraform CI setup and rollout guide](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/blob/main/deployment/ci/README.md).
-The feature is disabled by default. Phase one keeps `DEPLOYMENT_SERVICE_KEY_JSON`
-for Kubernetes deployment; Terraform CI uses WIF without a service-account key.
+With backend repository variable `ENABLE_TERRAFORM_CI=true`, the upstream staging
+workflow reconciles shared infrastructure after merge or a manual run on `main`:
+
+| Result | Next action |
+| --- | --- |
+| Tracked Terraform inputs and state match the last successful reconciliation | Skip planning and applying; deployment reads live targets. |
+| A fresh plan has no changes | Automatically verify the saved plan, current inputs/state, and outputs; record readiness without applying. |
+| A fresh plan has changes, including output-only changes | Wait for `terraform-apply` approval, then apply the exact saved plan. |
+| Plan, verification, or apply fails, or approval is rejected | Block staging deployment; fix the issue and start a new full staging run. |
+
+No-change detection uses Terraform's detailed exit code, not a search for text
+or a count of changed resources. A change to `kubernetes_deploy_targets` can
+require approval even when no cloud resources change. Automatic completion,
+apply, and deployments share a concurrency group per workspace. A superseded
+Terraform revision or changed state prevents stale no-change completion.
+
+Syncing a fork's `main` skips staging jobs, including infrastructure readiness.
+Merges into collaborator branches do not plan or apply Terraform; their deploy
+workflows require current upstream infrastructure readiness. Application
+promotion to those environments still follows their own branch workflows.
+
+### Set up or upgrade CI
+
+Bootstrap is an operator-run script, outside GitHub Actions. From the backend
+repository root, set the existing project, workspace, deployment account, and
+dedicated CI bucket, then run `bash deployment/ci/bootstrap_terraform_ci.sh`.
+It creates/configures WIF, separate plan/apply accounts, and private plan storage;
+it does not apply application Terraform or create a workspace. Reuse the existing
+bucket on reruns (`ogrre-terraform-ci` for the current installation).
+
+Configure only the **`terraform-apply`** GitHub Environment with required
+reviewers, deployment branch `main`, and administrator bypass disabled. Its
+**Prevent self-review** setting is independent of normal PR approval rules.
+The former `terraform-plan` workflow and Environment are retired.
+
+Existing installations must rerun the updated bootstrap **before** merging the
+automatic no-change update. The plan account needs permission to replace exactly
+`status/<workspace>.json` in the CI bucket, in addition to its existing reads and
+state-lock access. It receives no Terraform state or infrastructure writes. No
+new variables, keys, or Environments are required for this upgrade.
+
+Follow the backend [Terraform CI setup and rollout guide](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/blob/main/deployment/ci/README.md)
+for initial setup, the no-change upgrade, and retiring the old fork-plan workflow.
+Bootstrap prints **repository variables**, not secrets. Cloud CI is disabled
+unless `ENABLE_TERRAFORM_CI=true`; static PR checks run independently. Phase one
+keeps `DEPLOYMENT_SERVICE_KEY_JSON` for deployment; Terraform CI uses WIF.
+
+### Review a live plan
+
+In upstream **Actions → Deploy Staging Server to GKE**, open the run. The
+**Summary** contains the **Terraform plan** section with its commit and workspace.
+For full output, open **infrastructure / plan → Generate Terraform plan**.
+Review resource and output changes for the shared `ogrre` workspace. If apply
+is waiting, use **Review deployments → terraform-apply → Approve and deploy**
+or **Reject**. A verified no-change plan has no approval request.
+
+To run a fresh reconciliation, including after a failed or stale attempt:
+
+```bash
+gh workflow run deploy-k8s-staging.yml \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref main \
+  -f force_terraform_plan=true
+```
+
+Forcing a plan does not force apply or approval. This dispatch can deploy the
+backend image after reconciliation. A readiness record with `status: verified`
+means no-change completion; `status: applied` means a successful apply.
 
 ### Manual plan
 
@@ -116,6 +171,7 @@ authentication plugin:
 ```bash
 gcloud components install gke-gcloud-auth-plugin
 terraform version
+unset TF_WORKSPACE
 terraform init -input=false -lockfile=readonly
 terraform workspace select ogrre
 terraform workspace show
@@ -162,9 +218,9 @@ private; it can contain sensitive values. Generate a new plan if the state or
 desired configuration changed during review.
 
 If CI is enabled, resume the staging workflow first and dispatch it with
-`force_terraform_plan=true`. Approve the new reconciliation plan, normally with
-no resource changes if the local inputs match `main`. This restores CI's
-readiness record after the manual state write. Resume other deployment
+`force_terraform_plan=true`. Review the new plan; no-change completion restores
+readiness automatically when local inputs match `main`. Approve apply only if
+the plan contains changes. Resume other deployment
 workflows after that run succeeds; never edit the readiness record by hand.
 If CI is disabled, refresh the fallback target secret before backend deployment
 using the next section's commands.
@@ -195,7 +251,7 @@ terraform plan -var='enable_gke=false'
 
 Enabled CI selects the existing workspace and reads `kubernetes_deploy_targets`
 live. It does not use `K8S_DEPLOY_TARGETS`. Deployments stop when current `main`
-infrastructure has not been successfully applied; later backend-only commits
+infrastructure has not been successfully reconciled; later backend-only commits
 cannot bypass that check. Collaborator application promotion still follows its
 existing branch workflow.
 
@@ -203,7 +259,7 @@ Only while `ENABLE_TERRAFORM_CI` is disabled, export the target map and store it
 as the fallback backend repository secret:
 
 ```bash
-terraform workspace select ogrre
+env -u TF_WORKSPACE terraform workspace select ogrre
 gh auth login
 gh secret set K8S_DEPLOY_TARGETS \
   --repo CATALOG-Historic-Records/orphaned-wells-ui-server \
@@ -298,7 +354,7 @@ Use the shared `ogrre` workspace for normal infrastructure work:
 
 ```bash
 terraform init
-terraform workspace select ogrre
+env -u TF_WORKSPACE terraform workspace select ogrre
 terraform workspace show
 terraform plan
 ```

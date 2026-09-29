@@ -4,7 +4,11 @@ sidebar_position: 3
 ---
 # Install OGRRE on your computer
 
-In addition to the frontend and backend code, OGRRE relies on a Mongo database and Google Cloud Platform. Before attempting to run OGRRE, follow the previous setup tutorials to learn how to [set up MongoDB](database_setup) and [configure GCP](gcp_setup).
+OGRRE requires MongoDB. Follow the [database setup guide](database_setup), then
+[configure GCP](gcp_setup) if you will use Google sign-in, Cloud Storage, or
+Document AI. Local development can instead use local storage, a custom document
+processing service, and disabled authentication. The [Docker development guide](/docs/install/docker_setup)
+also provides a local setup with MongoDB included.
 
 ## Install frontend
 
@@ -67,16 +71,19 @@ pip install .
 
 ### 3. Set environment variables.
 
-Create a `.env` file for the backend runtime (where your backend process loads environment variables).
+Copy `ogrre/.env.example` to `ogrre/.env` and fill in the settings for your local
+backend. Keep this file and credential files out of Git.
 
 Required in all setups:
 
 - <b>ENVIRONMENT</b>: Deployment environment name used by OGRRE (for example, `isgs`).
 - <b>COLLABORATOR</b>: Collaborator key used to load processor metadata (for example, `isgs`, `calgem`, or `osage`).
-- <b>DB_USERNAME</b>: MongoDB username. See [database setup](database_setup#create-a-mongodb-database).
-- <b>DB_PASSWORD</b>: MongoDB password. See [database setup](database_setup#create-a-mongodb-database).
-- <b>DB_CONNECTION</b>: MongoDB connection string. See [database setup](database_setup#create-a-mongodb-database).
+- <b>DB_CONNECTION</b>: Full `mongodb://` or `mongodb+srv://` URI, or the short Atlas cluster identifier described in [database setup](database_setup#create-a-mongodb-database).
 - <b>DB_NAME</b>: MongoDB database name.
+
+When using a short Atlas cluster identifier, also set <b>DB_USERNAME</b> and
+<b>DB_PASSWORD</b>. A full MongoDB URI includes its own connection credentials
+when authentication is required.
 
 Optional toggles (defaults shown):
 
@@ -120,7 +127,7 @@ When <b>DOCUMENT_AI_BACKEND=custom</b>:
 For local non-Docker backend runs with Google Cloud integrations, put the storage
 and Document AI runtime key files in `orphaned-wells-ui-server/ogrre/` or set
 `STORAGE_SERVICE_KEY` and `DOCUMENT_AI_SERVICE_KEY` to absolute paths. Do not use
-the deployment/Terraform service-account key as a backend runtime key.
+a deployment or platform-administration service-account key as a backend runtime key.
 
 
 ### 4. Start the backend server
