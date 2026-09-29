@@ -14,24 +14,30 @@ import { GCPOverview, GCPInstructions, GCPEnvironmentVariables } from '@site/src
 
 ## Create Google service-account keys
 
-OGRRE uses three task-specific service accounts. Keep these accounts separate so
-backend runtime access is not combined with deployment or infrastructure access.
+OGRRE separates runtime, deployment, and Terraform CI identities. The three
+runtime/deployment accounts below use JSON keys in phase one; the two Terraform
+CI accounts use Workload Identity Federation (WIF), without JSON keys.
 
 | Service account | Suggested name | Used by | Credential setting |
 | --- | --- | --- | --- |
 | Storage runtime | `ogrre-storage-runtime` | Backend runtime in production GKE, local Docker, and local non-Docker runs when `STORAGE_BACKEND=google`. Reads, writes, lists, moves, signs, and deletes uploaded/generated files in Cloud Storage. | Local backend env: `STORAGE_SERVICE_KEY`. Backend GitHub secret: `STORAGE_SERVICE_KEY_JSON`. |
 | Document AI runtime | `ogrre-document-ai` | Backend runtime in production GKE, local Docker, and local non-Docker runs when `DOCUMENT_AI_BACKEND=google`. Runs online and batch processing and deploys, undeploys, and checks processor versions. | Local backend env: `DOCUMENT_AI_SERVICE_KEY`. Backend GitHub secret: `DOCUMENT_AI_SERVICE_KEY_JSON`. |
-| Deployment and Terraform | `ogrre-deployment-ci` | GitHub Actions deployment for backend GKE and frontend App Engine. Can also be used by operators to run Terraform when you want service-account based infrastructure changes instead of a human `gcloud` login. | Backend and frontend GitHub secret: `DEPLOYMENT_SERVICE_KEY_JSON`. Optional local Terraform env: `GOOGLE_APPLICATION_CREDENTIALS`. |
+| Deployment | `ogrre-deployment-ci` | GitHub Actions deployment for backend GKE and frontend App Engine. | Backend and frontend GitHub secret: `DEPLOYMENT_SERVICE_KEY_JSON`. |
+| Terraform plan/no-change completion | `github-terraform-plan` | Reads infrastructure and state, manages the workspace lock, and writes only the workspace's CI readiness record after no-change verification. | WIF; backend repository variable `TF_PLAN_SERVICE_ACCOUNT`. |
+| Terraform apply | `github-terraform-ci` | Applies infrastructure changes after `terraform-apply` approval. | WIF; backend repository variable `TF_APPLY_SERVICE_ACCOUNT`. |
 
 :::note
-For stricter production governance, split Terraform into a fourth infrastructure
-administrator service account. The documented three-account setup keeps the
-runtime accounts separate and combines Terraform with deployment operations.
+The backend's operator-run `deployment/ci/bootstrap_terraform_ci.sh` creates and
+configures both Terraform CI accounts and their WIF grants. Do not create JSON
+keys for them. Manual Terraform uses an authorized human ADC login or a separate
+platform account; keep infrastructure administration off the deployment identity.
+See [Terraform setup and manual operations](/docs/deploy-gcp/terraform).
 :::
 
 ### Create the accounts
 
-Repeat these steps for each service account in the table:
+Repeat these steps for the storage, Document AI, and deployment accounts.
+Use the bootstrap script for the Terraform CI accounts:
 
 1. Open the [Google Cloud Console](https://console.cloud.google.com).
 2. Select the project that owns the OGRRE infrastructure.
@@ -46,7 +52,7 @@ Repeat these steps for each service account in the table:
 
 Grant the storage runtime service account **Storage Object User**
 (`roles/storage.objectUser`) on each OGRRE upload bucket used by
-`STORAGE_BUCKET_NAME` or by `K8S_DEPLOY_TARGETS[*].storage_bucket_name`.
+`STORAGE_BUCKET_NAME` or by Terraform's `kubernetes_deploy_targets` output.
 
 Bucket-level access is the preferred scope. Project-level access also works, but
 it applies to every bucket in the project. If an older project policy blocks
@@ -87,10 +93,11 @@ bucket is the broader fallback.
 
 ### Grant deployment and Terraform access
 
-Grant the deployment and Terraform service account the roles needed for the
-operations it performs.
+Grant each identity the roles needed for its own operations.
 
-For Terraform infrastructure updates:
+For Terraform infrastructure updates, bootstrap grants the apply account these
+roles. A human or separate platform account performing manual applies needs
+equivalent access:
 
 - **Kubernetes Engine Admin** (`roles/container.admin`)
 - **Compute Network Admin** (`roles/compute.networkAdmin`)
@@ -98,16 +105,19 @@ For Terraform infrastructure updates:
 - **Storage Admin** (`roles/storage.admin`)
 - **Service Usage Admin** (`roles/serviceusage.serviceUsageAdmin`) when Terraform manages project services
 
-The same account also needs read/write access to the shared Terraform state
+The apply identity also needs read/write access to the shared Terraform state
 bucket, `gs://tidy-outlet-412020-ogrre-terraform-state`. The project-level
 `roles/storage.admin` grant covers this when the state bucket is in the same
 project. If it is scoped more tightly, grant the account access on the state
 bucket directly.
 
-For backend GKE deployments from GitHub Actions, `roles/container.admin` is
-enough for the current simple path. If this account is not used for Terraform,
-**Kubernetes Engine Developer** (`roles/container.developer`) is the narrower
-deployment-only option.
+For backend GKE deployments, give the deployment identity **Kubernetes Engine
+Developer** (`roles/container.developer`). Terraform owns namespaces and runtime
+RBAC; deployment applies application workloads. Bootstrap also grants the
+deployment account reads on the state and CI buckets so deployment can verify
+readiness and read live targets. The plan account's exact read, lock, and
+readiness grants are documented in the backend
+[CI identity guide](https://github.com/CATALOG-Historic-Records/orphaned-wells-ui-server/blob/main/deployment/ci/README.md#identities-and-artifact-permissions).
 
 For frontend App Engine deployments from GitHub Actions:
 
@@ -140,8 +150,9 @@ for OGRRE buckets in that project, but it also grants the same access to other
 project buckets. Resource-level grants are narrower and are preferred for the
 runtime accounts.
 
-Use project-level roles for the deployment and Terraform account when the account
-is expected to create and update infrastructure across the project.
+Use project-level roles for the Terraform apply identity where it must create
+and update infrastructure across the project. Keep deployment and runtime
+grants scoped to the operations and resources those accounts use.
 
 ### Generate the JSON key files
 
@@ -199,22 +210,25 @@ Do not set `GOOGLE_APPLICATION_CREDENTIALS` to the storage or Document AI
 runtime key for normal backend development. The backend reads `STORAGE_SERVICE_KEY`
 and `DOCUMENT_AI_SERVICE_KEY` directly.
 
-For local Terraform operations with the deployment and Terraform service account,
-authenticate with that key only in the shell where you run Terraform:
+For manual Terraform, prefer an authorized human login. From the Terraform
+directory, clear inherited credential overrides before configuring ADC:
 
 ```bash
 cd orphaned-wells-ui-server/deployment/terraform
-export GOOGLE_APPLICATION_CREDENTIALS=/secure/path/ogrre-deployment-ci-service-key.json
-gcloud auth activate-service-account --key-file "$GOOGLE_APPLICATION_CREDENTIALS"
+unset GOOGLE_APPLICATION_CREDENTIALS GOOGLE_AUTHORIZED_USER_CREDENTIALS CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE
+gcloud auth login
 gcloud config set project <PROJECT_ID>
-terraform init
+gcloud auth application-default login
+gcloud components install gke-gcloud-auth-plugin
+unset TF_WORKSPACE
+terraform init -input=false -lockfile=readonly
 terraform workspace select ogrre
-terraform plan
+terraform plan -input=false -lock-timeout=5m
 ```
 
-You can also run Terraform with a human `gcloud auth application-default login`
-identity if that user or group has the same infrastructure roles. Do not leave
-`GOOGLE_APPLICATION_CREDENTIALS` set when you return to backend runtime work.
+Use the backend's pinned Terraform version. A separately authorized platform
+account is also supported; see the [manual plan/apply guide](/docs/deploy-gcp/terraform#manual-plan).
+Do not leave a platform credential override set when returning to runtime work.
 
 ### Configure production GitHub secrets
 
