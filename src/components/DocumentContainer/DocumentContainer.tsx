@@ -8,7 +8,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import KeyboardIcon from "@mui/icons-material/Keyboard";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { ImageCropper } from "../ImageCropper/ImageCropper";
-import { useKeyDown, scrollIntoView, scrollToAttribute, coordinatesDecimalsToPercentage, callAPI, deriveAttribute, getAttributeRowId, getActiveAttributeEntries } from "../../util";
+import { useKeyDown, scrollToAttribute, callAPI, deriveAttribute, getAttributeRowId, getActiveAttributeEntries } from "../../util";
 import AttributesTable from "../RecordAttributesTable/RecordAttributesTable";
 import { DocumentContainerProps, updateFieldCoordinatesSignature, FieldID, RecordHistoryItem, Attribute } from "../../types";
 import { DocumentContainerStyles as styles } from "../../styles";
@@ -83,12 +83,16 @@ const DocumentContainer = ({
     setZoomScale((prev) => Math.max(MIN_ZOOM, prev - ZOOM_STEP));
   };
 
-  const handleResetZoom = () => {
-    setZoomScale(MIN_ZOOM);
+  const handleResetScroll = () => {
     if (imageBoxRef.current) {
       imageBoxRef.current.scrollLeft = 0;
       imageBoxRef.current.scrollTop = 0;
     }
+  }
+
+  const handleResetZoom = () => {
+    setZoomScale(MIN_ZOOM);
+    handleResetScroll();
   };
 
   const imageDivStyle = {
@@ -143,10 +147,7 @@ const DocumentContainer = ({
     setDisplayPoints(null);
     setDisplayIndexes([]);
     setZoomScale(MIN_ZOOM);
-    if (imageBoxRef.current) {
-      imageBoxRef.current.scrollLeft = 0;
-      imageBoxRef.current.scrollTop = 0;
-    }
+    handleResetScroll();
   }, [params.id]);
 
   const getVisualPageNumber = React.useCallback((pageNumber: number) => {
@@ -246,10 +247,6 @@ const DocumentContainer = ({
     }
     else {
       setZoomScale(MIN_ZOOM);
-      if (imageBoxRef.current) {
-        imageBoxRef.current.scrollLeft = 0;
-        imageBoxRef.current.scrollTop = 0;
-      }
       setDisplayIndexes([...indexes]);
       let current_attr = deriveAttribute(indexes, attributesListRef.current);
       if (!current_attr) {
@@ -483,20 +480,24 @@ const DocumentContainer = ({
                               </span>
                             </Tooltip>
                               <Tooltip title="Reset Zoom">
-                                <IconButton
-                                  id="zoom-reset-button"
-                                  data-cy="zoom-reset-button"
-                                  data-testid="zoom-reset-button"
-                                  onClick={handleResetZoom}
-                                  disabled={zoomScale <= MIN_ZOOM}
-                                >
-                                  <RestartAltIcon />
-                                </IconButton>
+                                <span>
+                                  <IconButton
+                                    id="zoom-reset-button"
+                                    data-cy="zoom-reset-button"
+                                    data-testid="zoom-reset-button"
+                                    onClick={handleResetZoom}
+                                    disabled={zoomScale <= MIN_ZOOM}
+                                  >
+                                    <RestartAltIcon />
+                                  </IconButton>
+                                </span>
                               </Tooltip>
                             <Tooltip title="Rotate Image(s)" placement="left">
-                              <IconButton id="rotate-image-button" onClick={() => setOpenRotationDialog(true)}>
-                                <Rotate90DegreesCcwIcon/>
-                              </IconButton>
+                              <span>
+                                <IconButton id="rotate-image-button" onClick={() => setOpenRotationDialog(true)}>
+                                  <Rotate90DegreesCcwIcon/>
+                                </IconButton>
+                              </span>
                             </Tooltip>
                             <IconButton id='fullscreen-image-button' onClick={() => handleSetFullscreen("image")}>
                               { 

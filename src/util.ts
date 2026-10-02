@@ -612,8 +612,8 @@ export const formatConfidence = (value: number | null): string => {
   return `${percentageValue} %`;
 };
 
-export const formatAttributeValue = (value: string | number | boolean | null): string | number => {
-  if (value === null) return "";
+export const formatAttributeValue = (value?: string | number | boolean | null): string | number => {
+  if (value === null || value === undefined) return "";
   else if (value === true) return "true";
   else if (value === false) return "false";
   else return value;

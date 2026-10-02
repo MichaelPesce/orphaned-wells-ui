@@ -656,13 +656,13 @@ const AttributeRow = React.memo((props: AttributeRowProps) => {
                       {
                         showEditedValue(v) &&
                                     <Typography noWrap component={"p"} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
-                                        Edited value: {v.uncleaned_value}
+                                        Edited value: {formatAttributeValue(v.uncleaned_value)}
                                     </Typography>
                       }
                       {
                         showOCRRawValue(v) &&
                                     <Typography noWrap component={"p"} sx={styles.ocrRawText} onClick={(e) => e.stopPropagation()}>
-                                        OCR Raw Value: {v.raw_text}
+                                        OCR Raw Value: {formatAttributeValue(v.raw_text)}
                                     </Typography>
                       }
                     </span>
