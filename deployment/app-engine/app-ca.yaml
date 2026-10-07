@@ -3,15 +3,15 @@ runtime: python310
 runtime_config:
   python_version: 3.10
 handlers:
-  # Serve static files (JS, CSS, images, fonts, etc.)
-  - url: /(.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|map|json))
+  # Serve static files (JS, CSS, images, fonts, etc. Excludes .map source maps)
+  - url: /(.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|json|txt))
     static_files: build/\1
-    upload: build/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|map|json)
+    upload: build/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|json|txt)
     secure: always
     expiration: "7d"
 
-  # Catch-all: send all other requests to index.html
-  - url: /.*
+  # SPA routes: serve index.html for known client-side application routes
+  - url: /((index\.html|login|project|projects|record|records|record_group|schema|admin|users)(/.*)?)?$
     static_files: build/index.html
     upload: build/index.html
     secure: always

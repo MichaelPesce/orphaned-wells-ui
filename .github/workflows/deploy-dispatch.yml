@@ -41,11 +41,13 @@ jobs:
             echo "REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL}"
             echo "REACT_APP_GOOGLE_CLIENTID=${REACT_APP_GOOGLE_CLIENTID}"
             echo "REACT_APP_COLLABORATOR=${REACT_APP_COLLABORATOR}"
+            echo "GENERATE_SOURCEMAP=false"
           } >> .env
 
       - name: Build frontend
         env:
           CI: false
+          GENERATE_SOURCEMAP: false
         run: npm run build
 
       - name: Deploy
