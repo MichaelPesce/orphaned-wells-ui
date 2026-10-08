@@ -55,6 +55,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
     "embedded_pdf_files": false,
   });
   const [name, setName] = useState("");
+  const [exportRawValues, setExportRawValues] = useState<boolean>(false);
   const dialogHeight = "85vh";
   const dialogWidth = "60vw";
 
@@ -181,6 +182,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
         sort: [sortBy, sortAscending],
         filter: convertFiltersToMongoFormat(appliedFilters),
         document_types: documentTypes || [],
+        export_raw_values: exportRawValues,
       };
       setLoadingFileSize(true);
       callAPI(
@@ -206,6 +208,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
       sort: [sortBy, sortAscending],
       filter: convertFiltersToMongoFormat(appliedFilters),
       document_types: documentTypes || [],
+      export_raw_values: exportRawValues,
     };
     try {
       await downloadWithProgress(downloadRecords, [location, _id, exportTypes, name, body], `${name}.zip`, totalBytes);
@@ -292,6 +295,8 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
             updateExportTypes={handleChangeExportTypes}
             disabled={loadingFileSize || isDownloading}
             location={location}
+            exportRawValues={exportRawValues}
+            setExportRawValues={setExportRawValues}
           />
           <Divider sx={{ my: 1.5 }} />
           <CheckboxesGroup
@@ -322,7 +327,7 @@ const ColumnSelectDialog = (props: ColumnSelectDialogProps) => {
 };
 
 const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
-  const { exportTypes, updateExportTypes, disabled } = props;
+  const { exportTypes, updateExportTypes, disabled, location, exportRawValues, setExportRawValues } = props;
 
   const handleChangeExportTypes = (event: React.ChangeEvent<HTMLInputElement>) => {
     let name = event.target.name;
@@ -352,6 +357,22 @@ const ExportTypeSelection = (props: ExportTypeSelectionProps) => {
           </Stack>
         </FormGroup>
       </FormControl>
+      {setExportRawValues && (
+        <Box sx={{ mt: 1.5 }}>
+          <FormControlLabel
+            data-cy="export-raw-values-option"
+            control={
+              <Checkbox
+                checked={exportRawValues || false}
+                onChange={(e) => setExportRawValues(e.target.checked)}
+                name="export_raw_values"
+                disabled={disabled}
+              />
+            }
+            label="Export raw OCR read values for all fields"
+          />
+        </Box>
+      )}
     </Box>
   );
 };
