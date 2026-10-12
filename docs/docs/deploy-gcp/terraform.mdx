@@ -8,7 +8,7 @@ sidebar_position: 2
 
 Terraform lives in `orphaned-wells-ui-server/deployment/terraform`.
 
-It manages the current GKE deployment infrastructure, upload buckets, DNS, namespace-level Kubernetes RBAC, and deployment target outputs. Legacy VM definitions remain in Terraform for future re-enablement, but Terraform manages legacy VM modules only for names listed in `enabled_legacy_backend_vms`.
+It manages the current GKE deployment infrastructure, upload buckets, DNS, namespace-level Kubernetes RBAC, and deployment target outputs. Legacy Compute Engine VM modules have been retired; all backend workloads run on Google Kubernetes Engine (GKE Autopilot).
 
 ## What Terraform manages
 
@@ -19,16 +19,47 @@ It manages the current GKE deployment infrastructure, upload buckets, DNS, names
 - Primary backend DNS records, such as `staging-server.uow-carbon.org`, pointing to the GKE static IP.
 - One Kubernetes namespace plus the `backend-api`/`processing-worker` ServiceAccounts and worker-dispatch Role/RoleBinding per backend.
 - `kubernetes_deploy_targets`, the output consumed by backend GitHub Actions.
-- Legacy Compute Engine VM resources only for names listed in `enabled_legacy_backend_vms`.
 
-:::caution
-Add a collaborator to `gke_backends` or `gke_backend_overrides` for GKE-only infrastructure. Add a collaborator to `legacy_backend_vms` only when you need to preserve a reusable VM definition, and add it to `enabled_legacy_backend_vms` only when Terraform should actively manage that VM.
-:::
+## Decoupled Architecture and Configuration
 
-Set `enable_kubernetes_workloads = false` in a GKE backend definition to retain
-its cloud resources but exclude it from Kubernetes namespaces, runtime RBAC,
-and `kubernetes_deploy_targets`. CA currently uses this setting. Change it to
-`true` when CA is ready for a complete GKE deployment.
+Core infrastructure variable declarations live in `variables.tf` and are completely decoupled from specific collaborator environments. Environment-specific collaborator backends are declared in `gke_backends` inside `terraform.tfvars`.
+
+See `orphaned-wells-ui-server/deployment/terraform/terraform.tfvars.example` for a clean template.
+
+### CI Hydration via `PROD_TERRAFORM_TFVARS`
+
+To ensure environment configurations are decoupled from Git and production inventory can be managed dynamically:
+- Production `terraform.tfvars` is stored securely as the `PROD_TERRAFORM_TFVARS` GitHub Secret.
+- The CI workflow (`terraform-apply.yml`) automatically hydrates `deployment/terraform/terraform.tfvars` from this secret prior to planning or applying.
+- `terraform.tfvars` and `*.env` files are local operational files and should never be committed to Git.
+
+### Sharing and Syncing `terraform.tfvars` via GCS
+
+Because `terraform.tfvars` is excluded from Git, the shared team source of truth is stored in Google Cloud Storage:
+
+```text
+gs://<TF_STATE_BUCKET>/config/terraform.tfvars
+```
+
+Use `sync_tfvars.sh` in the server repository to manage and share your local copy:
+
+```bash
+# Pull the latest shared configuration from GCS
+./deployment/terraform/scripts/sync_tfvars.sh pull
+
+# View differences between local and GCS
+./deployment/terraform/scripts/sync_tfvars.sh diff
+
+# Push updates to GCS and update the GitHub secret in one step
+./deployment/terraform/scripts/sync_tfvars.sh push --secret
+
+# Sync GCS directly into the GitHub secret without changing local files
+./deployment/terraform/scripts/sync_tfvars.sh sync-secret
+
+# Or stream directly from GCS into gh via pipe
+gcloud storage cat gs://tidy-outlet-412020-ogrre-terraform-state/config/terraform.tfvars | \
+  gh secret set PROD_TERRAFORM_TFVARS --repo CATALOG-Historic-Records/orphaned-wells-ui-server
+```
 
 ## Prerequisites
 
@@ -40,19 +71,7 @@ and `kubernetes_deploy_targets`. CA currently uses this setting. Change it to
 - Access to the target GCP project.
 - Access to the shared Terraform state bucket: `gs://tidy-outlet-412020-ogrre-terraform-state`.
 - A Terraform platform identity with the [deployment and Terraform service-account permissions](/docs/install/gcp_setup#grant-deployment-and-terraform-access), including permission to create Kubernetes Roles and RoleBindings. Use a privileged human identity or dedicated infrastructure account; the GitHub deployment account's `roles/container.developer` is intentionally insufficient for RBAC creation.
-- A local `terraform.tfvars` file only when you need uncommitted local overrides.
-
-Shared non-secret defaults live in `variables.tf`. Add long-lived public collaborators to the `gke_backends` map there so the repo remains the source of truth.
-
-Example `terraform.tfvars` override for local testing:
-
-```hcl
-gke_backend_overrides = {
-  "boots" = {}
-}
-```
-
-`*.tfvars` and `.env` files are local operational files and should not be committed. Terraform state is stored remotely in GCS; do not commit local state backups or state migration files.
+- A local `terraform.tfvars` file copied from `terraform.tfvars.example` for local planning and execution.
 
 ## Authenticate
 
@@ -183,8 +202,8 @@ terraform plan -input=false -lock-timeout=5m
 Confirm the CLI matches `.terraform-version` and the workspace is `ogrre`.
 A speculative plan can run with CI enabled; it may wait for the state lock.
 Keep locking enabled. Local `terraform.tfvars` files load automatically, while
-CI uses committed defaults. Incorporate required production overrides into
-reviewed shared configuration so local and CI plans agree.
+CI automatically hydrates `terraform.tfvars` from the `PROD_TERRAFORM_TFVARS`
+GitHub Secret. Ensure local `terraform.tfvars` matches production values so local and CI plans agree.
 
 ### Manual apply
 
@@ -326,19 +345,9 @@ Single-file/ZIP processing, record-image uploads, imports, rotation, and exports
 still use API resources. Include these workflows in staging load checks before
 choosing a smaller production API allocation.
 
-## Legacy Compute Engine VMs
+## Retired Compute Engine VMs
 
-Legacy VM definitions are kept in `legacy_backend_vms` so they can be re-enabled later without reconstructing their machine, disk, image, or zone settings. They are disabled by default because `enabled_legacy_backend_vms` defaults to an empty set.
-
-To re-enable a legacy VM, add its name to `enabled_legacy_backend_vms`:
-
-```hcl
-enabled_legacy_backend_vms = ["isgs"]
-```
-
-To disable it again without deleting the definition, remove the name from `enabled_legacy_backend_vms`. If Terraform state still contains old module resources and you want Terraform to stop managing them rather than destroy them, remove only those bindings from state with `terraform state rm`.
-
-Stopped legacy VMs, detached disks, static IPs, or automatic snapshots that are no longer in Terraform state require explicit Google Cloud cleanup. Confirm rollback is no longer needed before deleting them.
+Legacy Compute Engine VM modules (`modules/backend_vm`) have been retired from Terraform. All backend API and batch worker workloads now run on Google Kubernetes Engine (GKE Autopilot). If standalone legacy VMs, detached disks, or static IPs still exist in GCP from earlier migrations, they must be decommissioned directly in Google Cloud Console or via `gcloud`.
 
 ## Workspaces and state
 
@@ -399,7 +408,7 @@ bash scripts/import_existing_infrastructure.sh --target-workspace ogrre --dry-ru
 bash scripts/import_existing_infrastructure.sh --target-workspace ogrre
 ```
 
-The comprehensive importer reads this repo's Terraform naming conventions and attempts to import the configured firewalls, GKE resources, upload buckets, DNS records, static IPs, and enabled legacy VM resources. Missing resources are reported and do not stop the script unless `--strict` is passed.
+The comprehensive importer reads this repo's Terraform naming conventions and attempts to import the configured firewalls, GKE resources, upload buckets, DNS records, and static IPs. Missing resources are reported and do not stop the script unless `--strict` is passed.
 
 ## Primary DNS ownership
 
@@ -409,15 +418,42 @@ Primary backend DNS records are managed by root-level GKE resources:
 google_dns_record_set.gke_backend_primary["<collaborator>"]
 ```
 
-Legacy VM modules can still manage VMs and VM IPs, but they do not create the primary backend DNS record for a collaborator whose GKE backend has `create_primary_dns_record=true`. Existing DNS records were moved into the GKE resource addresses with Terraform `moved` blocks, so a normal plan should not propose duplicate DNS records for existing `<collaborator>-server.uow-carbon.org` names.
+Existing DNS records were moved into the GKE resource addresses with Terraform `moved` blocks, so a normal plan should not propose duplicate DNS records for existing `<collaborator>-server.uow-carbon.org` names.
 
 ## Targeted plans
 
 Use `-target` only for isolated Terraform work:
 
 ```bash
-terraform plan -target='module.backend_vms["staging"]'
-terraform apply -target='module.backend_vms["staging"]'
+terraform plan -target='google_storage_bucket.backend_uploads["staging"]'
+terraform apply -target='google_storage_bucket.backend_uploads["staging"]'
 ```
 
 Targeting bypasses part of Terraform's normal dependency planning, so use a full plan afterward when possible.
+
+## Self-Hosting and Standalone Collaborator Deployments
+
+If an external partner or collaborator wants to host an independent instance of OGRRE for their organization, the backend infrastructure is designed to be cleanly portable:
+
+1. **State Storage (`backend.tf`)**:
+   By default, `backend.tf` references the shared OGRRE state bucket. A self-hosting collaborator should update the `bucket` attribute in `orphaned-wells-ui-server/deployment/terraform/backend.tf` to their own GCS bucket (or omit the backend block to use local state during testing).
+
+2. **Decoupled Inventory (`terraform.tfvars`)**:
+   Copy `deployment/terraform/terraform.tfvars.example` to `deployment/terraform/terraform.tfvars`. Configure only your own deployment in `gke_backends`:
+   ```hcl
+   gke_backends = {
+     "myorg" = {
+       # optional overrides or leave default
+     }
+   }
+   ```
+   No references to upstream staging or other collaborators are needed.
+
+3. **CI Hydration Secret (`PROD_TERRAFORM_TFVARS`)**:
+   In the collaborator's GitHub repository settings, create the secret `PROD_TERRAFORM_TFVARS` containing the entire contents of their `terraform.tfvars`. This enables GitHub Actions (`terraform-apply.yml`) to hydrate infrastructure variables securely without committing them to source control.
+
+4. **Runtime Environment Secret (`RUNTIME_ENV`)**:
+   Set `RUNTIME_ENV` in GitHub Secrets with the backend runtime environment variables (e.g., MongoDB credentials, storage credentials, Auth0 / GCP configuration). The deployment workflow `.github/workflows/deploy-k8s-dispatch.yml` will automatically fall back to `RUNTIME_ENV` if an environment-specific secret like `<ORG>_ENV` is not found.
+
+5. **Collaborator Registry (`collaborators.json`)**:
+   In `orphaned-wells-ui-server/collaborators.json`, set the list of active deployment branches (e.g. `["myorg"]` or `[]` if deploying directly from `main` or manual dispatch).

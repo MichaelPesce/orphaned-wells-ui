@@ -55,14 +55,9 @@ In Google Cloud DNS, add an `A` record:
 
 Point it to the VM static external IP.
 
-If Terraform should manage this VM, keep its definition in `legacy_backend_vms`, add the collaborator key to `enabled_legacy_backend_vms`, and import the existing VM resources before applying Terraform:
-
-```bash
-cd orphaned-wells-ui-server/deployment/terraform
-terraform init
-terraform workspace select ogrre
-bash scripts/import_existing_infrastructure.sh --target-workspace ogrre --backend-vms-only <collaborator>
-```
+:::important Terraform module removed
+Terraform no longer manages Compute Engine VM resources (`modules/backend_vm` and `legacy_backend_vms` have been removed from the IaC). If any legacy VM instances remain in GCP, manage or decommission them directly in Google Cloud Console or via `gcloud compute`.
+:::
 
 ## nginx and Docker Compose
 

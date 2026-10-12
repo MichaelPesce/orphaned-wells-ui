@@ -248,7 +248,7 @@ The GKE deployment workflows require:
 - `STORAGE_SERVICE_KEY_JSON`
 - `DOCUMENT_AI_SERVICE_KEY_JSON`
 - `K8S_DEPLOY_TARGETS` only for the disabled Terraform CI rollout fallback
-- One runtime env secret per currently enabled collaborator: `STAGING_ENV`, `ISGS_ENV`, `NEWTS_ENV`, `OSAGE_ENV`, and `RRC_ENV`. `CA_ENV` may remain configured for future use, but CA cannot deploy while `enable_kubernetes_workloads = false`.
+- One runtime env secret per active collaborator: `STAGING_ENV`, `ISGS_ENV`, `NEWTS_ENV`, `OSAGE_ENV`, and `RRC_ENV` (or `RUNTIME_ENV` for standalone/single-tenant environments).
 
 `DEPLOYMENT_SERVICE_KEY_JSON` is used only by GitHub Actions to authenticate to
 Google Cloud and apply the deployment. `STORAGE_SERVICE_KEY_JSON` and
@@ -269,7 +269,7 @@ The environment-file secret should contain the same key/value pairs used by the 
 
 Keep `COLLABORATOR` in the runtime secret when the backend needs collaborator-specific processor metadata.
 
-When adding a collaborator, update `deploy-k8s-dispatch.yml` with the new `DEPLOY_ENV`, `<COLLABORATOR>_ENV` secret, and runtime-env case branch before relying on a dedicated workflow. A dedicated `deploy-k8s-<collaborator>.yml` workflow calls the dispatch workflow and will fail until dispatch supports that collaborator.
+Collaborator deployments are unified into `.github/workflows/deploy-k8s-collaborator.yml` driven by `collaborators.json`. When adding a collaborator, add their branch name to `collaborators.json` at the repo root and configure their `<COLLABORATOR>_ENV` secret (or `RUNTIME_ENV`). If manual `workflow_dispatch` options are needed, also update `deploy-k8s-dispatch.yml` with the new `DEPLOY_ENV` option, secret mapping, and case branch.
 
 ## Deploy with GitHub Actions
 
@@ -281,13 +281,21 @@ gh workflow run deploy-k8s-staging.yml \
   --ref main
 ```
 
-Collaborator workflows deploy an existing image tag through `IMAGE_TAG: auto`. On collaborator branch merge commits, `auto` resolves to the second parent commit, which is the main commit that staging built and tested. On fast-forward or non-merge commits, `auto` resolves to the current commit:
+### Automated Collaborator Deployments
+
+Pushing to any branch listed in `collaborators.json` triggers `.github/workflows/deploy-k8s-collaborator.yml`, which calls the dispatch deployment workflow using the branch name as the environment.
+
+Collaborator deployments deploy an existing image tag through `IMAGE_TAG: auto`. On collaborator branch merge commits, `auto` resolves to the second parent commit, which is the main commit that staging built and tested. On fast-forward or non-merge commits, `auto` resolves to the current commit.
+
+### Manual Dispatch
+
+To manually trigger a collaborator deployment via GitHub CLI:
 
 ```bash
-gh workflow run deploy-k8s-isgs.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref isgs
-gh workflow run deploy-k8s-newts.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref newts
-gh workflow run deploy-k8s-osage.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref osage
-gh workflow run deploy-k8s-rrc.yml --repo CATALOG-Historic-Records/orphaned-wells-ui-server --ref rrc
+gh workflow run deploy-k8s-dispatch.yml \
+  --repo CATALOG-Historic-Records/orphaned-wells-ui-server \
+  --ref <branch> \
+  -f DEPLOY_ENV=<collaborator>
 ```
 
 The exact set of deployable collaborators is controlled by both
