@@ -33,6 +33,27 @@ To ensure environment configurations are decoupled from Git and production inven
 - The CI workflow (`terraform-apply.yml`) automatically hydrates `deployment/terraform/terraform.tfvars` from this secret prior to planning or applying.
 - `terraform.tfvars` and `*.env` files are local operational files and should never be committed to Git.
 
+### Sharing and Syncing `terraform.tfvars` via GCS
+
+Because `terraform.tfvars` is excluded from Git, the shared team source of truth is stored in Google Cloud Storage:
+
+```text
+gs://<TF_STATE_BUCKET>/config/terraform.tfvars
+```
+
+Use `sync_tfvars.sh` in the server repository to manage and share your local copy:
+
+```bash
+# Pull the latest shared configuration from GCS
+./deployment/terraform/scripts/sync_tfvars.sh pull
+
+# View differences between local and GCS
+./deployment/terraform/scripts/sync_tfvars.sh diff
+
+# Push updates to GCS and update the GitHub secret in one step
+./deployment/terraform/scripts/sync_tfvars.sh push --secret
+```
+
 ## Prerequisites
 
 - Terraform at the backend's pinned `.terraform-version` (1.13.5).

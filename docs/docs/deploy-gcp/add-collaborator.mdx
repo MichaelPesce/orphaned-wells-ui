@@ -205,14 +205,18 @@ The default collaborator API target is 2 replicas with 1 CPU and 4 GiB memory
 per pod. Processing workers retain 1850m CPU and 12 GiB. Use overrides when the
 collaborator needs different sizing, such as a smaller temporary test deployment.
 
-### Hydration in CI
+### Shared Configuration & CI Hydration
 
-For production deployments, `terraform.tfvars` is stored securely as the `PROD_TERRAFORM_TFVARS` GitHub Secret rather than tracked in Git:
+For production deployments, `terraform.tfvars` is stored in Google Cloud Storage and hydrated in CI via the `PROD_TERRAFORM_TFVARS` GitHub Secret rather than tracked in Git:
 
-1. Update the local `terraform.tfvars` with the new collaborator backend.
-2. Update the `PROD_TERRAFORM_TFVARS` repository secret in GitHub with the entire contents of your updated `terraform.tfvars`.
-3. When infrastructure changes are merged to `main`, `terraform-apply.yml` automatically hydrates this secret into `deployment/terraform/terraform.tfvars` during CI runs.
-4. Review and approve the Terraform plan in GitHub Actions.
+1. Pull the latest shared configuration: `./deployment/terraform/scripts/sync_tfvars.sh pull`
+2. Add the new collaborator backend to `gke_backends` in `terraform.tfvars`.
+3. Upload to GCS and update the GitHub secret in one step:
+   ```bash
+   ./deployment/terraform/scripts/sync_tfvars.sh push --secret
+   ```
+4. When infrastructure changes are merged to `main`, `terraform-apply.yml` automatically hydrates this secret into `deployment/terraform/terraform.tfvars` during CI runs.
+5. Review and approve the Terraform plan in GitHub Actions.
 
 For manual planning and applying:
 
