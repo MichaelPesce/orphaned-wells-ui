@@ -28,8 +28,9 @@ export default function ConnectProcessorDialog({ open, recordGroup, onClose, onC
     callAPI(getProcessors, [], data => {
       if (!active) return;
       setSchemas(data.processor_list.map(convertToMongoProcessor));
-      setDatabaseMode(data.USE_DB_PROCESSORS);
-      setSelected(data.USE_DB_PROCESSORS ? recordGroup.active_schema_id || recordGroup.schema_id || "" : recordGroup.processorId || "");
+      const dbMode = Boolean(data.USE_DB_SCHEMAS ?? data.USE_DB_PROCESSORS);
+      setDatabaseMode(dbMode);
+      setSelected(dbMode ? recordGroup.active_schema_id || recordGroup.schema_id || "" : recordGroup.processorId || "");
       setLoading(false);
     }, message => { if (active) { setError(String(message)); setLoading(false); } });
     return () => { active = false; };

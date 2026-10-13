@@ -9,7 +9,9 @@ const expectRecordResponse = (response, expectedRecordName) => {
 };
 
 describe("loading in each schema mode", () => {
-  const databaseMode = Boolean(Cypress.env("useDbProcessors"));
+  const databaseMode = Boolean(
+    Cypress.env("useDbSchemas") ?? Cypress.env("useDbProcessors")
+  );
 
   before(() => {
     cy.resetSeedData();
@@ -21,7 +23,7 @@ describe("loading in each schema mode", () => {
 
   it("reports the configured mode and renders its schema catalog", () => {
     cy.api("GET", "/get_processors").then(({ body }) => {
-      expect(body.USE_DB_PROCESSORS).to.eq(databaseMode);
+      expect(body.USE_DB_SCHEMAS ?? body.USE_DB_PROCESSORS).to.eq(databaseMode);
       expect(body.processor_list).to.have.length.greaterThan(0);
     });
 

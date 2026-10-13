@@ -138,6 +138,7 @@ jobs:
           set_env deployment/.env.e2e SESSION_COOKIE_DOMAIN ""
           set_env deployment/.env.e2e SESSION_COOKIE_SECURE false
           set_env deployment/.env.e2e SESSION_COOKIE_SAMESITE lax
+          set_env deployment/.env.e2e USE_DB_SCHEMAS false
           set_env deployment/.env.e2e USE_DB_PROCESSORS false
 
       - name: Start docker containers
@@ -189,6 +190,7 @@ jobs:
 
       - name: Switch backend to database schema mode
         run: |
+          sed -i 's/^USE_DB_SCHEMAS=.*/USE_DB_SCHEMAS=true/' deployment/.env.e2e
           sed -i 's/^USE_DB_PROCESSORS=.*/USE_DB_PROCESSORS=true/' deployment/.env.e2e
           npm run docker:e2e:recreate-backend
 
@@ -207,7 +209,7 @@ jobs:
         run: |
           for i in {1..180}; do
             response="$(curl -fsS http://localhost:8002/get_processors 2>/dev/null || true)"
-            if [[ "$response" == *'"USE_DB_PROCESSORS":true'* ]]; then
+            if [[ "$response" == *'"USE_DB_SCHEMAS":true'* ]] || [[ "$response" == *'"USE_DB_PROCESSORS":true'* ]]; then
               exit 0
             fi
             docker compose --env-file deployment/.env.e2e -f deployment/docker-compose.dev.yml ps
