@@ -129,9 +129,18 @@ export interface SchemaOverview {
 }
 
 export interface RepoSchemaSource {
+    type?: "installed" | "github";
     package: string;
     version: string;
     collaborator: string;
+    repo?: string;
+    ref?: string;
+}
+
+export interface SchemaImportSourceOptions {
+    type?: "installed" | "github";
+    repo?: string;
+    ref?: string;
 }
 
 export interface SchemaImportGroup {
@@ -156,6 +165,7 @@ export interface SchemaImportRequest {
     mode: "refresh" | "add" | "replace";
     selected: string[];
     decisions: Record<string, SchemaImportDecision>;
+    source?: SchemaImportSourceOptions;
 }
 
 export interface SchemaImportEntry {

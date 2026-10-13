@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, LinearProgress, Radio, RadioGroup, Stack, Step, StepLabel, Stepper, Typography } from "@mui/material";
+import { Alert, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, LinearProgress, Radio, RadioGroup, Stack, Step, StepLabel, Stepper, TextField, Typography } from "@mui/material";
 import { useUserContext } from "../../usercontext";
 import SchemaImportReview, { ImportSummary } from "./SchemaImportReview";
 import useSchemaImport from "./useSchemaImport";
@@ -24,7 +24,13 @@ export default function SchemaImportDialog({ onClose, onApplied }: { onClose: ()
     </Box>
     <DialogContent dividers><Stack spacing={2}>
       <Stepper activeStep={completed ? 3 : step}>{["Choose", "Review", "Apply"].map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}</Stepper>
-      {sourceInfo && <Typography variant="body2">Installed {sourceInfo.package} · {sourceInfo.version} · {sourceInfo.collaborator}</Typography>}
+      {sourceInfo && (
+        <Typography variant="body2">
+          {sourceInfo.type === "github"
+            ? `GitHub ${sourceInfo.repo || "CATALOG-Historic-Records/OGRRE_data_cleaning"} @ ${sourceInfo.ref || "main"} · ${sourceInfo.collaborator}`
+            : `Installed ${sourceInfo.package} · ${sourceInfo.version} · ${sourceInfo.collaborator}`}
+        </Typography>
+      )}
       {error && <Alert severity="error">{error}</Alert>}
       {step === 0 && source && <>
         {source.error && <Alert severity="error">{source.error}</Alert>}
@@ -32,6 +38,56 @@ export default function SchemaImportDialog({ onClose, onApplied }: { onClose: ()
         {source.pending_import ? <Alert severity="warning" action={<Button disabled={busy || source.busy} onClick={flow.resume}>Review saved import</Button>}>
           An import is unfinished. Review its saved changes and resume it before starting another import.
         </Alert> : <>
+          <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, p: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Schema Source</Typography>
+            <RadioGroup
+              row
+              value={flow.sourceType}
+              onChange={event => flow.changeSourceType(event.target.value as "installed" | "github")}
+              aria-label="Schema source type"
+            >
+              <FormControlLabel value="installed" control={<Radio size="small" />} label="Installed package" disabled={busy} />
+              <FormControlLabel value="github" control={<Radio size="small" />} label="GitHub branch or commit" disabled={busy} />
+            </RadioGroup>
+            {flow.sourceType === "github" && (
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 1.5 }}>
+                <TextField
+                  size="small"
+                  label="Branch, tag, or commit"
+                  value={flow.ref}
+                  onChange={e => flow.setRef(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && flow.ref.trim() && flow.repo.trim() && !busy) {
+                      flow.loadRemoteSource(flow.ref, flow.repo);
+                    }
+                  }}
+                  disabled={busy}
+                  sx={{ width: 220 }}
+                />
+                <TextField
+                  size="small"
+                  label="GitHub Repository"
+                  value={flow.repo}
+                  onChange={e => flow.setRepo(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && flow.ref.trim() && flow.repo.trim() && !busy) {
+                      flow.loadRemoteSource(flow.ref, flow.repo);
+                    }
+                  }}
+                  disabled={busy}
+                  sx={{ flexGrow: 1 }}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={busy || !flow.ref.trim() || !flow.repo.trim()}
+                  onClick={() => flow.loadRemoteSource(flow.ref, flow.repo)}
+                >
+                  Fetch
+                </Button>
+              </Stack>
+            )}
+          </Box>
           <Typography>Imported schemas belong to the database and are shared by all teams. Later package changes do not update them automatically.</Typography>
           <RadioGroup value={mode} onChange={event => flow.chooseMode(event.target.value as "refresh" | "add" | "replace")} aria-label="Import mode">
             <FormControlLabel value="refresh" control={<Radio />} label="Refresh from repo (recommended)" disabled={busy || !canReplace} />

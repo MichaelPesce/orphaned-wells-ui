@@ -191,3 +191,72 @@ test("Replace mode omits decision dropdowns and displays catalog replacement war
   expect(screen.queryByLabelText(/Decision for/)).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
 });
+
+test("can select GitHub source, fetch from custom branch/ref, and include source in preview request", async () => {
+  const githubSource = {
+    type: "github" as const,
+    package: "ogrre_data_cleaning",
+    version: "feature-branch",
+    collaborator: "isgs",
+    repo: "CATALOG-Historic-Records/OGRRE_data_cleaning",
+    ref: "feature-branch",
+  };
+  (getRepoSchemaImport as jest.Mock).mockImplementation((options) => {
+    if (options?.source_type === "github") {
+      const isFeatureBranch = options.ref === "feature-branch";
+      return Promise.resolve(response({
+        source: { ...githubSource, ref: options.ref || "main", version: options.ref || "main" },
+        schemas: isFeatureBranch
+          ? [{ source_id: "feature_well", name: "Feature Well", field_count: 5 }]
+          : [{ source_id: "remote_well", name: "Remote Well", field_count: 3 }],
+        busy: false,
+      }));
+    }
+    return Promise.resolve(response({ source, schemas: [{ source_id: "well", name: "Well", field_count: 2 }], busy: false }));
+  });
+  (previewRepoSchemaImport as jest.Mock).mockResolvedValue(response(plan({
+    source: githubSource,
+    entries: [{ source_id: "feature_well", name: "Feature Well", action: "added", candidates: [], groups: [], diff }],
+  })));
+
+  render(<SchemaImportDialog onClose={jest.fn()} onApplied={jest.fn()} />);
+  await screen.findByLabelText("Well · 2 fields");
+
+  // Switch to GitHub source
+  fireEvent.click(screen.getByLabelText("GitHub branch or commit"));
+  await screen.findByLabelText("Remote Well · 3 fields");
+  expect(getRepoSchemaImport).toHaveBeenCalledWith({
+    source_type: "github",
+    ref: "main",
+    repo: "CATALOG-Historic-Records/OGRRE_data_cleaning",
+  });
+
+  // Change ref to feature-branch and click Fetch
+  const refInput = screen.getByLabelText("Branch, tag, or commit");
+  fireEvent.change(refInput, { target: { value: "feature-branch" } });
+  fireEvent.click(screen.getByRole("button", { name: "Fetch" }));
+  await screen.findByLabelText("Feature Well · 5 fields");
+  expect(getRepoSchemaImport).toHaveBeenCalledWith({
+    source_type: "github",
+    ref: "feature-branch",
+    repo: "CATALOG-Historic-Records/OGRRE_data_cleaning",
+  });
+
+  // Click Preview import
+  fireEvent.click(screen.getByRole("button", { name: "Preview import" }));
+  await screen.findByText("1 added");
+  expect(previewRepoSchemaImport).toHaveBeenCalledWith({
+    mode: "refresh",
+    selected: ["feature_well"],
+    decisions: {},
+    source: {
+      type: "github",
+      repo: "CATALOG-Historic-Records/OGRRE_data_cleaning",
+      ref: "feature-branch",
+    },
+  });
+
+  // Check the banner displays the GitHub source info
+  expect(screen.getByText(/GitHub CATALOG-Historic-Records\/OGRRE_data_cleaning @ feature-branch · isgs/)).toBeInTheDocument();
+});
+
