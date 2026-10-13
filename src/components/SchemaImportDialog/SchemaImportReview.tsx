@@ -1,4 +1,4 @@
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Chip, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { SchemaImportDecision, SchemaImportDiff, SchemaImportGroup, SchemaImportPreview } from "../../types";
 
@@ -48,27 +48,59 @@ interface ReviewProps {
   canReplace: boolean;
   disabled: boolean;
   onDecision: (id: string, decision: SchemaImportDecision) => void;
+  onDecideAll: (action: "keep" | "replace") => void;
 }
 
-export default function SchemaImportReview({ preview, decisions, canReplace, disabled, onDecision }: ReviewProps) {
+export default function SchemaImportReview({ preview, decisions, canReplace, disabled, onDecision, onDecideAll }: ReviewProps) {
   return <Stack spacing={2}>
     <ImportSummary preview={preview} />
+    {preview.mode === "refresh" && (
+      <Alert severity="info">
+        Refreshing schemas will update matching schemas in place and add new repository schemas. Existing schemas in active use are preserved, and unused schemas are pruned.
+        {preview.counts.removed > 0 && ` ${preview.counts.removed} unused schema${preview.counts.removed === 1 ? "" : "s"} will be removed.`}
+      </Alert>
+    )}
+    {preview.mode === "replace" && (
+      <Alert severity="warning">
+        Replacing the schema catalog will overwrite existing schemas with the repository versions, archive removed schemas, and detach unmapped record groups.
+        {preview.counts.removed > 0 && ` ${preview.counts.removed} existing schema${preview.counts.removed === 1 ? "" : "s"} will be removed.`}
+        {preview.counts.detached > 0 && ` ${preview.counts.detached} record group${preview.counts.detached === 1 ? "" : "s"} will be detached.`}
+      </Alert>
+    )}
     {preview.errors.map(message => <Alert key={message} severity="error">{message}</Alert>)}
-    {preview.counts.conflict > 0 && <Alert severity="warning">Resolve each conflict, then update the preview. Nothing is applied until the final confirmation.</Alert>}
+    {preview.mode === "add" && preview.counts.conflict > 0 && (
+      <Alert
+        severity="warning"
+        action={
+          <Stack direction="row" spacing={1} sx={{ mt: { xs: 1, sm: 0 } }}>
+            {canReplace && (
+              <Button size="small" color="inherit" variant="outlined" disabled={disabled} onClick={() => onDecideAll("replace")}>
+                Use repo version for all
+              </Button>
+            )}
+            <Button size="small" color="inherit" variant="outlined" disabled={disabled} onClick={() => onDecideAll("keep")}>
+              Keep existing for all
+            </Button>
+          </Stack>
+        }
+      >
+        Resolve each conflict, then update the preview. Nothing is applied until the final confirmation.
+      </Alert>
+    )}
     {preview.entries.map(entry => {
       const decision = decisions[entry.source_id];
       const target = decision?.schema_id || (entry.candidates.length === 1 ? entry.candidates[0].schema_id : "");
       const candidate = entry.candidates.find(item => item.schema_id === target);
       return <Box key={entry.source_id} sx={{ border: 1, borderColor: "divider", borderRadius: 1, p: 2 }}>
         <Stack direction="row" justifyContent="space-between" gap={1}><Typography fontWeight={600}>{entry.name}</Typography><Chip size="small" label={entry.action} /></Stack>
-        {entry.candidates.length > 0 && entry.action !== "unchanged" && <Stack spacing={2} sx={{ mt: 2 }}>
+        {preview.mode === "add" && entry.candidates.length > 0 && entry.action !== "unchanged" && <Stack spacing={2} sx={{ mt: 2 }}>
           {entry.candidates.length > 1 && <TextField select size="small" label={`Existing schema for ${entry.name}`} value={target} disabled={disabled}
-            onChange={event => onDecision(entry.source_id, { action: decision?.action || (preview.mode === "replace" ? "replace" : "keep"), schema_id: event.target.value })}>
+            onChange={event => onDecision(entry.source_id, { action: decision?.action || "keep", schema_id: event.target.value })}>
             {entry.candidates.map(item => <MenuItem key={item.schema_id} value={item.schema_id}>{item.name}</MenuItem>)}
           </TextField>}
           <TextField select size="small" label={`Decision for ${entry.name}`} value={decision?.action || ""} disabled={disabled}
             onChange={event => onDecision(entry.source_id, { action: event.target.value as SchemaImportDecision["action"], schema_id: target })}>
-            {preview.mode === "add" && <MenuItem value="keep">Keep existing</MenuItem>}
+            <MenuItem value="keep">Keep existing</MenuItem>
             {canReplace && <MenuItem value="replace">Use repo version</MenuItem>}
           </TextField>
           {!canReplace && <Typography variant="body2">An administrator must approve replacing an existing schema.</Typography>}
@@ -80,7 +112,7 @@ export default function SchemaImportReview({ preview, decisions, canReplace, dis
         <ImportGroups groups={candidate?.groups || entry.groups} label="Record groups using this schema" />
       </Box>;
     })}
-    {preview.removed.length > 0 && <Accordion disableGutters elevation={0}>
+    {preview.removed.length > 0 && <Accordion disableGutters elevation={0} defaultExpanded={preview.mode === "replace"}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography>Schemas to remove ({preview.removed.length})</Typography></AccordionSummary>
       <AccordionDetails>{preview.removed.map(schema => <Box key={schema.schema_id} sx={{ mb: 1 }}>
         <Typography>{schema.name}</Typography><ImportGroups groups={schema.groups} label="Record groups" />

@@ -153,7 +153,7 @@ export interface SchemaImportDecision {
 }
 
 export interface SchemaImportRequest {
-    mode: "add" | "replace";
+    mode: "refresh" | "add" | "replace";
     selected: string[];
     decisions: Record<string, SchemaImportDecision>;
 }
@@ -171,7 +171,7 @@ export interface SchemaImportEntry {
 export interface SchemaImportPreview {
     import_id: string;
     source: RepoSchemaSource;
-    mode: "add" | "replace";
+    mode: "refresh" | "add" | "replace";
     status: "preview" | "applying" | "partial" | "complete";
     entries: SchemaImportEntry[];
     removed: { schema_id: string; name: string; groups: SchemaImportGroup[] }[];

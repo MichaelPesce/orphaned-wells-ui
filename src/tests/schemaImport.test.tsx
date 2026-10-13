@@ -30,10 +30,27 @@ async function openPreview() {
   await screen.findByText("1 added");
 }
 
-test("Add requires review and confirmation, and sends only the saved preview ID", async () => {
+test("Refresh from repo is the default mode, requires confirmation, and applies successfully", async () => {
   const onApplied = jest.fn();
+  (previewRepoSchemaImport as jest.Mock).mockResolvedValue(response(plan({ mode: "refresh" })));
   render(<SchemaImportDialog onClose={jest.fn()} onApplied={onApplied} />);
   await openPreview();
+  expect(previewRepoSchemaImport).toHaveBeenCalledWith({ mode: "refresh", selected: ["well"], decisions: {} });
+  expect(applyRepoSchemaImport).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  fireEvent.click(screen.getByRole("button", { name: "Refresh schemas from repo" }));
+  await screen.findByText("Schema import complete.");
+  expect(applyRepoSchemaImport).toHaveBeenCalledWith("saved-preview");
+  expect(onApplied).toHaveBeenCalledTimes(1);
+});
+
+test("Add requires choosing Add mode, review and confirmation, and sends only the saved preview ID", async () => {
+  const onApplied = jest.fn();
+  render(<SchemaImportDialog onClose={jest.fn()} onApplied={onApplied} />);
+  await screen.findByLabelText("Well · 2 fields");
+  fireEvent.click(screen.getByLabelText("Add to existing schemas"));
+  fireEvent.click(screen.getByRole("button", { name: "Preview import" }));
+  await screen.findByText("1 added");
   expect(previewRepoSchemaImport).toHaveBeenCalledWith({ mode: "add", selected: ["well"], decisions: {} });
   expect(applyRepoSchemaImport).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
@@ -108,4 +125,69 @@ test("invalid package schemas cannot be selected", async () => {
   await screen.findByText("Missing schema file");
   expect(screen.getByLabelText("Invalid schema")).toBeDisabled();
   expect(screen.getByRole("button", { name: "Preview import" })).toBeDisabled();
+});
+
+test("bulk decision actions set keep or replace for all conflicting schemas in Add mode", async () => {
+  const conflict = plan({
+    can_apply: false,
+    counts: { ...plan().counts, added: 0, conflict: 1 },
+    entries: [{
+      source_id: "well",
+      name: "Well",
+      action: "conflict",
+      groups: [],
+      candidates: [{ schema_id: "existing", name: "Current well", diff, groups: [] }],
+    }],
+  });
+  (previewRepoSchemaImport as jest.Mock)
+    .mockResolvedValueOnce(response(conflict))
+    .mockResolvedValueOnce(response(plan({ counts: { ...plan().counts, added: 0, updated: 1 }, entries: [{ ...conflict.entries[0], action: "updated" }] })));
+  render(<SchemaImportDialog onClose={jest.fn()} onApplied={jest.fn()} />);
+  await screen.findByLabelText("Well · 2 fields");
+  fireEvent.click(screen.getByLabelText("Add to existing schemas"));
+  fireEvent.click(screen.getByRole("button", { name: "Preview import" }));
+  await screen.findByText(/Resolve each conflict/);
+  fireEvent.click(screen.getByRole("button", { name: "Use repo version for all" }));
+  fireEvent.click(screen.getByRole("button", { name: "Update preview" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled());
+  expect(previewRepoSchemaImport).toHaveBeenLastCalledWith({
+    mode: "add",
+    selected: ["well"],
+    decisions: { well: { action: "replace", schema_id: "existing" } },
+  });
+});
+
+test("Refresh mode omits decision dropdowns and displays info summary", async () => {
+  (previewRepoSchemaImport as jest.Mock).mockResolvedValue(response(plan({
+    mode: "refresh",
+    counts: { ...plan().counts, added: 0, updated: 1, removed: 1, detached: 0 },
+    removed: [{ schema_id: "unused", name: "Unused schema", groups: [] }],
+    entries: [{ source_id: "well", name: "Well", action: "updated", candidates: [{ schema_id: "existing", name: "Well", diff, groups: [] }], groups: [], diff }],
+  })));
+  render(<SchemaImportDialog onClose={jest.fn()} onApplied={jest.fn()} />);
+  await screen.findByLabelText("Well · 2 fields");
+  fireEvent.click(screen.getByRole("button", { name: "Preview import" }));
+  await screen.findByText(/Refreshing schemas will update matching schemas in place/);
+  expect(screen.queryByLabelText(/Decision for/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+});
+
+test("Replace mode omits decision dropdowns and displays catalog replacement warning summary", async () => {
+  const group = { id: "group", name: "Shared records", team: "Other team" };
+  (previewRepoSchemaImport as jest.Mock).mockResolvedValue(response(plan({
+    mode: "replace",
+    destructive: true,
+    counts: { ...plan().counts, added: 0, updated: 1, removed: 1, detached: 1 },
+    affected_groups: [group],
+    detached_groups: [group],
+    removed: [{ schema_id: "old", name: "Old schema", groups: [group] }],
+    entries: [{ source_id: "well", name: "Well", action: "updated", candidates: [{ schema_id: "existing", name: "Well", diff, groups: [] }], groups: [], diff }],
+  })));
+  render(<SchemaImportDialog onClose={jest.fn()} onApplied={jest.fn()} />);
+  await screen.findByLabelText("Well · 2 fields");
+  fireEvent.click(screen.getByLabelText("Replace the schema catalog"));
+  fireEvent.click(screen.getByRole("button", { name: "Preview import" }));
+  await screen.findByText(/Replacing the schema catalog will overwrite existing schemas/);
+  expect(screen.queryByLabelText(/Decision for/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
 });

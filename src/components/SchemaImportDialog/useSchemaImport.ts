@@ -3,9 +3,9 @@ import { applyRepoSchemaImport, getRepoSchemaImport, previewRepoSchemaImport } f
 import { RepoSchemaImportSource, SchemaImportDecision, SchemaImportPreview } from "../../types";
 import { callAPI } from "../../util";
 
-export default function useSchemaImport(onApplied: () => void) {
+export default function useSchemaImport(onApplied: () => void, canReplace = true) {
   const [source, setSource] = useState<RepoSchemaImportSource>();
-  const [mode, setMode] = useState<"add" | "replace">("add");
+  const [mode, setMode] = useState<"refresh" | "add" | "replace">(canReplace ? "refresh" : "add");
   const [selected, setSelected] = useState<string[]>([]);
   const [decisions, setDecisions] = useState<Record<string, SchemaImportDecision>>({});
   const [preview, setPreview] = useState<SchemaImportPreview>();
@@ -13,6 +13,12 @@ export default function useSchemaImport(onApplied: () => void) {
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!canReplace && mode !== "add") {
+      setMode("add");
+    }
+  }, [canReplace, mode]);
 
   useEffect(() => {
     let active = true;
@@ -58,9 +64,22 @@ export default function useSchemaImport(onApplied: () => void) {
     setStep(2);
   };
 
+  const decideAll = (action: "keep" | "replace") => {
+    if (!preview) return;
+    const next: Record<string, SchemaImportDecision> = { ...decisions };
+    preview.entries.forEach(entry => {
+      if (entry.candidates.length > 0 && entry.action !== "unchanged") {
+        const target = next[entry.source_id]?.schema_id || entry.candidates[0].schema_id;
+        next[entry.source_id] = { action, schema_id: target };
+      }
+    });
+    setDecisions(next);
+    setDirty(true);
+  };
+
   return {
-    source, mode, selected, decisions, preview, step, busy, dirty, error, review, apply, resume, setStep,
-    chooseMode: (value: "add" | "replace") => { setMode(value); setDecisions({}); setDirty(true); },
+    source, mode, selected, decisions, preview, step, busy, dirty, error, review, apply, resume, setStep, decideAll,
+    chooseMode: (value: "refresh" | "add" | "replace") => { setMode(value); setDecisions({}); setDirty(true); },
     chooseSchema: (id: string) => {
       setSelected(previous => previous.includes(id) ? previous.filter(value => value !== id) : [...previous, id]);
       setDecisions({}); setDirty(true);
