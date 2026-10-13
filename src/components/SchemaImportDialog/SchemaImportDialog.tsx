@@ -19,7 +19,6 @@ import {
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import WidgetsOutlinedIcon from "@mui/icons-material/WidgetsOutlined";
 import { useUserContext } from "../../usercontext";
@@ -363,13 +362,6 @@ export default function SchemaImportDialog({
                             size="small"
                             disabled={busy || !flow.ref.trim() || !flow.repo.trim()}
                             onClick={() => flow.loadRemoteSource(flow.ref, flow.repo)}
-                            sx={{
-                              borderRadius: "6px",
-                              textTransform: "none",
-                              fontWeight: 600,
-                              borderColor: "#e4e4e7",
-                              color: "#18181b",
-                            }}
                           >
                             Fetch
                           </Button>
@@ -725,40 +717,16 @@ export default function SchemaImportDialog({
           )}
           {step > 0 && !started && (
             <Button
-              startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
+              startIcon={<ArrowBackIcon />}
               disabled={busy}
               onClick={() => flow.setStep(step - 1)}
-              sx={{
-                textTransform: "none",
-                color: "#18181b",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                p: 0,
-                minWidth: 0,
-                "&:hover": { bgcolor: "transparent", textDecoration: "underline" },
-              }}
             >
               Back
             </Button>
           )}
         </Box>
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <Button
-            onClick={onClose}
-            disabled={busy}
-            variant="outlined"
-            sx={{
-              textTransform: "none",
-              borderColor: "#e4e4e7",
-              color: "#18181b",
-              fontWeight: 600,
-              fontSize: "0.875rem",
-              borderRadius: "8px",
-              px: 2.5,
-              py: 0.8,
-              "&:hover": { borderColor: "#d4d4d8", bgcolor: "#f4f4f5" },
-            }}
-          >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button onClick={onClose} disabled={busy}>
             {completed ? "Done" : started ? "Close" : "Cancel"}
           </Button>
           {step === 0 && !source?.pending_import && (
@@ -766,21 +734,8 @@ export default function SchemaImportDialog({
               variant="contained"
               disabled={busy || !selected.length || source?.busy}
               startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
-              endIcon={!busy ? <ArrowForwardIcon sx={{ fontSize: 16 }} /> : undefined}
               onClick={flow.review}
               aria-label="Preview import"
-              sx={{
-                bgcolor: "#18181b",
-                color: "#fff",
-                "&:hover": { bgcolor: "#27272a" },
-                "&.Mui-disabled": { bgcolor: "#f4f4f5", color: "#a1a1aa" },
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                borderRadius: "8px",
-                px: 2.5,
-                py: 0.8,
-              }}
             >
               Review changes
             </Button>
@@ -789,20 +744,7 @@ export default function SchemaImportDialog({
             <Button
               variant="contained"
               disabled={busy || dirty || !preview?.can_apply || missingTarget}
-              endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
               onClick={() => flow.setStep(2)}
-              sx={{
-                bgcolor: "#18181b",
-                color: "#fff",
-                "&:hover": { bgcolor: "#27272a" },
-                "&.Mui-disabled": { bgcolor: "#f4f4f5", color: "#a1a1aa" },
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                borderRadius: "8px",
-                px: 2.5,
-                py: 0.8,
-              }}
             >
               Continue
             </Button>
@@ -810,24 +752,11 @@ export default function SchemaImportDialog({
           {step === 2 && !completed && (
             <Button
               variant="contained"
+              color={effectiveMode === "replace" || preview?.counts.detached ? "error" : "primary"}
               disabled={busy || (!!preview?.destructive && !canReplace)}
               startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
               onClick={flow.apply}
               aria-label={applyLabel}
-              sx={{
-                bgcolor: effectiveMode === "replace" || preview?.counts.detached ? "#dc2626" : "#18181b",
-                color: "#fff",
-                "&:hover": {
-                  bgcolor: effectiveMode === "replace" || preview?.counts.detached ? "#b91c1c" : "#27272a",
-                },
-                "&.Mui-disabled": { bgcolor: "#f4f4f5", color: "#a1a1aa" },
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                borderRadius: "8px",
-                px: 2.5,
-                py: 0.8,
-              }}
             >
               {preview?.status === "partial" || preview?.status === "applying" ? "Resume import" : "Apply changes"}
             </Button>

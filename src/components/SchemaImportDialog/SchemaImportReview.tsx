@@ -6,6 +6,7 @@ import {
   Alert,
   Box,
   Button,
+  Link,
   MenuItem,
   Stack,
   Table,
@@ -306,18 +307,11 @@ export default function SchemaImportReview({
           <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", color: "#18181b" }}>Summary</Typography>
           {onRecheck && (
             <Button
-              startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
+              startIcon={<RefreshIcon />}
               onClick={onRecheck}
               disabled={disabled}
               aria-label="Update preview"
-              sx={{
-                textTransform: "none",
-                color: "#18181b",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                p: 0,
-                "&:hover": { bgcolor: "transparent", color: "#52525b" },
-              }}
+              size="small"
             >
               Re-run preview
             </Button>
@@ -348,7 +342,6 @@ export default function SchemaImportReview({
                   variant="outlined"
                   disabled={disabled}
                   onClick={() => onDecideAll("replace")}
-                  sx={{ textTransform: "none", borderRadius: 1.5 }}
                 >
                   Use repo version for all
                 </Button>
@@ -359,7 +352,6 @@ export default function SchemaImportReview({
                 variant="outlined"
                 disabled={disabled}
                 onClick={() => onDecideAll("keep")}
-                sx={{ textTransform: "none", borderRadius: 1.5 }}
               >
                 Keep existing for all
               </Button>
@@ -477,22 +469,20 @@ export default function SchemaImportReview({
                           {diffDesc}
                         </Typography>
                         {diff && (
-                          <Button
+                          <Link
+                            component="button"
+                            variant="body2"
                             onClick={() => toggleComparison(entry.source_id)}
                             sx={{
-                              textTransform: "none",
-                              p: 0,
-                              minWidth: 0,
                               color: "#18181b",
-                              textDecoration: "underline",
-                              fontWeight: 500,
-                              fontSize: "0.875rem",
+                              display: "inline-block",
                               mt: 0.75,
-                              "&:hover": { bgcolor: "transparent", textDecoration: "underline" },
+                              cursor: "pointer",
+                              textDecoration: "underline",
                             }}
                           >
                             {isComparing ? "Hide comparison" : "View full comparison"}
-                          </Button>
+                          </Link>
                         )}
                         {isComparing && diff && <FieldDiff diff={diff} />}
                       </Box>
