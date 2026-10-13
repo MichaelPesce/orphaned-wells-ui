@@ -178,6 +178,8 @@ export interface SchemaImportEntry {
     candidates: { schema_id: string; name: string; diff: SchemaImportDiff; groups: SchemaImportGroup[] }[];
 }
 
+export type SchemaImportCandidate = SchemaImportEntry["candidates"][number];
+
 export interface SchemaImportPreview {
     import_id: string;
     source: RepoSchemaSource;
