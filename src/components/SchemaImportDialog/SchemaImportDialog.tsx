@@ -229,6 +229,7 @@ export default function SchemaImportDialog({
                           sx={{
                             display: "inline-flex",
                             alignItems: "center",
+                            position: "relative",
                             cursor: busy ? "not-allowed" : "pointer",
                             px: 2,
                             py: 0.6,
@@ -247,7 +248,18 @@ export default function SchemaImportDialog({
                             size="small"
                             disabled={busy}
                             inputProps={{ "aria-label": "Installed package" }}
-                            sx={{ position: "absolute", opacity: 0, width: 0, height: 0, pointerEvents: "none" }}
+                            sx={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              height: "100%",
+                              m: 0,
+                              p: 0,
+                              opacity: 0,
+                              cursor: busy ? "not-allowed" : "pointer",
+                              zIndex: 1,
+                            }}
                           />
                           Installed package
                         </Box>
@@ -256,6 +268,7 @@ export default function SchemaImportDialog({
                           sx={{
                             display: "inline-flex",
                             alignItems: "center",
+                            position: "relative",
                             cursor: busy ? "not-allowed" : "pointer",
                             px: 2,
                             py: 0.6,
@@ -274,7 +287,18 @@ export default function SchemaImportDialog({
                             size="small"
                             disabled={busy}
                             inputProps={{ "aria-label": "GitHub branch or commit" }}
-                            sx={{ position: "absolute", opacity: 0, width: 0, height: 0, pointerEvents: "none" }}
+                            sx={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              height: "100%",
+                              m: 0,
+                              p: 0,
+                              opacity: 0,
+                              cursor: busy ? "not-allowed" : "pointer",
+                              zIndex: 1,
+                            }}
                           />
                           GitHub branch or commit
                         </Box>
@@ -440,7 +464,18 @@ export default function SchemaImportDialog({
                               checked={isSelected}
                               disabled={card.disabled}
                               inputProps={{ "aria-label": card.label }}
-                              sx={{ position: "absolute", opacity: 0, width: 0, height: 0, pointerEvents: "none" }}
+                              sx={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: "100%",
+                                height: "100%",
+                                m: 0,
+                                p: 0,
+                                opacity: 0,
+                                cursor: card.disabled ? "not-allowed" : "pointer",
+                                zIndex: 1,
+                              }}
                             />
                             <Stack direction="row" alignItems="center" spacing={1}>
                               <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", color: "#18181b" }}>
