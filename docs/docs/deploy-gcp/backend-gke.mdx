@@ -271,6 +271,18 @@ Keep `COLLABORATOR` in the runtime secret when the backend needs collaborator-sp
 
 Collaborator deployments are unified into `.github/workflows/deploy-k8s-collaborator.yml` driven by `collaborators.json`. When adding a collaborator, add their branch name to `collaborators.json` at the repo root and configure their `RUNTIME_ENV` secret in that GitHub Environment (or repository secret). Deployments dynamically bind to the collaborator's environment.
 
+To configure an environment via the GitHub CLI:
+
+```bash
+# Create the environment (required before setting secrets via CLI)
+gh api --method PUT repos/CATALOG-Historic-Records/orphaned-wells-ui-server/environments/<COLLABORATOR>
+
+# Set the RUNTIME_ENV secret
+gh secret set RUNTIME_ENV \
+  -R CATALOG-Historic-Records/orphaned-wells-ui-server \
+  --env <COLLABORATOR> < path/to/.env
+```
+
 ## Deploy with GitHub Actions
 
 The staging workflow builds and pushes the backend image, then deploys staging:
