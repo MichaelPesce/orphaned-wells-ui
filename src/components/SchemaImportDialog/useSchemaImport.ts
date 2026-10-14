@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { applyRepoSchemaImport, getRepoSchemaImport, previewRepoSchemaImport } from "../../services/app.service";
-import { RepoSchemaImportSource, SchemaImportDecision, SchemaImportPreview } from "../../types";
+import { RepoSchemaImportSource, SchemaImportDecision, SchemaImportPreview, SchemaImportRequest } from "../../types";
 import { callAPI } from "../../util";
 
-export default function useSchemaImport(onApplied: () => void) {
+const DEFAULT_REPO = "CATALOG-Historic-Records/OGRRE_data_cleaning";
+const DEFAULT_REF = "main";
+
+export default function useSchemaImport(onApplied: () => void, canReplace = true) {
   const [source, setSource] = useState<RepoSchemaImportSource>();
-  const [mode, setMode] = useState<"add" | "replace">("add");
+  const [sourceType, setSourceType] = useState<"installed" | "github">("installed");
+  const [repo, setRepo] = useState(DEFAULT_REPO);
+  const [ref, setRef] = useState(DEFAULT_REF);
+  const [mode, setMode] = useState<"refresh" | "add" | "replace">(canReplace ? "refresh" : "add");
   const [selected, setSelected] = useState<string[]>([]);
   const [decisions, setDecisions] = useState<Record<string, SchemaImportDecision>>({});
   const [preview, setPreview] = useState<SchemaImportPreview>();
@@ -15,21 +21,80 @@ export default function useSchemaImport(onApplied: () => void) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!canReplace && mode !== "add") {
+      setMode("add");
+    }
+  }, [canReplace, mode]);
+
+  useEffect(() => {
     let active = true;
     setBusy(true);
     callAPI(getRepoSchemaImport, [], (data: RepoSchemaImportSource) => {
       if (!active) return;
       setSource(data);
+      if (data.source.type) {
+        setSourceType(data.source.type);
+      }
+      if (data.source.ref) {
+        setRef(data.source.ref);
+      }
+      if (data.source.repo) {
+        setRepo(data.source.repo);
+      }
       setSelected(data.schemas.filter(schema => !schema.error).map(schema => schema.source_id));
       setBusy(false);
     }, message => { if (active) { setError(String(message)); setBusy(false); } });
     return () => { active = false; };
   }, []);
 
+  const fetchSource = async (type: "installed" | "github", branchOrRef = ref, repoName = repo) => {
+    setBusy(true);
+    setError("");
+    const options = type === "github" ? { source_type: type, ref: branchOrRef, repo: repoName } : { source_type: type };
+    await callAPI(getRepoSchemaImport, [options], (data: RepoSchemaImportSource) => {
+      setSource(data);
+      if (data.source.type) {
+        setSourceType(data.source.type);
+      }
+      if (data.source.ref) {
+        setRef(data.source.ref);
+      }
+      if (data.source.repo) {
+        setRepo(data.source.repo);
+      }
+      setSelected(data.schemas.filter(schema => !schema.error).map(schema => schema.source_id));
+      setDecisions({});
+      setDirty(true);
+    }, message => {
+      setError(String(message));
+    });
+    setBusy(false);
+  };
+
+  const changeSourceType = async (newType: "installed" | "github") => {
+    setSourceType(newType);
+    await fetchSource(newType, ref, repo);
+  };
+
+  const loadRemoteSource = async (branchOrRef: string, repoName: string) => {
+    setRef(branchOrRef);
+    setRepo(repoName);
+    await fetchSource("github", branchOrRef, repoName);
+  };
+
   const review = async () => {
     setBusy(true);
     setError("");
-    await callAPI(previewRepoSchemaImport, [{ mode, selected, decisions }], (data: SchemaImportPreview) => {
+    const sourcePayload = sourceType === "github"
+      ? { type: "github" as const, repo, ref }
+      : undefined;
+    const requestPayload: SchemaImportRequest = {
+      mode,
+      selected,
+      decisions,
+      ...(sourcePayload ? { source: sourcePayload } : {}),
+    };
+    await callAPI(previewRepoSchemaImport, [requestPayload], (data: SchemaImportPreview) => {
       setPreview(data);
       setDirty(false);
       setStep(1);
@@ -58,9 +123,23 @@ export default function useSchemaImport(onApplied: () => void) {
     setStep(2);
   };
 
+  const decideAll = (action: "keep" | "replace") => {
+    if (!preview) return;
+    const next: Record<string, SchemaImportDecision> = { ...decisions };
+    preview.entries.forEach(entry => {
+      if (entry.candidates.length > 0 && entry.action !== "unchanged") {
+        const target = next[entry.source_id]?.schema_id || entry.candidates[0].schema_id;
+        next[entry.source_id] = { action, schema_id: target };
+      }
+    });
+    setDecisions(next);
+    setDirty(true);
+  };
+
   return {
-    source, mode, selected, decisions, preview, step, busy, dirty, error, review, apply, resume, setStep,
-    chooseMode: (value: "add" | "replace") => { setMode(value); setDecisions({}); setDirty(true); },
+    source, mode, selected, decisions, preview, step, busy, dirty, error, review, apply, resume, setStep, decideAll,
+    sourceType, repo, ref, setRepo, setRef, changeSourceType, loadRemoteSource,
+    chooseMode: (value: "refresh" | "add" | "replace") => { setMode(value); setDecisions({}); setDirty(true); },
     chooseSchema: (id: string) => {
       setSelected(previous => previous.includes(id) ? previous.filter(value => value !== id) : [...previous, id]);
       setDecisions({}); setDirty(true);

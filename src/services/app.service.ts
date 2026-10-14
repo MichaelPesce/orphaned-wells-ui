@@ -22,7 +22,14 @@ export const applyRecordGroupSchema = (groupId: string, request: SchemaGeneratio
   method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(request),
 });
 
-export const getRepoSchemaImport = () => fetch(BACKEND_URL + "/get_repo_schema_import", { mode: CORS_MODE });
+export const getRepoSchemaImport = (options?: { source_type?: string; ref?: string; repo?: string }) => {
+  const params = new URLSearchParams();
+  if (options?.source_type) params.set("source_type", options.source_type);
+  if (options?.ref) params.set("ref", options.ref);
+  if (options?.repo) params.set("repo", options.repo);
+  const query = params.toString();
+  return fetch(BACKEND_URL + "/get_repo_schema_import" + (query ? `?${query}` : ""), { mode: CORS_MODE });
+};
 
 export const previewRepoSchemaImport = (request: SchemaImportRequest) => fetch(BACKEND_URL + "/preview_repo_schema_import", {
   method: "POST", mode: CORS_MODE, headers: JSON_HEADERS, body: JSON.stringify(request),

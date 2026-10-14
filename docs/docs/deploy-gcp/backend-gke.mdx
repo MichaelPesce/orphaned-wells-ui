@@ -248,7 +248,7 @@ The GKE deployment workflows require:
 - `STORAGE_SERVICE_KEY_JSON`
 - `DOCUMENT_AI_SERVICE_KEY_JSON`
 - `K8S_DEPLOY_TARGETS` only for the disabled Terraform CI rollout fallback
-- One runtime env secret per active collaborator: `STAGING_ENV`, `ISGS_ENV`, `NEWTS_ENV`, `OSAGE_ENV`, and `RRC_ENV` (or `RUNTIME_ENV` for standalone/single-tenant environments).
+- `RUNTIME_ENV` stored inside each GitHub Environment (`staging`, `isgs`, `newts`, `osage`, and `rrc`), or as a repository-level secret for single-tenant environments.
 
 `DEPLOYMENT_SERVICE_KEY_JSON` is used only by GitHub Actions to authenticate to
 Google Cloud and apply the deployment. `STORAGE_SERVICE_KEY_JSON` and
@@ -269,7 +269,19 @@ The environment-file secret should contain the same key/value pairs used by the 
 
 Keep `COLLABORATOR` in the runtime secret when the backend needs collaborator-specific processor metadata.
 
-Collaborator deployments are unified into `.github/workflows/deploy-k8s-collaborator.yml` driven by `collaborators.json`. When adding a collaborator, add their branch name to `collaborators.json` at the repo root and configure their `<COLLABORATOR>_ENV` secret (or `RUNTIME_ENV`). If manual `workflow_dispatch` options are needed, also update `deploy-k8s-dispatch.yml` with the new `DEPLOY_ENV` option, secret mapping, and case branch.
+Collaborator deployments are unified into `.github/workflows/deploy-k8s-collaborator.yml` driven by `collaborators.json`. When adding a collaborator, add their branch name to `collaborators.json` at the repo root and configure their `RUNTIME_ENV` secret in that GitHub Environment (or repository secret). Deployments dynamically bind to the collaborator's environment.
+
+To configure an environment via the GitHub CLI:
+
+```bash
+# Create the environment (required before setting secrets via CLI)
+gh api --method PUT repos/CATALOG-Historic-Records/orphaned-wells-ui-server/environments/<COLLABORATOR>
+
+# Set the RUNTIME_ENV secret
+gh secret set RUNTIME_ENV \
+  -R CATALOG-Historic-Records/orphaned-wells-ui-server \
+  --env <COLLABORATOR> < path/to/.env
+```
 
 ## Deploy with GitHub Actions
 
@@ -306,22 +318,13 @@ mapping before dispatching it.
 
 Merging source changes into a collaborator branch only changes the live backend when that branch's deployment workflow runs. If automatic deployments are enabled for the branch, the merge can trigger the rollout. Otherwise, manually dispatch the collaborator workflow after the merge.
 
-Automatic deployments are controlled by repository variables:
+Automatic deployments on push are enabled by default for `staging` and for any branch listed in `collaborators.json`.
+
+To pause automatic deployments across all environments, set the repository variable:
 
 ```text
-ENABLE_GKE_DEPLOYMENTS=true
+ENABLE_GKE_DEPLOYMENTS=false
 ```
-
-Or one collaborator at a time:
-
-```text
-ENABLE_GKE_STAGING_DEPLOY=true
-ENABLE_GKE_ISGS_DEPLOY=true
-ENABLE_GKE_NEWTS_DEPLOY=true
-ENABLE_GKE_OSAGE_DEPLOY=true
-```
-
-The current RRC workflow checks `ENABLE_GKE_DEPLOYMENTS`; add an `ENABLE_GKE_RRC_DEPLOY` workflow check before relying on an RRC-specific deploy variable.
 
 ## Check rollout status
 

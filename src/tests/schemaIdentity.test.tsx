@@ -21,7 +21,7 @@ const response = (body: unknown, status = 200) => ({ status, json: async () => b
 beforeEach(() => {
   jest.clearAllMocks();
   mockHasPermission.mockReturnValue(true);
-  (getProcessors as jest.Mock).mockResolvedValue(response({ USE_DB_PROCESSORS: true, processor_list: schemas }));
+  (getProcessors as jest.Mock).mockResolvedValue(response({ USE_DB_SCHEMAS: true, USE_DB_PROCESSORS: true, processor_list: schemas }));
   (updateRecordGroup as jest.Mock).mockResolvedValue(response({ _id: "group" }));
   (addRecordGroup as jest.Mock).mockResolvedValue(response("group"));
 });

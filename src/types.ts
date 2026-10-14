@@ -129,9 +129,18 @@ export interface SchemaOverview {
 }
 
 export interface RepoSchemaSource {
+    type?: "installed" | "github";
     package: string;
     version: string;
     collaborator: string;
+    repo?: string;
+    ref?: string;
+}
+
+export interface SchemaImportSourceOptions {
+    type?: "installed" | "github";
+    repo?: string;
+    ref?: string;
 }
 
 export interface SchemaImportGroup {
@@ -153,9 +162,10 @@ export interface SchemaImportDecision {
 }
 
 export interface SchemaImportRequest {
-    mode: "add" | "replace";
+    mode: "refresh" | "add" | "replace";
     selected: string[];
     decisions: Record<string, SchemaImportDecision>;
+    source?: SchemaImportSourceOptions;
 }
 
 export interface SchemaImportEntry {
@@ -168,10 +178,12 @@ export interface SchemaImportEntry {
     candidates: { schema_id: string; name: string; diff: SchemaImportDiff; groups: SchemaImportGroup[] }[];
 }
 
+export type SchemaImportCandidate = SchemaImportEntry["candidates"][number];
+
 export interface SchemaImportPreview {
     import_id: string;
     source: RepoSchemaSource;
-    mode: "add" | "replace";
+    mode: "refresh" | "add" | "replace";
     status: "preview" | "applying" | "partial" | "complete";
     entries: SchemaImportEntry[];
     removed: { schema_id: string; name: string; groups: SchemaImportGroup[] }[];

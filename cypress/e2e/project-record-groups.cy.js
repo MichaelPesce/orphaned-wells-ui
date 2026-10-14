@@ -99,7 +99,7 @@ describe("project and record group management", () => {
       cy.getByCy("new-record-group-dialog").should("be.visible");
       cy.wait("@processorMode").then(({ response }) => {
         expect(response.statusCode).to.eq(200);
-        bindingKey = response.body.USE_DB_PROCESSORS ? "schema_id" : "processorId";
+        bindingKey = (response.body.USE_DB_SCHEMAS ?? response.body.USE_DB_PROCESSORS) ? "schema_id" : "processorId";
       });
       cy.contains("Create without processor").should("not.exist");
       cy.getByCy("record-group-name-input").find("input").type(recordGroupName);

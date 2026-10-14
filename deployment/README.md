@@ -89,16 +89,16 @@ DB_CONNECTION=mongodb://mongodb:27017
 DB_NAME=isgs
 DB_USERNAME=
 DB_PASSWORD=
-USE_DB_PROCESSORS=false
+USE_DB_SCHEMAS=false
 ```
 
 Set these values in `deployment/.env` to point the backend at a different MongoDB instance. Existing `.env` files are not regenerated from `.env.example`, so add any missing keys manually after pulling deployment changes.
 
-`USE_DB_PROCESSORS` defaults to `false` in the backend, Compose, and the provided
+`USE_DB_SCHEMAS` (formerly `USE_DB_PROCESSORS`) defaults to `false` in the backend, Compose, and the provided
 environment templates. In this mode, the app reads schemas from the installed
 `ogrre_data_cleaning` package and displays them read-only. Set it to `true`
 explicitly and recreate the backend when the deployment should use editable,
-database-backed schemas.
+database-backed schemas. (The legacy name `USE_DB_PROCESSORS` remains supported as an alias.)
 
 `SCHEMA_INFERENCE_MAX_RECORDS` sets the maximum record sample for explicit schema
 generation and extension (default 1,000; range 1–10,000). Add it to an existing

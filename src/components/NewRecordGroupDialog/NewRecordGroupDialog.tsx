@@ -30,7 +30,7 @@ export default function NewRecordGroupDialog({ open, onClose, project_id }: NewR
     setError(undefined);
     callAPI(getProcessors, [], data => {
       if (!active) return;
-      setDatabaseMode(data.USE_DB_PROCESSORS);
+      setDatabaseMode(Boolean(data.USE_DB_SCHEMAS ?? data.USE_DB_PROCESSORS));
       setSchemas(data.processor_list.map(convertToMongoProcessor));
       setLoading(false);
     }, message => { if (active) { setError(String(message)); setLoading(false); } });

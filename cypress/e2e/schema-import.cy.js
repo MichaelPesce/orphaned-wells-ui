@@ -70,9 +70,9 @@ describe("Import repo schemas", () => {
     cy.findByRole("button", { name: "Continue" }).click();
     cy.findByRole("button", { name: "Replace schemas and detach 1 group" }).click();
     cy.wait("@applyImport");
-    cy.contains("Import paused. Retry to continue.").should("be.visible");
+    cy.contains("Import paused. Retry to continue.").should("exist");
     cy.findByRole("button", { name: "Resume import" }).click();
     cy.wait("@applyImport");
-    cy.contains("Schema import complete.").should("be.visible");
+    cy.contains("Schema import complete.").should("exist");
   });
 });

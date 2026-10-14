@@ -14,7 +14,7 @@ describe("Shared schema identity", () => {
     cy.mockCheckAuth({ email: "schema-test@example.com", permissions: ["manage_schema", "manage_schema_destructive", "manage_project", "clean_record", "upload_document", "create_record_group"] });
     cy.intercept("GET", `${api()}/get_schema`, req => req.reply({ processors: schemas, source: "database", read_only: false }));
     cy.intercept("GET", `${api()}/get_cleaning_functions`, { cleaning_functions: [] });
-    cy.intercept("GET", `${api()}/get_processors`, { USE_DB_PROCESSORS: true, processor_list: [schema] });
+    cy.intercept("GET", `${api()}/get_processors`, { USE_DB_SCHEMAS: true, USE_DB_PROCESSORS: true, processor_list: [schema] });
     cy.intercept("GET", `${api()}/get_record_group/${groupId}`, req => req.reply({ project: { _id: "project", name: "Project" }, rg_data: group }));
     cy.intercept("GET", `${api()}/get_column_data/record_group/${groupId}*`, req => req.reply({ columns: [], obj: group }));
     cy.intercept("POST", `${api()}/get_records/record_group*`, req => {
