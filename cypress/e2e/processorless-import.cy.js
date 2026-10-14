@@ -165,6 +165,7 @@ describe("processorless record import workflows", () => {
   let recordGroupsToCleanup = [];
 
   beforeEach(() => {
+    cy.resetSeedData();
     cy.clearLocalStorage();
   });
 
@@ -455,7 +456,7 @@ describe("processorless record import workflows", () => {
         cy.visitApp(`/record_group/${recordGroupId}`);
         cy.getByCy("subheader-primary-action").should("contain", "Import JSON/CSV records");
         cy.getByCy("subheader-actions").click();
-        cy.contains('[data-cy="subheader-action-item"]', "Connect processor").should("not.exist");
+        cy.contains('[data-cy="subheader-action-item"]', /Connect processor|Select schema/).should("not.exist");
         cy.api("POST", `/connect_record_group_processor/${recordGroupId}`, { processorId: "restricted" }, { failOnStatusCode: false })
           .its("status").should("eq", 403);
         cy.api("GET", `/get_record_group/${recordGroupId}`).then(({ body }) => {

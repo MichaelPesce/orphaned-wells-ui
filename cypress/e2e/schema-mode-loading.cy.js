@@ -13,11 +13,8 @@ describe("loading in each schema mode", () => {
     Cypress.env("useDbSchemas") ?? Cypress.env("useDbProcessors")
   );
 
-  before(() => {
-    cy.resetSeedData();
-  });
-
   beforeEach(() => {
+    cy.resetSeedData();
     cy.clearLocalStorage();
   });
 

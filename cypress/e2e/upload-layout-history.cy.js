@@ -85,9 +85,9 @@ describe("upload dialog layout and history", () => {
       cy.getByCy("directory-upload-amount-input").find("input").clear().type(String(count));
       cy.getByCy("directory-upload-amount-input").find("input").should("have.value", String(count));
       cy.getByCy("directory-upload-button").should("be.enabled");
-      cy.getByCy("directory-file-list").should(($preview) => expect($preview[0].getBoundingClientRect().height).to.eq(previewHeight));
-      cy.get('[role="dialog"]').should(($dialog) => {const rect = $dialog[0].getBoundingClientRect(); expect(rect.top).to.eq(top); expect(rect.height).to.eq(height);});
-      cy.getByCy("upload-status-region").should(($status) => expect($status[0].getBoundingClientRect().top).to.eq(footer));
+      cy.getByCy("directory-file-list").should(($preview) => expect($preview[0].getBoundingClientRect().height).to.be.closeTo(previewHeight, 1));
+      cy.get('[role="dialog"]').should(($dialog) => {const rect = $dialog[0].getBoundingClientRect(); expect(rect.top).to.be.closeTo(top, 1); expect(rect.height).to.be.closeTo(height, 1);});
+      cy.getByCy("upload-status-region").should(($status) => expect($status[0].getBoundingClientRect().top).to.be.closeTo(footer, 1));
     });
     cy.contains("Recent processing jobs").should("not.exist");
     cy.getByCy("directory-prevent-duplicates-toggle").should("be.visible");

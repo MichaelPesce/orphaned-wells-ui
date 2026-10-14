@@ -6,6 +6,7 @@ const parseRequestBody = (body) => {
 
 describe("project and record group management", () => {
   beforeEach(() => {
+    cy.resetSeedData();
     cy.clearLocalStorage();
   });
 

@@ -112,7 +112,7 @@ describe("real record exports", () => {
     cy.get('[data-export-type="csv"] input').check();
     cy.getByCy("export-select-all-columns").click();
     cy.findByRole("checkbox", { name: "User Notes" }).uncheck();
-    cy.get('[data-cy="export-column-label"][data-column="Depth"]').click();
+    cy.get('[data-cy="export-column-label"][data-column="Depth"] input').check();
     cy.getByCy("download-button").click();
     waitForExport("csv");
     readExport(groupName, "csv").then((contents) => {
