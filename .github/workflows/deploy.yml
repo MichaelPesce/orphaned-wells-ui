@@ -3,6 +3,7 @@ name: Deploy Staging Frontend
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   staging-deploy:
@@ -12,7 +13,5 @@ jobs:
     with:
       app_yaml: deployment/app-engine/app.yaml
       collaborator: isgs
-    secrets:
-      backend_url: ${{ secrets.DEV_BACKEND_URL }}
-      google_clientid: ${{ secrets.GOOGLE_CLIENTID }}
-      deployment_service_key_json: ${{ secrets.DEPLOYMENT_SERVICE_KEY_JSON }}
+      environment: staging
+    secrets: inherit
