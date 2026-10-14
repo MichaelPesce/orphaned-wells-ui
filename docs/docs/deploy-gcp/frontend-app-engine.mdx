@@ -10,19 +10,15 @@ Frontend deployment lives in `orphaned-wells-ui/deployment/app-engine`.
 
 Each collaborator frontend has its own App Engine service, backend URL secret, dispatch route, DNS records, custom domain, and OAuth configuration. Collaborator branch deployments and sync PRs are managed dynamically via `collaborators.json`.
 
-Use `<collaborator>` as the short deployment key, such as `ca`, `isgs`, `newts`, `osage`, or `rrc`. Use `<COLLABORATOR>` for uppercase GitHub secret names.
+Use `<collaborator>` as the short deployment key, such as `isgs`, `newts`, `osage`, or `rrc`. Use `<COLLABORATOR>` for uppercase GitHub secret names.
 
 ## App Engine service configuration
 
-By default, the deployment workflow automatically renders the App Engine configuration dynamically (`service: <collaborator>-uow` based on `deployment/app-engine/app.yaml`).
+`deployment/app-engine/app.yaml` is the single source of truth for all frontend deployments.
 
-If a collaborator requires custom static handlers, routing rules, or runtime overrides, you can optionally create an explicit service config:
+During deployment, the workflow automatically renders the service configuration dynamically (`service: <collaborator>-uow` prepended to `deployment/app-engine/app.yaml`). Separate `app-<collaborator>.yaml` files are not needed.
 
-```text
-deployment/app-engine/app-<collaborator>.yaml
-```
-
-Existing services follow the `<collaborator>-uow` naming pattern:
+Collaborator services follow the `<collaborator>-uow` naming pattern:
 
 ```yaml
 service: <collaborator>-uow
@@ -35,7 +31,6 @@ Add the collaborator branch key to `collaborators.json` at the root of `orphaned
 
 ```json
 [
-  "ca",
   "isgs",
   "newts",
   "osage",

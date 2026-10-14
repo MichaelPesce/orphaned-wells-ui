@@ -113,7 +113,7 @@ terraform output -json kubernetes_deploy_targets | jq --arg collaborator "${coll
 
 Use this checklist when adding a new public OGRRE collaborator deployment.
 
-Use <CollaboratorInline /> for the short deployment key, such as `rrc`, `ca`, `isgs`, `newts`, or `osage`. Use <CollaboratorInline uppercase /> for the uppercase GitHub secret prefix.
+Use <CollaboratorInline /> for the short deployment key, such as `isgs`, `newts`, `osage`, or `rrc`. Use <CollaboratorInline uppercase /> for the uppercase GitHub secret prefix.
 
 Some existing backend workflow fields are still named `DEPLOY_ENV`. In this checklist, their value should be the collaborator key unless the existing workflow has a documented exception.
 
@@ -335,7 +335,6 @@ In `orphaned-wells-ui`:
 1. Add the collaborator branch key to `collaborators.json` at the root of the repository:
    <CollaboratorCodeBlock language="json">{`
    [
-     "ca",
      "isgs",
      "newts",
      "osage",
@@ -349,8 +348,8 @@ In `orphaned-wells-ui`:
    <CollaboratorCodeBlock language="text">{`
    https://__COLLABORATOR__-server.uow-carbon.org
    `}</CollaboratorCodeBlock>
-3. (Optional) Custom App Engine service config:
-   By default, the deployment workflow automatically renders the App Engine service configuration (`service: <collaborator>-uow` using `deployment/app-engine/app.yaml`). Only create <CollaboratorInline prefix="deployment/app-engine/app-" suffix=".yaml" /> if the collaborator requires custom routing or handler rules.
+3. App Engine service config:
+   The deployment workflow automatically renders the App Engine configuration (`service: <collaborator>-uow` using `deployment/app-engine/app.yaml`). No manual `app-<collaborator>.yaml` files are needed.
 4. Add <CollaboratorInline suffix=".uow-carbon.org/*" /> to `deployment/app-engine/dispatch.yaml`:
    <CollaboratorCodeBlock language="yaml">{`
    - url: "__COLLABORATOR__.uow-carbon.org/*"

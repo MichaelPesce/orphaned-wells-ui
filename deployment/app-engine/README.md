@@ -5,7 +5,7 @@ Each deployed frontend instance has its own App Engine service, branch-triggered
 GitHub Actions workflow, backend URL secret, dispatch route, DNS records, custom
 domain, and OAuth configuration.
 
-Use `<collaborator>` below as the short collaborator key, such as `ca`, `isgs`,
+Use `<collaborator>` below as the short collaborator key, such as `isgs`,
 `newts`, `osage`, or `rrc`.
 
 ## Add a Frontend Instance
@@ -16,7 +16,6 @@ Use `<collaborator>` below as the short collaborator key, such as `ca`, `isgs`,
 
    ```json
    [
-     "ca",
      "isgs",
      "newts",
      "osage",
@@ -40,12 +39,10 @@ Use `<collaborator>` below as the short collaborator key, such as `ca`, `isgs`,
 
    Do not include a trailing slash.
 
-3. (Optional) Custom App Engine service config:
+3. App Engine service config:
 
-   `deployment/app-engine/app-<collaborator>.yaml`
-
-   By default, the deployment workflow automatically renders the App Engine configuration (`service: <collaborator>-uow` using `deployment/app-engine/app.yaml`).
-   Only add an explicit `app-<collaborator>.yaml` if the collaborator requires custom runtime handlers or overrides.
+   The deployment workflow automatically renders the App Engine configuration (`service: <collaborator>-uow` using `deployment/app-engine/app.yaml`).
+   Separate `app-<collaborator>.yaml` files are not needed.
 
 4. Deploy the frontend:
 

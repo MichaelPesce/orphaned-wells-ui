@@ -69,7 +69,6 @@ jobs:
           PASSED_BACKEND_URL: ${{ secrets.backend_url }}
           ENV_BACKEND_URL: ${{ secrets.BACKEND_URL }}
           DEV_BACKEND_URL: ${{ secrets.DEV_BACKEND_URL }}
-          CA_BACKEND_URL: ${{ secrets.CA_BACKEND_URL }}
           ISGS_BACKEND_URL: ${{ secrets.ISGS_BACKEND_URL }}
           NEWTS_BACKEND_URL: ${{ secrets.NEWTS_BACKEND_URL }}
           OSAGE_BACKEND_URL: ${{ secrets.OSAGE_BACKEND_URL }}
@@ -89,7 +88,6 @@ jobs:
           fi
           if [ -z "$resolved_backend_url" ]; then
             case "$COLLABORATOR" in
-              ca) resolved_backend_url="${CA_BACKEND_URL:-}" ;;
               isgs) resolved_backend_url="${ISGS_BACKEND_URL:-}" ;;
               newts) resolved_backend_url="${NEWTS_BACKEND_URL:-}" ;;
               osage) resolved_backend_url="${OSAGE_BACKEND_URL:-}" ;;
@@ -117,8 +115,6 @@ jobs:
           if [ "$resolved_app_yaml" = "auto" ]; then
             if [ "$COLLABORATOR" = "staging" ] || [ "$COLLABORATOR" = "default" ]; then
               resolved_app_yaml="deployment/app-engine/app.yaml"
-            elif [ -f "deployment/app-engine/app-${COLLABORATOR}.yaml" ]; then
-              resolved_app_yaml="deployment/app-engine/app-${COLLABORATOR}.yaml"
             else
               mkdir -p deployment/app-engine
               rendered_file="deployment/app-engine/rendered-app.yaml"

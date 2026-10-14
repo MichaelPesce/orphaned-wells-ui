@@ -5,9 +5,6 @@ dispatch:
   - url: "isgs.uow-carbon.org/*"
     service: isgs-uow
 
-  - url: "ca.uow-carbon.org/*"
-    service: ca-uow
-  
   - url: "osage.uow-carbon.org/*"
     service: osage-uow
 
