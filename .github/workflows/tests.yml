@@ -13,7 +13,7 @@ on:
         type: string
         required: false
         # TODO: revert this back to main after passing tests are verified.
-        default: 8631a35535477f89786c2d6cf2ad759318f60115
+        default: cilogon
       backend_repository:
         description: Backend repository (owner/name); override to test a fork.
         type: string
@@ -45,6 +45,6 @@ jobs:
       checkout_ref: ${{ github.sha }}
       backend_mode: source
       backend_repository: ${{ inputs.backend_repository || 'MichaelPesce/orphaned-wells-ui-server' }}
-      backend_ref: ${{ inputs.backend_ref || '8631a35535477f89786c2d6cf2ad759318f60115' }}
+      backend_ref: ${{ inputs.backend_ref || 'cilogon' }}
     secrets:
       checkout_token: ${{ secrets.CHECKOUT_TOKEN }}
