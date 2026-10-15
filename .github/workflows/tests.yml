@@ -12,14 +12,12 @@ on:
         description: Backend branch, tag, or commit to test against.
         type: string
         required: false
-        # TODO: revert this back to main after passing tests are verified.
-        default: cilogon
+        default: main
       backend_repository:
         description: Backend repository (owner/name); override to test a fork.
         type: string
         required: false
-        # TODO: revert this back to CATALOG-Historic-Records/orphaned-wells-ui-server after passing tests are verified.
-        default: MichaelPesce/orphaned-wells-ui-server
+        default: CATALOG-Historic-Records/orphaned-wells-ui-server
 
 jobs:
   component-tests:
@@ -44,7 +42,7 @@ jobs:
       checkout_repository: ${{ github.repository }}
       checkout_ref: ${{ github.sha }}
       backend_mode: source
-      backend_repository: ${{ inputs.backend_repository || 'MichaelPesce/orphaned-wells-ui-server' }}
-      backend_ref: ${{ inputs.backend_ref || 'cilogon' }}
+      backend_repository: ${{ inputs.backend_repository || 'CATALOG-Historic-Records/orphaned-wells-ui-server' }}
+      backend_ref: ${{ inputs.backend_ref || 'main' }}
     secrets:
       checkout_token: ${{ secrets.CHECKOUT_TOKEN }}
