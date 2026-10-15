@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getRecordData, updateRecord, deleteRecord, cleanRecords } from "../../services/app.service";
-import { callAPI, useKeyDown, DEFAULT_RECORDS_TABLE_PAGE_SIZE } from "../../util";
+import { callAPI, useKeyDown, DEFAULT_RECORDS_TABLE_PAGE_SIZE, getApiErrorMessage } from "../../util";
 import Subheader from "../../components/Subheader/Subheader";
 import Bottombar from "../../components/BottomBar/BottomBar";
 import DocumentContainer from "../../components/DocumentContainer/DocumentContainer";
@@ -210,10 +210,10 @@ const Record = () => {
     if (response_status === 303) {
       handleSuccessfulFetchRecord(data, true);
     } else if (response_status === 403) {
-      setErrorMsg(`${data}`);
+      setErrorMsg(getApiErrorMessage(data, "You do not have access to this record."));
     }
     else {
-      setErrorMsg("error getting record data: " + data);
+      setErrorMsg(getApiErrorMessage(data, "error getting record data"));
     }
   }, [handleSuccessfulFetchRecord]);
 
@@ -257,7 +257,7 @@ const Record = () => {
   }, []);
 
   const handleFailedUpdate = React.useCallback((data: any) => {
-    showError(String(data));
+    showError(getApiErrorMessage(data, "Failed to update record."));
   }, [showError]);
 
   const handleSuccessfulAttributesListUpdate = React.useCallback((data: any) => {
@@ -297,11 +297,16 @@ const Record = () => {
 
   const handleUpdateRecordName = () => {
     if (locked) return;
+    const nextName = recordName;
     setOpenUpdateNameModal(false);
     callAPI(
       updateRecord,
-      [params.id, { data: { name: recordName }, type: "name" }],
-      (data) => window.location.reload(),
+      [params.id, { data: { name: nextName }, type: "name" }],
+      (data) => {
+        const resolvedName = (data && typeof data === "object" && data.name) || nextName;
+        setRecordName(resolvedName);
+        setRecordData((prev) => ({ ...prev, name: resolvedName }));
+      },
       handleFailedUpdate
     );
   };
@@ -457,9 +462,7 @@ const Record = () => {
   const handleUpdateReviewStatus = (new_status: string, categories?: string[], description?: string) => {
     let data_update;
     if (new_status === "unreviewed") {
-      let tempRecordData = { ...recordData };
-      tempRecordData["review_status"] = "unreviewed";
-      data_update = tempRecordData;
+      data_update = { review_status: "unreviewed" };
     } else if (new_status === "defective") {
       data_update = {review_status: new_status, defective_categories: categories, defective_description: description};
     } else if (new_status === "verification_required") {
@@ -616,7 +619,10 @@ const Record = () => {
         open={showResetPrompt}
         handleClose={() => setShowResetPrompt(false)}
         text="Setting status to unreviewed will reset any changes made, and revert all fields to uncleaned values. Are you sure you want to continue?"
-        handleSave={() => handleUpdateReviewStatus("unreviewed")}
+        handleSave={() => {
+          setShowResetPrompt(false);
+          handleUpdateReviewStatus("unreviewed");
+        }}
         buttonText='Reset'
         buttonColor='primary'
         buttonVariant='contained'

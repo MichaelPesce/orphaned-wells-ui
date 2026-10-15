@@ -736,8 +736,8 @@ export interface ExportTypeSelectionProps {
 }
 
 export interface ErrorBarProps {
-    errorMessage: string | null;
-    setErrorMessage: (v: string | null) => void;
+    errorMessage: any;
+    setErrorMessage: (v: any) => void;
     duration?: number;
     margin?: boolean;
 }

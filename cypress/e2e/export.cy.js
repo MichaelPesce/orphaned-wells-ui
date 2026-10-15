@@ -27,8 +27,10 @@ const importGroup = (projectId, name, sourceRecords) => {
 };
 
 const openExport = (recordGroupId, name) => {
+  cy.intercept("GET", `${Cypress.env("backendURL")}/get_record_group/${recordGroupId}`).as("getExportRecordGroup");
   cy.visitApp(`/record_group/${recordGroupId}`);
-  cy.getByCy("subheader-title").should("contain.text", name);
+  cy.wait("@getExportRecordGroup", { timeout: 30000 });
+  cy.getByCy("subheader-title", { timeout: 30000 }).should("contain.text", name);
   cy.getByCy("records-export-button").should("be.enabled").click();
   cy.getByCy("export-dialog").should("be.visible");
   cy.getByCy("download-button").should("be.enabled");
@@ -36,9 +38,13 @@ const openExport = (recordGroupId, name) => {
 
 const openProjectExport = (projectId, groupName) => {
   cy.visitApp(`/project/${projectId}`);
+  cy.getByCy("record-group-row", { timeout: 30000 }).should("be.visible");
   cy.contains('[data-cy="record-group-row"]', groupName)
-    .find('[data-cy="record-group-select"] input').check();
-  cy.getByCy("record-groups-export-button").click();
+    .find('[data-cy="record-group-select"] input')
+    .check({ force: true })
+    .should("be.checked");
+  cy.getByCy("record-groups-export-button").should("be.enabled").click();
+  cy.getByCy("export-dialog").should("be.visible");
   cy.getByCy("download-button").should("be.enabled");
 };
 
@@ -108,11 +114,11 @@ describe("real record exports", () => {
 
   it("downloads CSV containing only the selected field and expected records", () => {
     openExport(group.record_group_id, groupName);
-    cy.get('[data-export-type="json"] input').uncheck();
-    cy.get('[data-export-type="csv"] input').check();
+    cy.get('[data-export-type="json"] input').uncheck({ force: true }).should("not.be.checked");
+    cy.get('[data-export-type="csv"] input').check({ force: true }).should("be.checked");
     cy.getByCy("export-select-all-columns").click();
-    cy.findByRole("checkbox", { name: "User Notes" }).uncheck();
-    cy.get('[data-cy="export-column-label"][data-column="Depth"] input').check();
+    cy.findByRole("checkbox", { name: "User Notes" }).uncheck({ force: true }).should("not.be.checked");
+    cy.get('[data-cy="export-column-label"][data-column="Depth"] input').check({ force: true }).should("be.checked");
     cy.getByCy("download-button").click();
     waitForExport("csv");
     readExport(groupName, "csv").then((contents) => {

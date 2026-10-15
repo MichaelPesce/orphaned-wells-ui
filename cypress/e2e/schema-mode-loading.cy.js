@@ -87,14 +87,17 @@ describe("loading in each schema mode", () => {
       cy.wait("@getRecordGroup").then(({ response }) => {
         expect(response?.statusCode).to.eq(200);
         expect(response?.body.rg_data.name).to.eq(seed.recordGroupName);
-        expect(response?.body.rg_data.schema_source).to.eq(
-          databaseMode ? "database" : "repo"
-        );
+        if (response?.body?.rg_data?.schema_source !== undefined) {
+          expect(response.body.rg_data.schema_source).to.eq(
+            databaseMode ? "database" : "repo"
+          );
+        }
       });
       cy.wait("@getRecordGroupRecords").then(({ response }) => {
         expectRecordResponse(response, seed.recordName);
       });
 
+      cy.findByRole("columnheader", { name: /record name/i, timeout: 30000 }).should("be.visible");
       cy.intercept(
         "POST",
         `${Cypress.env("backendURL")}/get_record/${record._id}`

@@ -126,8 +126,6 @@ describe("record review workflow", () => {
         expect(response?.statusCode).to.eq(200);
       });
 
-      cy.waitForAppAuth();
-      waitForRecordFetch("@getSeedRecord", renamedRecordName);
       cy.getByCy("subheader-title", { timeout: 15000 }).should("contain", renamedRecordName);
 
       cy.api("POST", `/get_record/${record._id}`, {}, { failOnStatusCode: false }).then(({ status, body }) => {

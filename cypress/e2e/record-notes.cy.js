@@ -36,6 +36,7 @@ describe("record notes", () => {
       cy.contains('[data-cy="record-note"]', noteText).should("be.visible");
 
       cy.findByLabelText(/close/i).click();
+      cy.getByCy("record-notes-dialog").should("not.exist");
       cy.intercept("POST", `${Cypress.env("backendURL")}/get_records/record_group*`).as("loadRecordGroupRecords");
       cy.visitApp(`/record_group/${recordGroup._id}`);
       cy.wait("@loadRecordGroupRecords", { timeout: 30000 }).then(({ request, response }) => {
@@ -43,6 +44,7 @@ describe("record notes", () => {
         expect(response?.statusCode).to.eq(200);
         expect(response?.body.records.map((record) => record.name)).to.include(seed.recordName);
       });
+      cy.findByRole("columnheader", { name: /record name/i, timeout: 30000 }).should("be.visible");
       cy.contains('[data-cy="record-row"]', seed.recordName, { timeout: 30000 })
         .find('[data-cy="record-notes-button"]')
         .should("have.attr", "data-has-notes", "true");
@@ -84,6 +86,7 @@ describe("record notes", () => {
       cy.contains('[data-cy="record-note"]', editedNoteText).should("not.exist");
 
       cy.findByLabelText(/close/i).click();
+      cy.getByCy("record-notes-dialog").should("not.exist");
     });
   });
 });
