@@ -236,17 +236,19 @@ const RecordGroupPage = () => {
       <Box sx={styles.innerBox}>
         {recordGroup.schema_error && <Alert severity="warning" sx={{ mb: 2 }}>The schema is unavailable. Existing records can still be viewed and edited. {recordGroup.schema_error}</Alert>}
         {!recordGroup.schema_error && recordGroup.has_schema && !hasProcessor && <Alert severity="info" sx={{ mb: 2 }}>This record group uses {recordGroup.schema_name || "a schema"} without a processor. You can import and clean records.</Alert>}
-        <RecordsTable
-          key={`${recordGroup.schema_source}:${recordGroup.active_schema_id || recordGroup.processorId || ""}:${recordGroup.has_schema}:${schemaRefresh}`}
-          location="record_group"
-          params={params}
-          handleUpdate={handleUpdateRecordGroup}
-          onFiltersChange={setRecordFilters}
-          disabled={deletingRecords}
-          disabledMessage="Deleting records..."
-          refreshKey={Number(showDocumentModal)}
-          pollWhileIdle={showDocumentModal}
-        />
+        {isRecordGroupLoaded && (
+          <RecordsTable
+            key={`${recordGroup.schema_source}:${recordGroup.active_schema_id || recordGroup.processorId || ""}:${recordGroup.has_schema}:${schemaRefresh}`}
+            location="record_group"
+            params={params}
+            handleUpdate={handleUpdateRecordGroup}
+            onFiltersChange={setRecordFilters}
+            disabled={deletingRecords}
+            disabledMessage="Deleting records..."
+            refreshKey={Number(showDocumentModal)}
+            pollWhileIdle={showDocumentModal}
+          />
+        )}
       </Box>
       {showDocumentModal && 
                 <UploadDocumentsModal 

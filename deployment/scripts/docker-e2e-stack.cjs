@@ -64,7 +64,7 @@ console.log(`${action.description}...`);
 
 const activeEnvFile = prepareEnvFile(action.createEnvFile);
 const parsedEnv = parseEnvFile(activeEnvFile);
-const childEnv = { ...parsedEnv, ...process.env };
+const childEnv = { BACKEND_RELOAD: "false", ...parsedEnv, ...process.env };
 
 const backendDir = childEnv.BACKEND_DIR || "../../orphaned-wells-ui-server";
 const backendMode = childEnv.BACKEND_MODE || "auto";
