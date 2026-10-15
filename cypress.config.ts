@@ -70,7 +70,6 @@ export default defineConfig({
       return config;
     },
     baseUrl: process.env.CYPRESS_BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
-    chromeWebSecurity: false,
     video: true,
     trashAssetsBeforeRuns: true,
   },
