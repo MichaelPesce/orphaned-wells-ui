@@ -12,12 +12,14 @@ on:
         description: Backend branch, tag, or commit to test against.
         type: string
         required: false
-        default: main
+        # TODO: revert this back to main after passing tests are verified.
+        default: 8631a35535477f89786c2d6cf2ad759318f60115
       backend_repository:
         description: Backend repository (owner/name); override to test a fork.
         type: string
         required: false
-        default: CATALOG-Historic-Records/orphaned-wells-ui-server
+        # TODO: revert this back to CATALOG-Historic-Records/orphaned-wells-ui-server after passing tests are verified.
+        default: MichaelPesce/orphaned-wells-ui-server
 
 jobs:
   component-tests:
@@ -42,7 +44,7 @@ jobs:
       checkout_repository: ${{ github.repository }}
       checkout_ref: ${{ github.sha }}
       backend_mode: source
-      backend_repository: ${{ inputs.backend_repository || 'CATALOG-Historic-Records/orphaned-wells-ui-server' }}
-      backend_ref: ${{ inputs.backend_ref || 'main' }}
+      backend_repository: ${{ inputs.backend_repository || 'MichaelPesce/orphaned-wells-ui-server' }}
+      backend_ref: ${{ inputs.backend_ref || '8631a35535477f89786c2d6cf2ad759318f60115' }}
     secrets:
       checkout_token: ${{ secrets.CHECKOUT_TOKEN }}
