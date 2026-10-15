@@ -46,7 +46,7 @@ describe("schema UI", () => {
 
       // Is this correct?
       cy.getByCy("schema-remove-field-button").should("exist");
-      cy.getByCy("schema-edit-name").should("exist");
+      cy.getByCy("schema-edit-field-button").should("exist");
     });
   });
 
