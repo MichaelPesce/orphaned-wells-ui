@@ -201,7 +201,7 @@ const Header = (props: any) => {
             {hasPermission("manage_team") &&
               <Tab data-cy="header-tab-admin" label="Admin" value="admin" {...a11yProps(2)} />
             }
-            {hasPermission("manage_schema") &&
+            {(hasPermission("manage_schema") || hasPermission("view_schema")) &&
               <Tab data-cy="header-tab-schema" label="Schema" value="schema" {...a11yProps(3)} />
             }
           </Tabs>
@@ -260,7 +260,7 @@ const Header = (props: any) => {
               </span>
             )
             }
-            {hasPermission("manage_schema") && (
+            {(hasPermission("manage_schema") || hasPermission("view_schema")) && (
               <MenuItem data-cy="ogrre-version-menu-item" onClick={handleViewOgrreVersion}>
                 <ListItemIcon>
                   <InfoOutlinedIcon fontSize="small" />

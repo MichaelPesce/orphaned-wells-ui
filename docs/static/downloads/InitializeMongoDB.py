@@ -97,7 +97,6 @@ ROLES = [
             "review_record",
             "add_user",
             "clean_record",
-            "manage_schema",
             "update_coordinates",
         ],
         "includes": [

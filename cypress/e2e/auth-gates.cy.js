@@ -70,4 +70,17 @@ describe("limited auth gates", () => {
     cy.getByCy("header-tab-schema").should("be.visible");
     cy.getByCy("subheader-primary-action").should("contain.text", "New Project");
   });
+
+  it("shows schema navigation for a viewer with view_schema", () => {
+    cy.mockCheckAuth({
+      permissions: ["view_schema"],
+      default_team: "default",
+      collaborator: "isgs",
+    });
+
+    cy.visit("/projects");
+    cy.wait("@checkAuth");
+    cy.getByCy("header-tab-admin").should("not.exist");
+    cy.getByCy("header-tab-schema").should("be.visible");
+  });
 });

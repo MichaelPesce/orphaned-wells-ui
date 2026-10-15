@@ -10,6 +10,7 @@ const ALL_PERMISSIONS = [
   "delete",
   "manage_project",
   "manage_schema",
+  "manage_schema_destructive",
   "manage_system",
   "manage_team",
   "review_record",
@@ -17,7 +18,7 @@ const ALL_PERMISSIONS = [
   "update_coordinates",
   "upload_document",
   "verify_record",
-  "update_coordinates",
+  "view_schema",
 ];
 
 const backendUrl = () => Cypress.env("backendURL") || "http://localhost:8001";

@@ -11,7 +11,7 @@ export default function useSchemaImport(onApplied: () => void, canReplace = true
   const [sourceType, setSourceType] = useState<"installed" | "github">("installed");
   const [repo, setRepo] = useState(DEFAULT_REPO);
   const [ref, setRef] = useState(DEFAULT_REF);
-  const [mode, setMode] = useState<"refresh" | "add" | "replace">(canReplace ? "refresh" : "add");
+  const [mode, setMode] = useState<"refresh" | "add" | "replace">("refresh");
   const [selected, setSelected] = useState<string[]>([]);
   const [decisions, setDecisions] = useState<Record<string, SchemaImportDecision>>({});
   const [preview, setPreview] = useState<SchemaImportPreview>();
@@ -19,12 +19,6 @@ export default function useSchemaImport(onApplied: () => void, canReplace = true
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!canReplace && mode !== "add") {
-      setMode("add");
-    }
-  }, [canReplace, mode]);
 
   useEffect(() => {
     let active = true;

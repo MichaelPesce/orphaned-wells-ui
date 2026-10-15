@@ -33,7 +33,7 @@ const SchemaView = () => {
 
 
   useEffect(() => {
-    const hasAccess = hasPermission("manage_schema");
+    const hasAccess = hasPermission("manage_schema") || hasPermission("view_schema");
     if (!hasAccess) {
       navigate("/");
       return;

@@ -166,6 +166,7 @@ export interface SchemaImportRequest {
     selected: string[];
     decisions: Record<string, SchemaImportDecision>;
     source?: SchemaImportSourceOptions;
+    reconcile_records?: boolean;
 }
 
 export interface SchemaImportEntry {

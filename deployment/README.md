@@ -148,7 +148,7 @@ to container startup or page-loading hooks. Neither this command nor
 ### Schema roles and permissions
 
 The bundled dump and `docs/static/downloads/InitializeMongoDB.py` grant
-`manage_schema` to team leads and all system roles, and
+`manage_schema` to all system roles, and
 `manage_schema_destructive` only to `sys_admin`. Fresh Docker databases and
 restores of the updated dump need no schema-permission migration.
 
