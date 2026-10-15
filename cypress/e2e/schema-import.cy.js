@@ -24,51 +24,35 @@ describe("Import repo schemas", () => {
     cy.findByLabelText("Well · 1 fields").should("be.checked");
   };
 
-  it("requires an Add conflict decision before a schema manager can apply", () => {
+  it("allows refresh preview for schema managers without destructive permission", () => {
     setup(["manage_schema"]);
-    cy.intercept("POST", `${api()}/preview_repo_schema_import`, req => {
-      if (req.body.decisions.Well) {
-        expect(req.body.decisions.Well).to.deep.equal({ action: "keep", schema_id: "existing" });
-        req.reply({ ...plan, counts: { ...plan.counts, added: 0, kept: 1 }, entries: [{ ...plan.entries[0], action: "kept" }] });
-      } else req.reply({ ...plan, can_apply: false, counts: { ...plan.counts, added: 0, conflict: 1 }, entries: [{ ...plan.entries[0], action: "conflict", candidates: [{ schema_id: "existing", name: "Current Well", diff, groups: [] }] }] });
-    });
-    cy.intercept("POST", `${api()}/apply_repo_schema_import`, req => {
-      expect(req.body).to.deep.equal({ import_id: "saved-preview" });
-      req.reply({ ...plan, status: "complete" });
-    }).as("applyImport");
     open();
-    cy.findByLabelText("Replace the schema catalog").should("be.disabled");
-    cy.findByRole("button", { name: "Preview import" }).click();
-    cy.findByRole("button", { name: "Continue" }).should("be.disabled");
-    cy.findByLabelText("Decision for Well").click();
-    cy.findByRole("option", { name: "Keep existing" }).click();
-    cy.findByRole("button", { name: "Update preview" }).click();
-    cy.findByRole("button", { name: "Continue" }).click();
-    cy.findByRole("button", { name: "Import selected schemas" }).click();
-    cy.wait("@applyImport");
-    cy.contains("Schema import complete.").should("be.visible");
+    cy.findByLabelText("Refresh from repo (recommended)").should("be.enabled");
+    cy.findByRole("button", { name: "Preview import" }).should("be.enabled");
   });
 
-  it("warns about cross-team detachment before Replace and retains a partial import for retry", () => {
-    setup(["manage_schema", "manage_schema_destructive"]);
-    const replacement = { ...plan, mode: "replace", destructive: true, counts: { ...plan.counts, removed: 1, detached: 1 },
-      removed: [{ schema_id: "old", name: "Old schema", groups: [group] }], affected_groups: [group], detached_groups: [group] };
-    cy.intercept("POST", `${api()}/preview_repo_schema_import`, replacement);
+  it("previews and applies schema refresh and retains a partial import for retry", () => {
+    setup(["manage_schema"]);
+    const refreshPlan = {
+      ...plan,
+      mode: "refresh",
+      destructive: false,
+      counts: { ...plan.counts, added: 0, updated: 1, removed: 0 },
+      entries: [{ source_id: "Well", name: "Well", action: "updated", candidates: [{ schema_id: "existing", name: "Well", diff, groups: [] }], groups: [], diff }],
+    };
+    cy.intercept("POST", `${api()}/preview_repo_schema_import`, refreshPlan);
     let attempt = 0;
     cy.intercept("POST", `${api()}/apply_repo_schema_import`, req => {
       expect(req.body).to.deep.equal({ import_id: "saved-preview" });
       attempt += 1;
-      req.reply({ ...replacement, status: attempt === 1 ? "partial" : "complete", error: attempt === 1 ? "Import paused. Retry to continue." : null });
+      req.reply({ ...refreshPlan, status: attempt === 1 ? "partial" : "complete", error: attempt === 1 ? "Import paused. Retry to continue." : null });
     }).as("applyImport");
     open();
-    cy.findByLabelText("Replace the schema catalog").click();
+    cy.findByLabelText("Refresh from repo (recommended)").should("be.checked");
     cy.findByRole("button", { name: "Preview import" }).click();
-    cy.contains("Their records and stored fields are preserved.").should("be.visible");
-    cy.findByRole("button", { name: "Record groups to detach (1)" }).click().closest(".MuiAccordion-root").within(() => {
-      cy.contains("Other team records · Other team").should("be.visible");
-    });
+    cy.contains("Refreshing schemas will update matching schemas in place").should("be.visible");
     cy.findByRole("button", { name: "Continue" }).click();
-    cy.findByRole("button", { name: "Replace schemas and detach 1 group" }).click();
+    cy.findByRole("button", { name: "Refresh schemas from repo" }).click();
     cy.wait("@applyImport");
     cy.contains("Import paused. Retry to continue.").should("exist");
     cy.findByRole("button", { name: "Resume import" }).click();

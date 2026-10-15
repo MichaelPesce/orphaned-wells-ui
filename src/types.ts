@@ -166,6 +166,7 @@ export interface SchemaImportRequest {
     selected: string[];
     decisions: Record<string, SchemaImportDecision>;
     source?: SchemaImportSourceOptions;
+    reconcile_records?: boolean;
 }
 
 export interface SchemaImportEntry {
@@ -736,8 +737,8 @@ export interface ExportTypeSelectionProps {
 }
 
 export interface ErrorBarProps {
-    errorMessage: string | null;
-    setErrorMessage: (v: string | null) => void;
+    errorMessage: any;
+    setErrorMessage: (v: any) => void;
     duration?: number;
     margin?: boolean;
 }

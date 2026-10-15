@@ -1,46 +1,141 @@
 name: Deploy Frontend Dispatch
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      app_yaml:
+      collaborator:
+        description: "Collaborator key (e.g. isgs, osage) or staging"
         required: true
         type: string
+      environment:
+        description: "GitHub environment for secrets (defaults to collaborator)"
+        required: false
+        type: string
+        default: ""
+      app_yaml:
+        description: "Path to App Engine app.yaml or 'auto'"
+        required: false
+        type: string
+        default: "auto"
+  workflow_call:
+    inputs:
       collaborator:
         required: true
         type: string
+      environment:
+        required: false
+        type: string
+        default: ""
+      app_yaml:
+        required: false
+        type: string
+        default: "auto"
     secrets:
       backend_url:
-        required: true
+        required: false
       google_clientid:
-        required: true
+        required: false
       deployment_service_key_json:
-        required: true
+        required: false
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
     name: Deploy to Google App Engine
+    environment: ${{ inputs.environment || inputs.collaborator }}
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ format('deploy-frontend-{0}', inputs.environment || inputs.collaborator) }}
+      cancel-in-progress: false
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.deployment_service_key_json }}
+          credentials_json: ${{ secrets.deployment_service_key_json || secrets.DEPLOYMENT_SERVICE_KEY_JSON }}
 
       - name: Install packages
         run: npm clean-install
 
       - name: Configure frontend environment
+        id: config
         env:
-          REACT_APP_BACKEND_URL: ${{ secrets.backend_url }}
-          REACT_APP_GOOGLE_CLIENTID: ${{ secrets.google_clientid }}
-          REACT_APP_COLLABORATOR: ${{ inputs.collaborator }}
+          COLLABORATOR: ${{ inputs.collaborator }}
+          TARGET_ENV: ${{ inputs.environment || inputs.collaborator }}
+          INPUT_APP_YAML: ${{ inputs.app_yaml }}
+          PASSED_BACKEND_URL: ${{ secrets.backend_url }}
+          ENV_BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          DEV_BACKEND_URL: ${{ secrets.DEV_BACKEND_URL }}
+          ISGS_BACKEND_URL: ${{ secrets.ISGS_BACKEND_URL }}
+          NEWTS_BACKEND_URL: ${{ secrets.NEWTS_BACKEND_URL }}
+          OSAGE_BACKEND_URL: ${{ secrets.OSAGE_BACKEND_URL }}
+          RRC_BACKEND_URL: ${{ secrets.RRC_BACKEND_URL }}
+          PASSED_GOOGLE_CLIENTID: ${{ secrets.google_clientid }}
+          REPO_GOOGLE_CLIENTID: ${{ secrets.GOOGLE_CLIENTID }}
         run: |
+          # 1. Resolve backend URL
+          resolved_backend_url="${PASSED_BACKEND_URL:-}"
+          if [ -z "$resolved_backend_url" ]; then
+            resolved_backend_url="${ENV_BACKEND_URL:-}"
+          fi
+          if [ "$TARGET_ENV" = "staging" ] || [ "$COLLABORATOR" = "staging" ] || [ "$COLLABORATOR" = "default" ]; then
+            if [ -z "$resolved_backend_url" ]; then
+              resolved_backend_url="${DEV_BACKEND_URL:-}"
+            fi
+          fi
+          if [ -z "$resolved_backend_url" ]; then
+            case "$COLLABORATOR" in
+              isgs) resolved_backend_url="${ISGS_BACKEND_URL:-}" ;;
+              newts) resolved_backend_url="${NEWTS_BACKEND_URL:-}" ;;
+              osage) resolved_backend_url="${OSAGE_BACKEND_URL:-}" ;;
+              rrc) resolved_backend_url="${RRC_BACKEND_URL:-}" ;;
+            esac
+          fi
+          if [ -z "$resolved_backend_url" ]; then
+            resolved_backend_url="${DEV_BACKEND_URL:-}"
+          fi
+          if [ -z "$resolved_backend_url" ]; then
+            echo "::error::Could not resolve BACKEND_URL for collaborator '$COLLABORATOR'. Please configure BACKEND_URL in the '$TARGET_ENV' environment or repository secrets."
+            exit 1
+          fi
+          resolved_backend_url="${resolved_backend_url%/}"
+
+          # 2. Resolve Google Client ID
+          resolved_client_id="${PASSED_GOOGLE_CLIENTID:-${REPO_GOOGLE_CLIENTID:-}}"
+          if [ -z "$resolved_client_id" ]; then
+            echo "::error::Could not resolve GOOGLE_CLIENTID. Please configure GOOGLE_CLIENTID in repository secrets."
+            exit 1
+          fi
+
+          # 3. Resolve app.yaml path
+          resolved_app_yaml="${INPUT_APP_YAML:-auto}"
+          if [ "$resolved_app_yaml" = "auto" ]; then
+            if [ "$COLLABORATOR" = "staging" ] || [ "$COLLABORATOR" = "default" ]; then
+              resolved_app_yaml="deployment/app-engine/app.yaml"
+            else
+              mkdir -p deployment/app-engine
+              rendered_file="deployment/app-engine/rendered-app.yaml"
+              echo "service: ${COLLABORATOR}-uow" > "$rendered_file"
+              cat deployment/app-engine/app.yaml >> "$rendered_file"
+              resolved_app_yaml="$rendered_file"
+            fi
+          fi
+
+          if [ ! -f "$resolved_app_yaml" ]; then
+            echo "::error::App Engine configuration file '$resolved_app_yaml' does not exist."
+            exit 1
+          fi
+
+          echo "app_yaml=$resolved_app_yaml" >> "$GITHUB_OUTPUT"
+
+          # 4. Write .env
           {
-            echo "REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL}"
-            echo "REACT_APP_GOOGLE_CLIENTID=${REACT_APP_GOOGLE_CLIENTID}"
-            echo "REACT_APP_COLLABORATOR=${REACT_APP_COLLABORATOR}"
+            echo "REACT_APP_BACKEND_URL=${resolved_backend_url}"
+            echo "REACT_APP_GOOGLE_CLIENTID=${resolved_client_id}"
+            echo "REACT_APP_COLLABORATOR=${COLLABORATOR}"
             echo "GENERATE_SOURCEMAP=false"
           } >> .env
 
@@ -51,4 +146,4 @@ jobs:
         run: npm run build
 
       - name: Deploy
-        run: gcloud app deploy . --appyaml "${{ inputs.app_yaml }}"
+        run: gcloud app deploy . --appyaml "${{ steps.config.outputs.app_yaml }}"

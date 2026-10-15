@@ -113,7 +113,7 @@ terraform output -json kubernetes_deploy_targets | jq --arg collaborator "${coll
 
 Use this checklist when adding a new public OGRRE collaborator deployment.
 
-Use <CollaboratorInline /> for the short deployment key, such as `rrc`, `ca`, `isgs`, `newts`, or `osage`. Use <CollaboratorInline uppercase /> for the uppercase GitHub secret prefix.
+Use <CollaboratorInline /> for the short deployment key, such as `isgs`, `newts`, `osage`, or `rrc`. Use <CollaboratorInline uppercase /> for the uppercase GitHub secret prefix.
 
 Some existing backend workflow fields are still named `DEPLOY_ENV`. In this checklist, their value should be the collaborator key unless the existing workflow has a documented exception.
 
@@ -332,14 +332,36 @@ curl -f https://__COLLABORATOR__-server.uow-carbon.org/health
 
 In `orphaned-wells-ui`:
 
-1. Add <CollaboratorInline prefix="deployment/app-engine/app-" suffix=".yaml" />.
-2. Add <CollaboratorInline prefix=".github/workflows/deploy-" suffix=".yml" />.
-3. Add the frontend repository secret <CollaboratorInline suffix="_BACKEND_URL" uppercase /> with no trailing slash.
-4. Add <CollaboratorInline suffix=".uow-carbon.org/*" /> to `deployment/app-engine/dispatch.yaml`.
-5. Deploy the frontend workflow.
-6. Deploy `dispatch.yaml`.
-
-When editing the frontend workflow, set the existing `collaborator` field to the collaborator key unless an existing deployment has a documented exception.
+1. Add the collaborator branch key to `collaborators.json` at the root of the repository:
+   <CollaboratorCodeBlock language="json">{`
+   [
+     "isgs",
+     "newts",
+     "osage",
+     "rrc",
+     "__COLLABORATOR__"
+   ]
+   `}</CollaboratorCodeBlock>
+   Listing the branch in `collaborators.json` automatically enables push deployments via `.github/workflows/deploy-collaborator.yml` and automated sync PRs via `.github/workflows/sync-collaborators.yml`. Dedicated per-collaborator workflow files are not needed.
+2. Configure the backend URL secret:
+   Add `BACKEND_URL` to the <CollaboratorInline /> GitHub Environment (or as a repository-level fallback secret <CollaboratorInline suffix="_BACKEND_URL" uppercase />) with no trailing slash:
+   <CollaboratorCodeBlock language="text">{`
+   https://__COLLABORATOR__-server.uow-carbon.org
+   `}</CollaboratorCodeBlock>
+3. App Engine service config:
+   The deployment workflow automatically renders the App Engine configuration (`service: <collaborator>-uow` using `deployment/app-engine/app.yaml`). No manual `app-<collaborator>.yaml` files are needed.
+4. Add <CollaboratorInline suffix=".uow-carbon.org/*" /> to `deployment/app-engine/dispatch.yaml`:
+   <CollaboratorCodeBlock language="yaml">{`
+   - url: "__COLLABORATOR__.uow-carbon.org/*"
+     service: __COLLABORATOR__-uow
+   `}</CollaboratorCodeBlock>
+5. Deploy the frontend:
+   Push to the collaborator's branch (which triggers `.github/workflows/deploy-collaborator.yml`), or manually trigger `.github/workflows/deploy-dispatch.yml` via GitHub Actions (`workflow_dispatch`).
+6. Deploy `dispatch.yaml`:
+   ```bash
+   cd orphaned-wells-ui/deployment/app-engine
+   gcloud app deploy dispatch.yaml
+   ```
 
 See [Frontend on App Engine](./frontend-app-engine) for details.
 
@@ -375,4 +397,4 @@ Confirm the collaborator deployment has:
 - Updating DNS is not enough for GKE. The Ingress host and ManagedCertificate domain must match the Terraform deployment target's hostname.
 - After target changes, approve Terraform apply and redeploy the backend. Refresh `K8S_DEPLOY_TARGETS` only for the disabled rollout fallback.
 - Frontend backend URL secrets should not have trailing slashes.
-- Ensure the collaborator branch is added to `collaborators.json` so automated push deployments and branch syncing are active.
+- Ensure the collaborator branch is added to `collaborators.json` in both repositories (`orphaned-wells-ui` and `orphaned-wells-ui-server`) so automated push deployments and branch syncing are active.

@@ -16,6 +16,7 @@
 
 # production
 /build
+/deployment/app-engine/rendered-app.yaml
 
 # misc
 .DS_Store

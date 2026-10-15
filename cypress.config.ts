@@ -3,7 +3,7 @@ declare let require: any;
 declare let process: any;
 const dotenv = require("dotenv");
 
-const { spawnSync } = require("child_process");
+const { exec } = require("child_process");
 
 const shellEnv = { ...process.env };
 dotenv.config({ path: ".env" });
@@ -25,34 +25,52 @@ const DEFAULT_DB_SEED_COMMAND =
 export default defineConfig({
   e2e: {
     setupNodeEvents(on, config) {
+      on("before:browser:launch", (browser: any = {}, launchOptions: any) => {
+        if (browser.family === "chromium" && browser.name !== "electron") {
+          launchOptions.args.push("--disable-dev-shm-usage");
+        }
+        return launchOptions;
+      });
+
       on("task", {
         seedDatabase() {
           if (!config.env.resetDb) return null;
 
           const command = config.env.dbSeedCommand || DEFAULT_DB_SEED_COMMAND;
-          const result = spawnSync(command, {
-            cwd: __dirname,
-            encoding: "utf8",
-            shell: true,
-          });
+          return new Promise((resolve, reject) => {
+            exec(
+              command,
+              {
+                cwd: __dirname,
+                encoding: "utf8",
+              },
+              (error: any, stdout: string, stderr: string) => {
+                if (error) {
+                  reject(
+                    new Error(
+                      [
+                        `Database seed command failed with status ${error.code ?? 1}.`,
+                        stdout,
+                        stderr,
+                      ]
+                        .filter(Boolean)
+                        .join("\n")
+                    )
+                  );
+                  return;
+                }
 
-          if (result.status !== 0) {
-            throw new Error(
-              [
-                `Database seed command failed with status ${result.status}.`,
-                result.stdout,
-                result.stderr,
-              ].filter(Boolean).join("\n")
+                resolve(stdout || "Database seed completed.");
+              }
             );
-          }
-
-          return result.stdout || "Database seed completed.";
+          });
         },
       });
 
       return config;
     },
     baseUrl: process.env.CYPRESS_BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
+    chromeWebSecurity: false,
     video: true,
     trashAssetsBeforeRuns: true,
   },

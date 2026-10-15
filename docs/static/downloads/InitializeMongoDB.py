@@ -52,6 +52,7 @@ ROLES = [
             "clean_record",
             "system_administration",
             "developer",
+            "view_schema",
             "manage_schema",
             "manage_schema_destructive",
             "update_coordinates",
@@ -77,6 +78,7 @@ ROLES = [
             "verify_record",
             "manage_system",
             "clean_record",
+            "view_schema",
             "manage_schema",
             "developer",
             "update_coordinates",
@@ -97,7 +99,6 @@ ROLES = [
             "review_record",
             "add_user",
             "clean_record",
-            "manage_schema",
             "update_coordinates",
         ],
         "includes": [

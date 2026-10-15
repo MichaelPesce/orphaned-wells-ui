@@ -11,7 +11,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import { updateRecord, getRecordNotes } from "../../services/app.service";
-import { callAPI, formatDateTime } from "../../util";
+import { callAPI, formatDateTime, getApiErrorMessage } from "../../util";
 import { RecordNote, RecordNotesDialogProps } from "../../types";
 import { useUserContext } from "../../usercontext";
 import PopupModal from "../PopupModal/PopupModal";
@@ -188,8 +188,10 @@ const RecordNotesDialog = ({ record_id, open, onClose }: RecordNotesDialogProps)
     reset(data);
   };
 
-  const handleFailed = (e: string) => {
-    setErrorMsg(e);
+  const handleFailed = (e: unknown) => {
+    setErrorMsg(getApiErrorMessage(e, "Unable to update notes."));
+    setLoading(false);
+    setDisableButton(false);
   };
 
   const checkForResolved = () => {

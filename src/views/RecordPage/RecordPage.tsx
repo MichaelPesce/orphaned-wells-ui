@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getRecordData, updateRecord, deleteRecord, cleanRecords } from "../../services/app.service";
-import { callAPI, useKeyDown, DEFAULT_RECORDS_TABLE_PAGE_SIZE } from "../../util";
+import { callAPI, useKeyDown, DEFAULT_RECORDS_TABLE_PAGE_SIZE, getApiErrorMessage } from "../../util";
 import Subheader from "../../components/Subheader/Subheader";
 import Bottombar from "../../components/BottomBar/BottomBar";
 import DocumentContainer from "../../components/DocumentContainer/DocumentContainer";
@@ -210,10 +210,10 @@ const Record = () => {
     if (response_status === 303) {
       handleSuccessfulFetchRecord(data, true);
     } else if (response_status === 403) {
-      setErrorMsg(`${data}`);
+      setErrorMsg(getApiErrorMessage(data, "You do not have access to this record."));
     }
     else {
-      setErrorMsg("error getting record data: " + data);
+      setErrorMsg(getApiErrorMessage(data, "error getting record data"));
     }
   }, [handleSuccessfulFetchRecord]);
 
@@ -257,7 +257,7 @@ const Record = () => {
   }, []);
 
   const handleFailedUpdate = React.useCallback((data: any) => {
-    showError(String(data));
+    showError(getApiErrorMessage(data, "Failed to update record."));
   }, [showError]);
 
   const handleSuccessfulAttributesListUpdate = React.useCallback((data: any) => {

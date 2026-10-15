@@ -9,17 +9,13 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONPYCACHEPREFIX: /tmp/python-pycache
     command:
-      - uvicorn
-      - ogrre.main:app
-      - --host
-      - ${BACKEND_CONTAINER_HOST:-backend}
-      - --port
-      - "8001"
-      - --reload
-      - --reload-dir
-      - /code/ogrre
-      - --reload-delay
-      - "1"
+      - sh
+      - -ec
+      - |
+        if [ "${BACKEND_RELOAD:-true}" = "true" ]; then
+          exec uvicorn ogrre.main:app --host "${BACKEND_CONTAINER_HOST:-backend}" --port 8001 --reload --reload-dir /code/ogrre --reload-exclude local_storage --reload-delay 1
+        fi
+        exec uvicorn ogrre.main:app --host "${BACKEND_CONTAINER_HOST:-backend}" --port 8001
     volumes:
       - ${BACKEND_DIR:-../../orphaned-wells-ui-server}:/code
       - backend_logs:/logs

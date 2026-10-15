@@ -5,38 +5,52 @@ Each deployed frontend instance has its own App Engine service, branch-triggered
 GitHub Actions workflow, backend URL secret, dispatch route, DNS records, custom
 domain, and OAuth configuration.
 
-Use `<collaborator>` below as the short collaborator key, such as `ca`, `isgs`,
+Use `<collaborator>` below as the short collaborator key, such as `isgs`,
 `newts`, `osage`, or `rrc`.
 
 ## Add a Frontend Instance
 
-1. Add an App Engine service config:
+1. Enable dynamic collaborator deployment and sync:
 
-   `deployment/app-engine/app-<collaborator>.yaml`
+   Add the collaborator branch key to `collaborators.json` at the root of `orphaned-wells-ui`:
 
-   Copy an existing `app-*.yaml` file and update the `service` value. Existing
-   services use the `<collaborator>-uow` naming pattern.
+   ```json
+   [
+     "isgs",
+     "newts",
+     "osage",
+     "rrc",
+     "<collaborator>"
+   ]
+   ```
 
-2. Add a deployment workflow:
+   Listing the branch in `collaborators.json`:
+   - Automatically enables push-based deployments via `.github/workflows/deploy-collaborator.yml` whenever code is pushed to that collaborator branch.
+   - Dynamically includes the branch in `.github/workflows/sync-collaborators.yml` to automatically open PRs against it when changes merge to `main`.
+   - Eliminates the need to create redundant individual `.github/workflows/deploy-<collaborator>.yml` workflows.
 
-   `.github/workflows/deploy-<collaborator>.yml`
+2. Configure the backend URL secret:
 
-   Copy an existing collaborator deployment workflow and update:
+   Configure `BACKEND_URL` in the `<collaborator>` GitHub environment (or as a repository-level fallback secret `<COLLABORATOR>_BACKEND_URL`):
 
-   - workflow name
-   - trigger branch
-   - job name
-   - `app_yaml`
-   - `collaborator`
-   - backend URL secret name
-
-3. Add the backend URL as a GitHub repository secret:
-
-   `<COLLABORATOR>_BACKEND_URL`
+   ```text
+   https://<collaborator>-server.uow-carbon.org
+   ```
 
    Do not include a trailing slash.
 
-4. Deploy the frontend by pushing to the workflow's configured branch.
+3. App Engine service config:
+
+   The deployment workflow automatically renders the App Engine configuration (`service: <collaborator>-uow` using `deployment/app-engine/app.yaml`).
+   Separate `app-<collaborator>.yaml` files are not needed.
+
+4. Deploy the frontend:
+
+   Deploy by pushing to the collaborator branch, or manually trigger `.github/workflows/deploy-dispatch.yml` via GitHub Actions (`workflow_dispatch`).
+
+## Repository Variables
+
+- `ENABLE_APP_ENGINE_DEPLOYMENTS`: Set to `false` in GitHub repository variables to pause automatic deployments across all collaborator branches. Manual dispatch deployments will still run.
 
 ## Deployment Account Permissions
 

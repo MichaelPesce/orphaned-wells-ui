@@ -8,43 +8,44 @@ sidebar_position: 4
 
 Frontend deployment lives in `orphaned-wells-ui/deployment/app-engine`.
 
-Each collaborator frontend has its own App Engine service, branch-triggered GitHub Actions workflow, backend URL secret, dispatch route, DNS records, custom domain, and OAuth configuration.
+Each collaborator frontend has its own App Engine service, backend URL secret, dispatch route, DNS records, custom domain, and OAuth configuration. Collaborator branch deployments and sync PRs are managed dynamically via `collaborators.json`.
 
-Use `<collaborator>` as the short deployment key, such as `ca`, `isgs`, `newts`, `osage`, or `rrc`. Use `<COLLABORATOR>` for uppercase GitHub secret names.
+Use `<collaborator>` as the short deployment key, such as `isgs`, `newts`, `osage`, or `rrc`. Use `<COLLABORATOR>` for uppercase GitHub secret names.
 
-## Add or update an App Engine service
+## App Engine service configuration
 
-Add an App Engine service config:
+`deployment/app-engine/app.yaml` is the single source of truth for all frontend deployments.
 
-```text
-deployment/app-engine/app-<collaborator>.yaml
-```
+During deployment, the workflow automatically renders the service configuration dynamically (`service: <collaborator>-uow` prepended to `deployment/app-engine/app.yaml`). Separate `app-<collaborator>.yaml` files are not needed.
 
-Copy an existing `app-*.yaml` file and update the `service` value. Existing services use the `<collaborator>-uow` naming pattern:
+Collaborator services follow the `<collaborator>-uow` naming pattern:
 
 ```yaml
 service: <collaborator>-uow
 runtime: python312
 ```
 
-## Add a deployment workflow
+## Enable dynamic collaborator deployment and sync
 
-Add a frontend workflow:
+Add the collaborator branch key to `collaborators.json` at the root of `orphaned-wells-ui`:
 
-```text
-.github/workflows/deploy-<collaborator>.yml
+```json
+[
+  "isgs",
+  "newts",
+  "osage",
+  "rrc",
+  "<collaborator>"
+]
 ```
 
-Copy an existing collaborator deployment workflow and update:
+Listing the branch in `collaborators.json`:
 
-- Workflow name.
-- Trigger branch.
-- Job name.
-- `app_yaml`.
-- `collaborator`.
-- Backend URL secret name.
+- Automatically enables push-based deployments via `.github/workflows/deploy-collaborator.yml` whenever code is pushed to that collaborator branch.
+- Dynamically includes the branch in `.github/workflows/sync-collaborators.yml` to automatically open PRs against it when changes merge to `main`.
+- Eliminates the need to create redundant individual `.github/workflows/deploy-<collaborator>.yml` workflows.
 
-The workflow calls `.github/workflows/deploy-dispatch.yml`, which builds the React app and deploys the configured App Engine service.
+The shared `.github/workflows/deploy-dispatch.yml` workflow builds the React app and deploys the configured App Engine service.
 
 The frontend repository must have `DEPLOYMENT_SERVICE_KEY_JSON` configured from
 the deployment service account. Terraform CI uses separate WIF identities.
@@ -61,21 +62,19 @@ the GCP setup guide.
 
 ## Add the backend URL secret
 
-Add a frontend repository secret:
-
-```text
-<COLLABORATOR>_BACKEND_URL
-```
-
-The value should be the public backend URL and must not include a trailing slash:
+Configure `BACKEND_URL` as a secret in the `<collaborator>` GitHub Environment (recommended) or as a repository-level fallback secret `<COLLABORATOR>_BACKEND_URL`:
 
 ```text
 https://<collaborator>-server.uow-carbon.org
 ```
 
+The value should be the public backend URL and must not include a trailing slash.
+
 ## Deploy the frontend
 
-Deploy by pushing to the workflow's configured branch, or run the workflow manually if the workflow supports manual dispatch.
+Deploy by pushing to the collaborator branch in GitHub (which triggers `.github/workflows/deploy-collaborator.yml`), or manually run `.github/workflows/deploy-dispatch.yml` via GitHub Actions (`workflow_dispatch`).
+
+To pause automatic deployments across all collaborator branches, set the repository variable `ENABLE_APP_ENGINE_DEPLOYMENTS` to `false`. Manual dispatch runs will still be permitted.
 
 The deployment workflow writes the build-time React environment values:
 

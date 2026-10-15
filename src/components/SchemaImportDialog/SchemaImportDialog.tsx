@@ -416,26 +416,9 @@ export default function SchemaImportDialog({
                           title: "Sync with repo",
                           recommended: true,
                           description:
-                            "Updates matching schemas, adds new ones, and removes unused ones. Schemas with record groups attached are always kept.",
+                            "Updates matching schemas and adds new ones. Existing schemas are always preserved.",
                           label: "Refresh from repo (recommended)",
-                          disabled: busy || !canReplace,
-                        },
-                        {
-                          value: "add" as const,
-                          title: "Add new only",
-                          recommended: false,
-                          description: "Adds schemas that don’t exist yet. Existing schemas are left unchanged.",
-                          label: "Add to existing schemas",
                           disabled: busy,
-                        },
-                        {
-                          value: "replace" as const,
-                          title: "Replace catalog",
-                          recommended: false,
-                          description:
-                            "Removes every schema not in this import, then imports the selection. Attached record groups will be detached if their schema is removed.",
-                          label: "Replace the schema catalog",
-                          disabled: busy || !canReplace,
                         },
                       ].map(card => {
                         const isSelected = mode === card.value;

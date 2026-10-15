@@ -17,7 +17,7 @@ const ALL_PERMISSIONS = [
   "update_coordinates",
   "upload_document",
   "verify_record",
-  "update_coordinates",
+  "view_schema",
 ];
 
 const backendUrl = () => Cypress.env("backendURL") || "http://localhost:8001";
