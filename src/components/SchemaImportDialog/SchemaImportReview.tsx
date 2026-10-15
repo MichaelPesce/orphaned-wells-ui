@@ -226,10 +226,8 @@ export function ImportSummary({ preview }: { preview: SchemaImportPreview }) {
 
       {preview.mode === "refresh" && (
         <Alert severity="info" sx={{ borderRadius: 2 }}>
-          Refreshing schemas will update matching schemas in place and add new repository schemas. Existing schemas in
-          active use are preserved, and unused schemas are pruned.
-          {preview.counts.removed > 0 &&
-            ` ${preview.counts.removed} unused schema${preview.counts.removed === 1 ? "" : "s"} will be removed.`}
+          Refreshing schemas will update matching schemas in place and add new repository schemas. Existing schemas are
+          preserved.
         </Alert>
       )}
 

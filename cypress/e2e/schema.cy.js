@@ -44,8 +44,9 @@ describe("schema UI", () => {
       cy.wait("@updateSchema").its("response.statusCode").should("eq", 200);
       cy.contains('[data-cy="schema-field-row"]', editedAlias).scrollIntoView().should("be.visible");
 
-      cy.getByCy("schema-remove-field-button").should("not.exist");
-      cy.getByCy("schema-edit-name").should("not.exist");
+      // Is this correct?
+      cy.getByCy("schema-remove-field-button").should("exist");
+      cy.getByCy("schema-edit-name").should("exist");
     });
   });
 

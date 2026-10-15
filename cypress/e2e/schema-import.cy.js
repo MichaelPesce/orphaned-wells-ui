@@ -24,19 +24,19 @@ describe("Import repo schemas", () => {
     cy.findByLabelText("Well · 1 fields").should("be.checked");
   };
 
-  it("disables refresh preview for schema managers without destructive permission", () => {
+  it("allows refresh preview for schema managers without destructive permission", () => {
     setup(["manage_schema"]);
     open();
-    cy.findByLabelText("Refresh from repo (recommended)").should("be.disabled");
-    cy.findByRole("button", { name: "Preview import" }).should("be.disabled");
+    cy.findByLabelText("Refresh from repo (recommended)").should("be.enabled");
+    cy.findByRole("button", { name: "Preview import" }).should("be.enabled");
   });
 
   it("previews and applies schema refresh and retains a partial import for retry", () => {
-    setup(["manage_schema", "manage_schema_destructive"]);
+    setup(["manage_schema"]);
     const refreshPlan = {
       ...plan,
       mode: "refresh",
-      destructive: true,
+      destructive: false,
       counts: { ...plan.counts, added: 0, updated: 1, removed: 0 },
       entries: [{ source_id: "Well", name: "Well", action: "updated", candidates: [{ schema_id: "existing", name: "Well", diff, groups: [] }], groups: [], diff }],
     };

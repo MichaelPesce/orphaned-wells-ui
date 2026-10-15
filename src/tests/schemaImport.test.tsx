@@ -44,12 +44,12 @@ test("Refresh from repo is the default mode, requires confirmation, and applies 
   expect(onApplied).toHaveBeenCalledTimes(1);
 });
 
-test("safe managers without destructive permission cannot preview or run refresh mode", async () => {
+test("safe managers without destructive permission can preview and run refresh mode", async () => {
   mockPermission.mockImplementation(permission => permission !== "manage_schema_destructive");
   render(<SchemaImportDialog onClose={jest.fn()} onApplied={jest.fn()} />);
   await screen.findByLabelText("Well · 2 fields");
-  expect(screen.getByLabelText("Refresh from repo (recommended)")).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Preview import" })).toBeDisabled();
+  expect(screen.getByLabelText("Refresh from repo (recommended)")).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Preview import" })).toBeEnabled();
 });
 
 test("a stale apply stays open and requires another preview", async () => {

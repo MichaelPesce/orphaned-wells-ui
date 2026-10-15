@@ -416,9 +416,9 @@ export default function SchemaImportDialog({
                           title: "Sync with repo",
                           recommended: true,
                           description:
-                            "Updates matching schemas, adds new ones, and removes unused ones. Schemas with record groups attached are always kept.",
+                            "Updates matching schemas and adds new ones. Existing schemas are always preserved.",
                           label: "Refresh from repo (recommended)",
-                          disabled: busy || !canReplace,
+                          disabled: busy,
                         },
                       ].map(card => {
                         const isSelected = mode === card.value;
@@ -750,7 +750,7 @@ export default function SchemaImportDialog({
           {step === 0 && !source?.pending_import && (
             <Button
               variant="contained"
-              disabled={busy || !selected.length || source?.busy || !canReplace}
+              disabled={busy || !selected.length || source?.busy}
               startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
               onClick={flow.review}
               aria-label="Preview import"
