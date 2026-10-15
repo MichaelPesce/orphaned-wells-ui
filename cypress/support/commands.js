@@ -10,7 +10,6 @@ const ALL_PERMISSIONS = [
   "delete",
   "manage_project",
   "manage_schema",
-  "manage_schema_destructive",
   "manage_system",
   "manage_team",
   "review_record",

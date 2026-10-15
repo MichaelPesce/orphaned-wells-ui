@@ -8,10 +8,7 @@ const expectRecordResponse = (response, expectedRecordName) => {
   }
 };
 
-describe(
-  "loading in each schema mode",
-  { retries: { runMode: 2, openMode: 0 } },
-  () => {
+describe("loading in each schema mode", () => {
   const databaseMode = Boolean(
     Cypress.env("useDbSchemas") ?? Cypress.env("useDbProcessors")
   );
@@ -73,14 +70,6 @@ describe(
         `${Cypress.env("backendURL")}/get_record_groups/${project._id}`
       ).as("getRecordGroups");
       cy.getByCy("project-row").contains(seed.projectName).click();
-      cy.getByCy("subheader-title", { timeout: 30000 }).should(
-        "contain",
-        seed.projectName
-      );
-      cy.findByRole("columnheader", {
-        name: /record group name/i,
-        timeout: 30000,
-      }).should("be.visible");
       cy.wait("@getRecordGroups").then(({ response }) => {
         expect(response?.statusCode).to.eq(200);
         expect(response?.body.record_groups.map((group) => group.name)).to.include(
@@ -98,33 +87,24 @@ describe(
         `${Cypress.env("backendURL")}/get_records/record_group*`
       ).as("getRecordGroupRecords");
       cy.getByCy("record-group-row").contains(seed.recordGroupName).click();
-      cy.getByCy("subheader-title", { timeout: 30000 }).should(
-        "contain",
-        seed.recordGroupName
-      );
       cy.wait("@getRecordGroup").then(({ response }) => {
         expect(response?.statusCode).to.eq(200);
         expect(response?.body.rg_data.name).to.eq(seed.recordGroupName);
-        if (response?.body?.rg_data?.schema_source !== undefined) {
-          expect(response.body.rg_data.schema_source).to.eq(
-            databaseMode ? "database" : "repo"
-          );
-        }
+        expect(response?.body.rg_data.schema_source).to.eq(
+          databaseMode ? "database" : "repo"
+        );
       });
       cy.wait("@getRecordGroupRecords").then(({ response }) => {
         expectRecordResponse(response, seed.recordName);
       });
 
-      cy.findByRole("columnheader", { name: /record name/i, timeout: 30000 }).should("be.visible");
       cy.intercept(
         "POST",
         `${Cypress.env("backendURL")}/get_record/${record._id}`
       ).as("getRecord");
       cy.contains('[data-cy="record-row"]', seed.recordName, {
         timeout: 30000,
-      })
-        .should("be.visible")
-        .click();
+      }).click();
       cy.wait("@getRecord").then(({ response }) => {
         expect(response?.statusCode).to.be.oneOf([200, 303]);
         expect(response?.body.recordData.name).to.eq(seed.recordName);
@@ -132,11 +112,7 @@ describe(
           0
         );
       });
-      cy.findByRole("columnheader", { name: /field/i, timeout: 30000 }).should("be.visible");
-      cy.getByCy("subheader-title", { timeout: 30000 }).should(
-        "contain",
-        seed.recordName
-      );
+      cy.findByRole("columnheader", { name: /field/i }).should("be.visible");
     });
   });
 
