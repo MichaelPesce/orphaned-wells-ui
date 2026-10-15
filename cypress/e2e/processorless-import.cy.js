@@ -165,7 +165,6 @@ describe("processorless record import workflows", () => {
   let recordGroupsToCleanup = [];
 
   beforeEach(() => {
-    cy.resetSeedData();
     cy.clearLocalStorage();
   });
 

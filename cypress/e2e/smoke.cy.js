@@ -22,8 +22,11 @@ const expectRecordsTableShell = () => {
 };
 
 describe("core navigation smoke", () => {
-  beforeEach(() => {
+  before(() => {
     cy.resetSeedData();
+  });
+
+  beforeEach(() => {
     cy.clearLocalStorage();
   });
 

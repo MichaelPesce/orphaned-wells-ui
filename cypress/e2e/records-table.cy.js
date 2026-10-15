@@ -78,7 +78,6 @@ const findRecordWithAttributes = (records) => {
 
 describe("record tables", () => {
   beforeEach(() => {
-    cy.resetSeedData();
     cy.clearLocalStorage();
   });
 

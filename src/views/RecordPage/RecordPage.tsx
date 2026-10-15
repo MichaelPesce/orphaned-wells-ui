@@ -297,16 +297,11 @@ const Record = () => {
 
   const handleUpdateRecordName = () => {
     if (locked) return;
-    const nextName = recordName;
     setOpenUpdateNameModal(false);
     callAPI(
       updateRecord,
-      [params.id, { data: { name: nextName }, type: "name" }],
-      (data) => {
-        const resolvedName = (data && typeof data === "object" && data.name) || nextName;
-        setRecordName(resolvedName);
-        setRecordData((prev) => ({ ...prev, name: resolvedName }));
-      },
+      [params.id, { data: { name: recordName }, type: "name" }],
+      (data) => window.location.reload(),
       handleFailedUpdate
     );
   };
@@ -462,7 +457,9 @@ const Record = () => {
   const handleUpdateReviewStatus = (new_status: string, categories?: string[], description?: string) => {
     let data_update;
     if (new_status === "unreviewed") {
-      data_update = { review_status: "unreviewed" };
+      let tempRecordData = { ...recordData };
+      tempRecordData["review_status"] = "unreviewed";
+      data_update = tempRecordData;
     } else if (new_status === "defective") {
       data_update = {review_status: new_status, defective_categories: categories, defective_description: description};
     } else if (new_status === "verification_required") {
@@ -619,10 +616,7 @@ const Record = () => {
         open={showResetPrompt}
         handleClose={() => setShowResetPrompt(false)}
         text="Setting status to unreviewed will reset any changes made, and revert all fields to uncleaned values. Are you sure you want to continue?"
-        handleSave={() => {
-          setShowResetPrompt(false);
-          handleUpdateReviewStatus("unreviewed");
-        }}
+        handleSave={() => handleUpdateReviewStatus("unreviewed")}
         buttonText='Reset'
         buttonColor='primary'
         buttonVariant='contained'

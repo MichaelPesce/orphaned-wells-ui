@@ -16,8 +16,11 @@ describe(
     Cypress.env("useDbSchemas") ?? Cypress.env("useDbProcessors")
   );
 
-  beforeEach(() => {
+  before(() => {
     cy.resetSeedData();
+  });
+
+  beforeEach(() => {
     cy.clearLocalStorage();
   });
 
