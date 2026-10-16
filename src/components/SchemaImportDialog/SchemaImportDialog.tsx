@@ -582,7 +582,7 @@ export default function SchemaImportDialog({
                                       fontFamily: "monospace",
                                       fontSize: "0.8125rem",
                                       fontWeight: 500,
-                                      color: schema.error ? "#dc2626" : "#18181b",
+                                      color: schema.error ? "#dc2626" : schema.warnings?.length ? "#d97706" : "#18181b",
                                       whiteSpace: "nowrap",
                                       overflow: "hidden",
                                       textOverflow: "ellipsis",
@@ -600,6 +600,11 @@ export default function SchemaImportDialog({
                                   {schema.error}
                                 </Alert>
                               )}
+                              {schema.warnings?.map(warning => (
+                                <Alert key={warning} severity="warning" sx={{ mx: 2, my: 1, py: 0, borderRadius: 1 }}>
+                                  {warning}
+                                </Alert>
+                              ))}
                             </Box>
                           );
                         })}
