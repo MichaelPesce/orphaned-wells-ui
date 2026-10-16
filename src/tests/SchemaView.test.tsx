@@ -162,7 +162,10 @@ test("administrators see a detachment warning when deleting a schema with attach
   (getSchema as jest.Mock).mockResolvedValue(response({
     processors: [{
       ...processor,
-      record_groups: [{ id: "cccccccccccccccccccccccc", name: "Group", team: "test" }],
+      record_groups: [
+        { id: "cccccccccccccccccccccccc", name: "Group A", team: "test" },
+        { id: "dddddddddddddddddddddddd", name: "Group B", team: "test" },
+      ],
     }],
     source: "database",
     read_only: false,
@@ -170,11 +173,13 @@ test("administrators see a detachment warning when deleting a schema with attach
   render(<MemoryRouter><SchemaView /></MemoryRouter>);
   const deleteButton = await screen.findByRole("button", { name: "Delete Well schema" });
   fireEvent.click(deleteButton);
+  expect(await screen.findByRole("dialog", { name: "Remove Schema" })).toBeInTheDocument();
+  expect(screen.getByText(/2 record groups will be detached/)).toBeInTheDocument();
   expect(
-    await screen.findByText(
-      /Are you sure you would like to remove Well schema\? Warning: Record group Group is attached to this schema and will be detached\./
-    )
+    screen.getByText(/The following record groups are attached to this schema and will be detached:/)
   ).toBeInTheDocument();
+  expect(screen.getByText("Group A")).toBeInTheDocument();
+  expect(screen.getByText("Group B")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Remove" }));
   await waitFor(() =>
     expect(deleteProcessorSchema).toHaveBeenCalledWith("Well schema", processor.schema_id)
