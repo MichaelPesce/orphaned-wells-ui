@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import SchemaView from "../views/SchemaView/SchemaView";
-import { createSchema, getCleaningFunctions, getSchema, updateProcessorAttribute } from "../services/app.service";
+import { createSchema, deleteProcessorSchema, getCleaningFunctions, getSchema, updateProcessorAttribute } from "../services/app.service";
 
 const mockHasPermission = jest.fn();
 jest.mock("../usercontext", () => ({ useUserContext: () => ({ hasPermission: mockHasPermission }) }));
@@ -153,5 +153,35 @@ test("schema table highlights fields with validation warnings without blocking a
       "add",
       processor.schema_id
     )
+  );
+});
+
+test("administrators see a detachment warning when deleting a schema with attached record groups", async () => {
+  mockHasPermission.mockReturnValue(true);
+  (deleteProcessorSchema as jest.Mock).mockResolvedValue(response("success"));
+  (getSchema as jest.Mock).mockResolvedValue(response({
+    processors: [{
+      ...processor,
+      record_groups: [
+        { id: "cccccccccccccccccccccccc", name: "Group A", team: "test" },
+        { id: "dddddddddddddddddddddddd", name: "Group B", team: "test" },
+      ],
+    }],
+    source: "database",
+    read_only: false,
+  }));
+  render(<MemoryRouter><SchemaView /></MemoryRouter>);
+  const deleteButton = await screen.findByRole("button", { name: "Delete Well schema" });
+  fireEvent.click(deleteButton);
+  expect(await screen.findByRole("dialog", { name: "Remove Schema" })).toBeInTheDocument();
+  expect(screen.getByText(/2 record groups will be detached/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/The following record groups are attached to this schema and will be detached:/)
+  ).toBeInTheDocument();
+  expect(screen.getByText("Group A")).toBeInTheDocument();
+  expect(screen.getByText("Group B")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+  await waitFor(() =>
+    expect(deleteProcessorSchema).toHaveBeenCalledWith("Well schema", processor.schema_id)
   );
 });
