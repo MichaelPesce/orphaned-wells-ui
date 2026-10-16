@@ -306,6 +306,7 @@ export interface MongoProcessor {
     can_process?: boolean;
     created_by?: string | null;
     created_by_team?: string | null;
+    record_groups?: SchemaImportGroup[];
     "name": string;
     "processorId"?: string | null;
     "modelId"?: string | null;

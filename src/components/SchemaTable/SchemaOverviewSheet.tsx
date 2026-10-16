@@ -180,7 +180,21 @@ const SchemaOverViewSheet = ({ processors, readOnly, setTabValue, setEditingProc
         handleClose={() => { if (!deleting) setShowDeleteProcessorModal(false); }}
         showError={!!deleteError}
         errorText={deleteError}
-        text={`Are you sure you would like to remove ${processors[pendingDelete || 0].name}?`}
+        text={(() => {
+          const targetProcessor = processors[pendingDelete || 0];
+          const attachedGroups = targetProcessor?.record_groups || [];
+          const attachedGroupNames = attachedGroups
+            .map((group) => group.name || group.id)
+            .filter(Boolean)
+            .join(", ");
+          return attachedGroups.length > 0
+            ? `Are you sure you would like to remove ${targetProcessor.name}? Warning: ${
+                attachedGroups.length === 1
+                  ? `Record group ${attachedGroupNames} is`
+                  : `Record groups (${attachedGroupNames}) are`
+              } attached to this schema and will be detached.`
+            : `Are you sure you would like to remove ${targetProcessor.name}?`;
+        })()}
         handleSave={handleDeleteProcessor}
         buttonText={deleting ? "Removing…" : "Remove"}
         buttonColor='error'
