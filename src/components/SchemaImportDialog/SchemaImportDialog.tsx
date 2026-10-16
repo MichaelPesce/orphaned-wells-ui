@@ -546,7 +546,12 @@ export default function SchemaImportDialog({
                             This package has no schemas available to import.
                           </Alert>
                         )}
-                        {source.schemas.map(schema => {
+                        {[...source.schemas]
+                          .sort((a, b) => {
+                            const rank = (s: typeof a) => (s.error ? 0 : s.warnings?.length ? 1 : 2);
+                            return rank(a) - rank(b);
+                          })
+                          .map(schema => {
                           const schemaLabel = `${schema.name}${schema.field_count !== undefined ? ` · ${schema.field_count} fields` : ""}`;
                           return (
                             <Box key={schema.source_id}>

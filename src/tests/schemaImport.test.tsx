@@ -166,21 +166,31 @@ test("can select GitHub source, fetch from custom branch/ref, and include source
   expect(screen.getByText(/GitHub CATALOG-Historic-Records\/OGRRE_data_cleaning @ feature-branch · isgs/)).toBeInTheDocument();
 });
 
-test("package schemas with field warnings remain selectable and display warning alerts", async () => {
+test("package schemas with field warnings are sorted to the top, remain selectable, and display warning alerts", async () => {
   (getRepoSchemaImport as jest.Mock).mockResolvedValue(response({
     source,
-    schemas: [{
-      source_id: "testamerica",
-      name: "TestAmerica Extractor",
-      field_count: 15,
-      warnings: ["Field 'sample::test_parameter::limits' requires a Parent field at its parent path."],
-    }],
+    schemas: [
+      {
+        source_id: "normal",
+        name: "Normal Extractor",
+        field_count: 10,
+      },
+      {
+        source_id: "testamerica",
+        name: "TestAmerica Extractor",
+        field_count: 15,
+        warnings: ["Field 'sample::test_parameter::limits' requires a Parent field at its parent path."],
+      },
+    ],
     busy: false,
   }));
   render(<SchemaImportDialog onClose={jest.fn()} onApplied={jest.fn()} />);
   await screen.findByText("Field 'sample::test_parameter::limits' requires a Parent field at its parent path.");
-  const checkbox = screen.getByLabelText("TestAmerica Extractor · 15 fields");
-  expect(checkbox).toBeEnabled();
-  expect(checkbox).toBeChecked();
+  const checkboxes = screen.getAllByRole("checkbox");
+  // checkboxes[0] is "Select all schemas", checkboxes[1] is the first schema row
+  expect(checkboxes[1]).toHaveAttribute("aria-label", "TestAmerica Extractor · 15 fields");
+  expect(checkboxes[2]).toHaveAttribute("aria-label", "Normal Extractor · 10 fields");
+  expect(checkboxes[1]).toBeEnabled();
+  expect(checkboxes[1]).toBeChecked();
   expect(screen.getByRole("button", { name: "Preview import" })).toBeEnabled();
 });
