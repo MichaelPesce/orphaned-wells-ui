@@ -118,3 +118,40 @@ test("schema managers can create an empty schema without processor identifiers",
   await waitFor(() => expect(createSchema).toHaveBeenCalledWith({ name: "Imported", displayName: "Imported", documentType: "Well", processorId: null, modelId: null, attributes: [] }));
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 });
+
+test("schema table highlights fields with validation warnings without blocking adding new fields", async () => {
+  (getSchema as jest.Mock).mockResolvedValue(response({
+    processors: [{
+      ...processor,
+      attributes: [
+        ...processor.attributes,
+        { name: "sample::test_parameter::limits", alias: "Limits", data_type: "Plain text", database_data_type: "str" },
+        { name: "analysis", alias: "Analysis", data_type: "Parent", database_data_type: "Table" },
+        { name: "analysis::parameter_test", alias: "Parameter Test", data_type: "Parent", database_data_type: "bool" },
+      ],
+    }],
+    source: "database",
+    read_only: false,
+  }));
+  await openFields();
+
+  expect(screen.getByTestId("schema-field-warning-sample::test_parameter::limits")).toBeInTheDocument();
+  expect(screen.getByTestId("schema-field-warning-analysis::parameter_test")).toBeInTheDocument();
+  expect(screen.queryByTestId("schema-field-warning-depth")).not.toBeInTheDocument();
+  expect(screen.queryByTestId("schema-field-warning-analysis")).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Add field" }));
+  fireEvent.change(screen.getByRole("textbox", { name: /Field Name/ }), { target: { value: "new_field" } });
+  fireEvent.mouseDown(screen.getByLabelText("Data type"));
+  fireEvent.click(screen.getByRole("option", { name: "Plain text" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add Field" }));
+  await waitFor(() =>
+    expect(updateProcessorAttribute).toHaveBeenCalledWith(
+      "Well schema",
+      "new_field",
+      expect.objectContaining({ name: "new_field" }),
+      "add",
+      processor.schema_id
+    )
+  );
+});

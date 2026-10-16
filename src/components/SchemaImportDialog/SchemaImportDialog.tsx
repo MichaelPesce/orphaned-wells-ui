@@ -546,7 +546,12 @@ export default function SchemaImportDialog({
                             This package has no schemas available to import.
                           </Alert>
                         )}
-                        {source.schemas.map(schema => {
+                        {[...source.schemas]
+                          .sort((a, b) => {
+                            const rank = (s: typeof a) => (s.error ? 0 : s.warnings?.length ? 1 : 2);
+                            return rank(a) - rank(b);
+                          })
+                          .map(schema => {
                           const schemaLabel = `${schema.name}${schema.field_count !== undefined ? ` · ${schema.field_count} fields` : ""}`;
                           return (
                             <Box key={schema.source_id}>
@@ -582,7 +587,7 @@ export default function SchemaImportDialog({
                                       fontFamily: "monospace",
                                       fontSize: "0.8125rem",
                                       fontWeight: 500,
-                                      color: schema.error ? "#dc2626" : "#18181b",
+                                      color: schema.error ? "#dc2626" : schema.warnings?.length ? "#d97706" : "#18181b",
                                       whiteSpace: "nowrap",
                                       overflow: "hidden",
                                       textOverflow: "ellipsis",
@@ -600,6 +605,11 @@ export default function SchemaImportDialog({
                                   {schema.error}
                                 </Alert>
                               )}
+                              {schema.warnings?.map(warning => (
+                                <Alert key={warning} severity="warning" sx={{ mx: 2, my: 1, py: 0, borderRadius: 1 }}>
+                                  {warning}
+                                </Alert>
+                              ))}
                             </Box>
                           );
                         })}

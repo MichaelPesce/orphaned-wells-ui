@@ -201,7 +201,7 @@ export interface SchemaImportPreview {
 
 export interface RepoSchemaImportSource {
     source: RepoSchemaSource;
-    schemas: { source_id: string; name: string; field_count?: number; error?: string }[];
+    schemas: { source_id: string; name: string; field_count?: number; error?: string; warnings?: string[] }[];
     pending_import?: SchemaImportPreview | null;
     busy: boolean;
     error?: string;

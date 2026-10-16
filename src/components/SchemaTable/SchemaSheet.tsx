@@ -15,6 +15,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import { useEffect, useState } from "react";
 import { MongoProcessor, SchemaField } from "../../types";
 import { schemaProcessorColumns as columns } from "../../util";
@@ -76,6 +77,32 @@ type DraftState = Record<EditableKey, string>;
 const getDatabaseOptions = (dataType?: string) =>
   DATABASE_DATA_TYPE_OPTIONS[dataType || ""] || [];
 
+const getFieldWarnings = (
+  row: SchemaField,
+  byName: Map<string, SchemaField>
+): string[] => {
+  const warnings: string[] = [];
+  const dataType = row.data_type || row.google_data_type;
+  if (dataType || row.database_data_type) {
+    const validDbTypes = dataType ? DATABASE_DATA_TYPE_OPTIONS[dataType] : undefined;
+    if (
+      !validDbTypes ||
+      !row.database_data_type ||
+      !validDbTypes.includes(row.database_data_type)
+    ) {
+      warnings.push(`Unsupported data type combination for '${row.name}'.`);
+    }
+  }
+  if (row.name?.includes("::")) {
+    const parentPath = row.name.slice(0, row.name.lastIndexOf("::"));
+    const parent = byName.get(parentPath);
+    if (!parent || (parent.data_type || parent.google_data_type) !== "Parent") {
+      warnings.push(`Field '${row.name}' requires a Parent field at its parent path.`);
+    }
+  }
+  return warnings;
+};
+
 const getDraftFromRow = (row: SchemaField): DraftState => ({
   alias: row.alias || "",
   cleaning_function: row.cleaning_function || "",
@@ -98,6 +125,7 @@ const SchemaSheet = ({
   const canEdit = !readOnly && hasPermission("manage_schema");
   const canRemove = canEdit && allowRemove && hasPermission("manage_schema_destructive");
   const { attributes = [] } = processor || {};
+  const byName = new Map(attributes.map((field) => [field.name, field]));
   const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [pendingDeleteRow, setPendingDeleteRow] = useState<SchemaField | null>(null);
@@ -231,35 +259,39 @@ const SchemaSheet = ({
     options: string[],
     allowEmpty = false,
     testId?: string
-  ) => (
-    <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
-      <Select
-        inputProps={{ "aria-label": label }}
-        data-cy={testId}
-        value={value}
-        displayEmpty={allowEmpty}
-        onChange={onChange}
-        sx={{
-          fontSize: 14,
-          "& .MuiSelect-select": {
-            py: 0.75,
-            px: 1.5,
-          },
-        }}
-      >
-        {allowEmpty && (
-          <MenuItem value="">
-            <em>None</em>
-          </MenuItem>
-        )}
-        {options.map((option) => (
-          <MenuItem key={option} value={option}>
-            {option}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  );
+  ) => {
+    const selectOptions =
+      value && !options.includes(value) ? [value, ...options] : options;
+    return (
+      <FormControl size="small" fullWidth sx={EDIT_CONTROL_SX}>
+        <Select
+          inputProps={{ "aria-label": label }}
+          data-cy={testId}
+          value={value}
+          displayEmpty={allowEmpty}
+          onChange={onChange}
+          sx={{
+            fontSize: 14,
+            "& .MuiSelect-select": {
+              py: 0.75,
+              px: 1.5,
+            },
+          }}
+        >
+          {allowEmpty && (
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+          )}
+          {selectOptions.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    );
+  };
 
   return (
     <>
@@ -299,16 +331,22 @@ const SchemaSheet = ({
           {attributes.map((row, idx) => {
             const isEditing = canEdit && editingRowKey === getRowKey(row, idx) && draft;
             const pageOrderSortInvalid = !!isEditing && getPageOrderSortInvalid(draft.page_order_sort);
+            const warnings = getFieldWarnings(row, byName);
+            const hasWarning = warnings.length > 0;
 
             return (
               <TableRow
                 key={idx}
                 data-cy="schema-field-row"
                 data-field-name={row.name}
+                data-has-warning={hasWarning ? "true" : undefined}
                 hover
                 sx={{
                   cursor: "pointer",
-                  "&:hover": { backgroundColor: "rgba(0,0,0,0.03)" },
+                  backgroundColor: hasWarning ? "#fffbeb" : undefined,
+                  "&:hover": {
+                    backgroundColor: hasWarning ? "#fef3c7" : "rgba(0,0,0,0.03)",
+                  },
                   "& td": {
                     borderBottom: "1px solid #eee",
                     padding: "8px 16px",
@@ -383,6 +421,18 @@ const SchemaSheet = ({
                           },
                         }}
                       />
+                    ) : col.key === "name" && hasWarning ? (
+                      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0 }}>
+                        <Tooltip title={warnings.join(" ")}>
+                          <WarningAmberOutlinedIcon
+                            data-testid={`schema-field-warning-${row.name}`}
+                            sx={{ fontSize: 16, color: "#d97706", flexShrink: 0 }}
+                          />
+                        </Tooltip>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {row.name}
+                        </span>
+                      </Stack>
                     ) : (
                       row[col.key as keyof SchemaField]
                     )}
