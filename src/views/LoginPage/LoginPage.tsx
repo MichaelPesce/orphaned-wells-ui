@@ -20,6 +20,7 @@ interface LoginPageProps {
 
 const CILOGON_STATE_STORAGE_KEY = "ogrre_cilogon_oauth_state";
 const CILOGON_REDIRECT_STORAGE_KEY = "ogrre_cilogon_redirect_uri";
+const CILOGON_CALLBACK_PATH = "/auth/cilogon/callback";
 const DEFAULT_CILOGON_AUTHORIZE_URI = "https://cilogon.org/authorize";
 const DEFAULT_CILOGON_SCOPE = "openid email profile org.cilogon.userinfo";
 const DEFAULT_UNAUTHORIZED_MESSAGE =
@@ -93,9 +94,10 @@ const LoginPage = (props: LoginPageProps) => {
         if (!active || !data) return;
         const nextGoogle = data.google ? Boolean(data.google.enabled) : true;
         const nextCilogonClientId = data.cilogon?.client_id || envCilogonClientId;
-        const nextCilogon = Boolean(
-          (data.cilogon && data.cilogon.enabled) || nextCilogonClientId
-        );
+        const nextCilogon =
+          data.cilogon !== undefined
+            ? Boolean(data.cilogon.enabled && nextCilogonClientId)
+            : Boolean(envCilogonClientId);
         setGoogleEnabled(nextGoogle || !nextCilogon);
         setCilogonEnabled(nextCilogon);
         if (nextCilogonClientId) {
@@ -128,13 +130,13 @@ const LoginPage = (props: LoginPageProps) => {
     handledCallbackRef.current = true;
 
     if (window.history?.replaceState) {
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.history.replaceState({}, document.title, "/login");
     }
 
     const expectedState = sessionStorage.getItem(CILOGON_STATE_STORAGE_KEY);
     const storedRedirectUri =
       sessionStorage.getItem(CILOGON_REDIRECT_STORAGE_KEY) ||
-      `${window.location.origin}/login`;
+      `${window.location.origin}${CILOGON_CALLBACK_PATH}`;
     sessionStorage.removeItem(CILOGON_STATE_STORAGE_KEY);
     sessionStorage.removeItem(CILOGON_REDIRECT_STORAGE_KEY);
 
@@ -170,7 +172,7 @@ const LoginPage = (props: LoginPageProps) => {
     setErrorMessage(null);
     setAuthenticatingProvider("cilogon");
 
-    const redirectUri = `${window.location.origin}/login`;
+    const redirectUri = `${window.location.origin}${CILOGON_CALLBACK_PATH}`;
     const randomPart =
       typeof window.crypto?.randomUUID === "function"
         ? window.crypto.randomUUID()

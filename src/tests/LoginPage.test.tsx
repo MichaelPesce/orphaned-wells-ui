@@ -97,7 +97,7 @@ describe("LoginPage", () => {
     render(<LoginPage handleSuccessfulAuthentication={jest.fn()} />);
 
     const cilogonButton = await screen.findByRole("button", {
-      name: /login with institutional account \(cilogon\)/i,
+      name: /login with institutional account/i,
     });
     expect(cilogonButton).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /login with google/i })).toBeInTheDocument();
@@ -108,7 +108,9 @@ describe("LoginPage", () => {
     const assignedUrl = new URL((window.location.assign as jest.Mock).mock.calls[0][0]);
     expect(assignedUrl.origin + assignedUrl.pathname).toBe("https://cilogon.org/authorize");
     expect(assignedUrl.searchParams.get("client_id")).toBe("cilogon-client-123");
-    expect(assignedUrl.searchParams.get("redirect_uri")).toBe("http://localhost:3000/login");
+    expect(assignedUrl.searchParams.get("redirect_uri")).toBe(
+      "http://localhost:3000/auth/cilogon/callback"
+    );
     expect(assignedUrl.searchParams.get("scope")).toBe(
       "openid email profile org.cilogon.userinfo"
     );
@@ -117,7 +119,11 @@ describe("LoginPage", () => {
 
   test("completes CILogon callback code exchange when returning with code and matching state", async () => {
     sessionStorage.setItem("ogrre_cilogon_oauth_state", "cilogon_state_abc");
-    sessionStorage.setItem("ogrre_cilogon_redirect_uri", "http://localhost:3000/login");
+    sessionStorage.setItem(
+      "ogrre_cilogon_redirect_uri",
+      "http://localhost:3000/auth/cilogon/callback"
+    );
+    window.location.pathname = "/auth/cilogon/callback";
     window.location.search = "?code=cilogon-code-xyz&state=cilogon_state_abc";
 
     const onSuccess = jest.fn();
@@ -127,7 +133,7 @@ describe("LoginPage", () => {
       expect(authLogin).toHaveBeenCalledWith(
         "cilogon-code-xyz",
         "cilogon",
-        "http://localhost:3000/login"
+        "http://localhost:3000/auth/cilogon/callback"
       );
       expect(onSuccess).toHaveBeenCalledTimes(1);
     });
