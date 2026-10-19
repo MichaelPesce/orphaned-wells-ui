@@ -34,6 +34,22 @@ export const CILOGON_IDP_OPTIONS: CilogonIdpOption[] = [
     entityId: "urn:mace:incommon:lbl.gov",
   },
   {
+    label: "Pacific Northwest National Laboratory (PNNL)",
+    entityId: "https://sso.pnnl.gov/idp",
+  },
+  {
+    label: "Lawrence Livermore National Laboratory (LLNL)",
+    entityId: "https://eidp.llnl.gov",
+  },
+  {
+    label: "Oak Ridge National Laboratory (ORNL)",
+    entityId: "https://idp.ornl.gov/idp",
+  },
+  {
+    label: "Argonne National Laboratory (ANL)",
+    entityId: "https://identityprovider.anl.gov/idp/shibboleth",
+  },
+  {
     label: "ORCID",
     entityId: "http://orcid.org/oauth/authorize",
   },
@@ -239,7 +255,6 @@ const LoginPage = (props: LoginPageProps) => {
           OGRRE
         </Typography>
         <Typography sx={styles.subtitle} variant="body2">
-          Sign in to access well document review and data cleaning workflows.
         </Typography>
 
         <Box sx={styles.buttonStack}>

@@ -339,13 +339,6 @@ export const LoginPageStyles = {
       borderColor: "#98A2B3",
     },
   },
-  providerHint: {
-    textAlign: "center",
-    color: "#6B7280",
-    fontSize: "0.775rem",
-    lineHeight: 1.4,
-    mt: -0.25,
-  },
   divider: {
     my: 0.5,
     color: "#6B7280",
