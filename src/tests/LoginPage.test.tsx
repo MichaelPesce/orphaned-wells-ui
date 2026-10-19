@@ -254,4 +254,42 @@ describe("LoginPage", () => {
     expect(alert).toHaveTextContent(/not authorized to access this application/i);
     expect(onSuccess).not.toHaveBeenCalled();
   });
+
+  test("resets CILogon loading state when navigating back to the login page", async () => {
+    (getAuthProviders as jest.Mock).mockResolvedValue(
+      makeResponse({
+        google: { enabled: true },
+        cilogon: {
+          enabled: true,
+          client_id: "cilogon-client-123",
+          authorize_uri: "https://cilogon.org/authorize",
+          scope: "openid email profile org.cilogon.userinfo",
+          idp_options: MOCK_DEFAULT_IDP_OPTIONS,
+        },
+      })
+    );
+
+    render(<LoginPage handleSuccessfulAuthentication={jest.fn()} />);
+
+    const cilogonButton = await screen.findByRole("button", {
+      name: /login with institutional account/i,
+    });
+    const googleButton = screen.getByRole("button", { name: /login with google/i });
+
+    fireEvent.click(cilogonButton);
+
+    expect(
+      screen.getByRole("button", { name: /signing in with cilogon/i })
+    ).toBeDisabled();
+    expect(googleButton).toBeDisabled();
+
+    fireEvent(window, new Event("pageshow"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /login with institutional account/i })
+      ).toBeEnabled();
+      expect(googleButton).toBeEnabled();
+    });
+  });
 });

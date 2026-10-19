@@ -116,10 +116,12 @@ const LoginPage = (props: LoginPageProps) => {
   const [authenticatingProvider, setAuthenticatingProvider] = useState<AuthProviderType | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const handledCallbackRef = useRef(false);
+  const isExchangingCodeRef = useRef(false);
 
   const completeCodeExchange = useCallback(
     async (code: string, provider?: AuthProviderType, redirectUri?: string) => {
       setErrorMessage(null);
+      isExchangingCodeRef.current = true;
       setAuthenticatingProvider(provider || "google");
       try {
         const response = provider
@@ -158,11 +160,37 @@ const LoginPage = (props: LoginPageProps) => {
         console.error("error trying to login: " + e);
         setErrorMessage("Unable to connect to authentication service. Please try again.");
       } finally {
+        isExchangingCodeRef.current = false;
         setAuthenticatingProvider(null);
       }
     },
     [handleSuccessfulAuthentication]
   );
+
+  useEffect(() => {
+    const resetRedirectState = () => {
+      if (!isExchangingCodeRef.current) {
+        setAuthenticatingProvider(null);
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        resetRedirectState();
+      }
+    };
+
+    window.addEventListener("pageshow", resetRedirectState);
+    window.addEventListener("pagehide", resetRedirectState);
+    window.addEventListener("popstate", resetRedirectState);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pageshow", resetRedirectState);
+      window.removeEventListener("pagehide", resetRedirectState);
+      window.removeEventListener("popstate", resetRedirectState);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
