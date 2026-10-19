@@ -258,7 +258,7 @@ const LoginPage = (props: LoginPageProps) => {
               >
                 {authenticatingProvider === "cilogon"
                   ? "Signing in with CILogon..."
-                  : "Login with Institutional Account (CILogon)"}
+                  : "Login with Institutional Account"}
               </Button>
               <Typography sx={styles.providerHint}>
                 Sign in with your university, national lab (e.g., LBL), or research institution credentials.
