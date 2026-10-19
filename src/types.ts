@@ -354,6 +354,26 @@ export interface UpdateRolePermissionsRequest {
     permissions: string[];
 }
 
+export type AuthProviderType = "google" | "cilogon";
+
+export interface AuthProviderInfo {
+    enabled: boolean;
+    client_id: string;
+    authorize_uri?: string;
+    scope?: string;
+}
+
+export interface AuthProvidersResponse {
+    google?: AuthProviderInfo;
+    cilogon?: AuthProviderInfo;
+}
+
+export interface AuthLoginRequest {
+    code: string;
+    provider?: AuthProviderType;
+    redirect_uri?: string;
+}
+
 export interface User {
     email: string;
     name: string;
@@ -364,6 +384,8 @@ export interface User {
     permissions?: any;
     default_team: string;
     collaborator?: string;
+    cilogon_sub?: string;
+    idp_name?: string;
 }
 
 export interface ChangeTeamRequest {

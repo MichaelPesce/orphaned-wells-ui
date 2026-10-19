@@ -1,4 +1,6 @@
 import {
+  AuthLoginRequest,
+  AuthProviderType,
   ChangeCollaboratorRequest,
   ChangeTeamRequest,
   DirectoryUploadRequest,
@@ -384,11 +386,31 @@ export const deleteRecords = (data: any) => {
   });
 };
 
-export const authLogin = (code: any) => {
+export const getAuthProviders = () => {
+  return fetch(BACKEND_URL + "/auth_providers", {
+    mode: CORS_MODE,
+  });
+};
+
+export const authLogin = (
+  codeOrPayload: string | AuthLoginRequest,
+  provider?: AuthProviderType,
+  redirectUri?: string
+) => {
+  const body =
+    typeof codeOrPayload === "string"
+      ? provider || redirectUri
+        ? {
+          code: codeOrPayload,
+          ...(provider ? { provider } : {}),
+          ...(redirectUri ? { redirect_uri: redirectUri } : {}),
+        }
+        : codeOrPayload
+      : codeOrPayload;
   return fetch(BACKEND_URL + "/auth_login", {
     method: "POST",
     mode: CORS_MODE,
-    body: JSON.stringify(code),
+    body: JSON.stringify(body),
     headers: JSON_HEADERS,
   });
 };

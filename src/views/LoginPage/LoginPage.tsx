@@ -1,71 +1,282 @@
-import { useState } from "react";
-import { Box, Button, Typography, Modal } from "@mui/material";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Divider,
+  Typography,
+} from "@mui/material";
 import { useGoogleLogin } from "@react-oauth/google";
-import { authLogin } from "../../services/app.service";
 import GoogleIcon from "@mui/icons-material/Google";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import { authLogin, getAuthProviders } from "../../services/app.service";
+import { AuthProvidersResponse, AuthProviderType } from "../../types";
 import { LoginPageStyles as styles } from "../../styles";
 
 interface LoginPageProps {
-    handleSuccessfulAuthentication: () => void;
+  handleSuccessfulAuthentication: () => void;
 }
+
+const CILOGON_STATE_STORAGE_KEY = "ogrre_cilogon_oauth_state";
+const CILOGON_REDIRECT_STORAGE_KEY = "ogrre_cilogon_redirect_uri";
+const DEFAULT_CILOGON_AUTHORIZE_URI = "https://cilogon.org/authorize";
+const DEFAULT_CILOGON_SCOPE = "openid email profile org.cilogon.userinfo";
+const DEFAULT_UNAUTHORIZED_MESSAGE =
+  "You are not authorized to access this application. Please login with a different account or contact the development team to gain access.";
 
 const LoginPage = (props: LoginPageProps) => {
   const { handleSuccessfulAuthentication } = props;
-  const [showUnauthorizedMessage, setShowUnauthorizedMessage] = useState(false);
+  const envCilogonClientId = process.env.REACT_APP_CILOGON_CLIENTID || "";
+
+  const [googleEnabled, setGoogleEnabled] = useState(true);
+  const [cilogonEnabled, setCilogonEnabled] = useState(Boolean(envCilogonClientId));
+  const [cilogonClientId, setCilogonClientId] = useState(envCilogonClientId);
+  const [cilogonAuthorizeUri, setCilogonAuthorizeUri] = useState(DEFAULT_CILOGON_AUTHORIZE_URI);
+  const [cilogonScope, setCilogonScope] = useState(DEFAULT_CILOGON_SCOPE);
+  const [authenticatingProvider, setAuthenticatingProvider] = useState<AuthProviderType | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const handledCallbackRef = useRef(false);
+
+  const completeCodeExchange = useCallback(
+    async (code: string, provider?: AuthProviderType, redirectUri?: string) => {
+      setErrorMessage(null);
+      setAuthenticatingProvider(provider || "google");
+      try {
+        const response = provider
+          ? await authLogin(code, provider, redirectUri)
+          : await authLogin(code);
+        let data: { detail?: { message?: string } | string } = {};
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
+        }
+
+        if (response.status === 200) {
+          handleSuccessfulAuthentication();
+          return;
+        }
+
+        if (response.status === 403) {
+          const detailMessage =
+            typeof data?.detail === "object" ? data?.detail?.message : undefined;
+          setErrorMessage(
+            detailMessage
+              ? `${detailMessage} ${DEFAULT_UNAUTHORIZED_MESSAGE}`
+              : DEFAULT_UNAUTHORIZED_MESSAGE
+          );
+        } else {
+          const detailMessage =
+            typeof data?.detail === "object"
+              ? data?.detail?.message
+              : typeof data?.detail === "string"
+                ? data.detail
+                : undefined;
+          setErrorMessage(detailMessage || "Unable to sign in. Please try again.");
+        }
+      } catch (e) {
+        console.error("error trying to login: " + e);
+        setErrorMessage("Unable to connect to authentication service. Please try again.");
+      } finally {
+        setAuthenticatingProvider(null);
+      }
+    },
+    [handleSuccessfulAuthentication]
+  );
+
+  useEffect(() => {
+    let active = true;
+    getAuthProviders()
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: AuthProvidersResponse | null) => {
+        if (!active || !data) return;
+        const nextGoogle = data.google ? Boolean(data.google.enabled) : true;
+        const nextCilogonClientId = data.cilogon?.client_id || envCilogonClientId;
+        const nextCilogon = Boolean(
+          (data.cilogon && data.cilogon.enabled) || nextCilogonClientId
+        );
+        setGoogleEnabled(nextGoogle || !nextCilogon);
+        setCilogonEnabled(nextCilogon);
+        if (nextCilogonClientId) {
+          setCilogonClientId(nextCilogonClientId);
+        }
+        if (data.cilogon?.authorize_uri) {
+          setCilogonAuthorizeUri(data.cilogon.authorize_uri);
+        }
+        if (data.cilogon?.scope) {
+          setCilogonScope(data.cilogon.scope);
+        }
+      })
+      .catch(() => {
+        // Keep default provider state when backend provider discovery is unavailable.
+      });
+    return () => {
+      active = false;
+    };
+  }, [envCilogonClientId]);
+
+  useEffect(() => {
+    if (handledCallbackRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const oauthError = params.get("error");
+    const oauthErrorDescription = params.get("error_description");
+
+    if (!code && !oauthError) return;
+    handledCallbackRef.current = true;
+
+    if (window.history?.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    const expectedState = sessionStorage.getItem(CILOGON_STATE_STORAGE_KEY);
+    const storedRedirectUri =
+      sessionStorage.getItem(CILOGON_REDIRECT_STORAGE_KEY) ||
+      `${window.location.origin}/login`;
+    sessionStorage.removeItem(CILOGON_STATE_STORAGE_KEY);
+    sessionStorage.removeItem(CILOGON_REDIRECT_STORAGE_KEY);
+
+    if (oauthError) {
+      setErrorMessage(
+        oauthErrorDescription || `Institutional sign-in failed (${oauthError}).`
+      );
+      return;
+    }
+
+    if (expectedState && state !== expectedState) {
+      setErrorMessage("Sign-in session expired or state mismatch. Please try again.");
+      return;
+    }
+
+    if (code) {
+      completeCodeExchange(code, "cilogon", storedRedirectUri);
+    }
+  }, [completeCodeExchange]);
 
   const googleLogin = useGoogleLogin({
     onSuccess: async ({ code }: { code: string }) => {
-      authLogin(code)
-        .then(response => {
-          response.json()
-            .then((data: { detail?: { message?: string } }) => {
-              if (response.status === 200) {
-                handleSuccessfulAuthentication();
-              } else if (response.status === 403) {
-                console.error("403 error: user is pending");
-                setShowUnauthorizedMessage(true);
-              } else {
-                console.error(data?.detail?.message || "error trying to login");
-              }
-            }).catch((e: Error) => {
-              console.error("error trying to login: " + e);
-            });
-        }).catch((e: Error) => {
-          console.error("error trying to login: " + e);
-        });
+      await completeCodeExchange(code);
     },
     flow: "auth-code",
   });
 
+  const handleCilogonLogin = () => {
+    if (!cilogonClientId) {
+      setErrorMessage("CILogon client ID is not configured.");
+      return;
+    }
+    setErrorMessage(null);
+    setAuthenticatingProvider("cilogon");
+
+    const redirectUri = `${window.location.origin}/login`;
+    const randomPart =
+      typeof window.crypto?.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+    const state = `cilogon_${randomPart}`;
+
+    sessionStorage.setItem(CILOGON_STATE_STORAGE_KEY, state);
+    sessionStorage.setItem(CILOGON_REDIRECT_STORAGE_KEY, redirectUri);
+
+    const authorizeUrl = new URL(cilogonAuthorizeUri);
+    authorizeUrl.searchParams.set("response_type", "code");
+    authorizeUrl.searchParams.set("client_id", cilogonClientId);
+    authorizeUrl.searchParams.set("redirect_uri", redirectUri);
+    authorizeUrl.searchParams.set("scope", cilogonScope);
+    authorizeUrl.searchParams.set("state", state);
+
+    window.location.assign(authorizeUrl.toString());
+  };
+
+  const isBusy = authenticatingProvider !== null;
+
   return (
     <Box sx={styles.outerBox}>
-      <Box sx={styles.innerBox}>
-        <Modal
-          open={true}
-        >
-          <Box sx={styles.modalBox}>
-            <Typography sx={styles.modalLogo} variant="h6" component="h2">
-              <img
-                src={`${process.env.PUBLIC_URL}/img/OGRRE_logo.svg`}
-                width="50%"
-                alt="OGRRE logo"
-              />
-            </Typography>
-            <Typography sx={styles.modalTitle} variant="h6" component="h2">
-                            OGRRE
-            </Typography>
-            <Typography sx={styles.modalBody} component="span">
-              <Button id='login-button' onClick={googleLogin} variant="contained" startIcon={<GoogleIcon />}>
-                                Login with Google
-              </Button>
-            </Typography>
-            <Typography sx={styles.unauthorized}>
-              {
-                showUnauthorizedMessage && "*You are not authorized to access this application. Please login with a different account or contact the development team to gain access."
+      <Box sx={styles.cardBox} role="region" aria-label="Sign in to OGRRE">
+        <Box sx={styles.logoContainer}>
+          <img
+            src={`${process.env.PUBLIC_URL}/img/OGRRE_logo.svg`}
+            width="88"
+            alt="OGRRE logo"
+          />
+        </Box>
+        <Typography sx={styles.title} variant="h5" component="h1">
+          OGRRE
+        </Typography>
+        <Typography sx={styles.subtitle} variant="body2">
+          Sign in to access well document review and data cleaning workflows.
+        </Typography>
+
+        <Box sx={styles.buttonStack}>
+          {googleEnabled && (
+            <Button
+              id="login-button"
+              data-cy="google-login-button"
+              onClick={() => {
+                setErrorMessage(null);
+                googleLogin();
+              }}
+              variant="contained"
+              fullWidth
+              disabled={isBusy}
+              sx={styles.primaryButton}
+              startIcon={
+                authenticatingProvider === "google" ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  <GoogleIcon />
+                )
               }
-            </Typography>
-          </Box>
-        </Modal>
+            >
+              Login with Google
+            </Button>
+          )}
+
+          {googleEnabled && cilogonEnabled && (
+            <Divider sx={styles.divider}>or</Divider>
+          )}
+
+          {cilogonEnabled && (
+            <>
+              <Button
+                id="cilogon-login-button"
+                data-cy="cilogon-login-button"
+                onClick={handleCilogonLogin}
+                variant={googleEnabled ? "outlined" : "contained"}
+                fullWidth
+                disabled={isBusy}
+                sx={googleEnabled ? styles.secondaryButton : styles.primaryButton}
+                startIcon={
+                  authenticatingProvider === "cilogon" ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : (
+                    <AccountBalanceIcon />
+                  )
+                }
+              >
+                {authenticatingProvider === "cilogon"
+                  ? "Signing in with CILogon..."
+                  : "Login with Institutional Account (CILogon)"}
+              </Button>
+              <Typography sx={styles.providerHint}>
+                Sign in with your university, national lab (e.g., LBL), or research institution credentials.
+              </Typography>
+            </>
+          )}
+        </Box>
+
+        {errorMessage && (
+          <Alert
+            severity="error"
+            variant="outlined"
+            sx={styles.alert}
+            data-cy="login-error-alert"
+          >
+            {errorMessage}
+          </Alert>
+        )}
       </Box>
     </Box>
   );

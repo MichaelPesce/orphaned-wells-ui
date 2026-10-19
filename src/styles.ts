@@ -252,53 +252,100 @@ export const TableFiltersStyles = {
 
 export const LoginPageStyles = {
   outerBox: {
-    backgroundColor: "#F5F5F6",
-    height: "100vh"
-  },
-  innerBox: {
-    paddingY: 5,
-    paddingX: 5,
-  },
-  modalBox: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "min(500px, calc(100vw - 32px))",
-    maxHeight: "calc(100vh - 32px)",
-    overflowY: "auto",
+    backgroundColor: "#F4F5F7",
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    px: 2,
+    py: 4,
     boxSizing: "border-box",
-    backgroundColor: "#FAFAFA",
-    boxShadow: 24,
-    px: 4,
-    pb: 4,
-    pt: 4, 
-    borderRadius: 4,
-    "&:focus": {
-      outline: "none"
+  },
+  cardBox: {
+    width: "100%",
+    maxWidth: 440,
+    backgroundColor: "#FFFFFF",
+    border: "1px solid #E4E7EC",
+    boxShadow: "0 12px 32px -8px rgba(16, 24, 40, 0.08), 0 4px 12px -2px rgba(16, 24, 40, 0.04)",
+    px: { xs: 3, sm: 4.5 },
+    py: { xs: 3.5, sm: 4.5 },
+    borderRadius: 3,
+    boxSizing: "border-box",
+  },
+  logoContainer: {
+    display: "flex",
+    justifyContent: "center",
+    mb: 2,
+  },
+  title: {
+    textAlign: "center",
+    fontWeight: 700,
+    color: "#111827",
+    letterSpacing: "0.02em",
+  },
+  subtitle: {
+    textAlign: "center",
+    color: "#4B5563",
+    mt: 0.75,
+    mb: 3.5,
+    lineHeight: 1.5,
+  },
+  buttonStack: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 1.5,
+  },
+  primaryButton: {
+    py: 1.25,
+    px: 2.5,
+    borderRadius: 2,
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: "0.9375rem",
+    boxShadow: "none",
+    "&:hover": {
+      boxShadow: "none",
     },
   },
-  modalLogo: {
-    display: "flex",
-    justifyContent: "center",
+  secondaryButton: {
+    py: 1.25,
+    px: 2.5,
+    borderRadius: 2,
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: "0.9375rem",
+    borderColor: "#D0D5DD",
+    color: "#1F2937",
+    backgroundColor: "#FFFFFF",
+    "&:hover": {
+      borderColor: "#98A2B3",
+      backgroundColor: "#F9FAFB",
+    },
   },
-  modalTitle: {
-    display: "flex",
-    justifyContent: "center",
-    fontWeight: "bold"
+  providerHint: {
+    textAlign: "center",
+    color: "#6B7280",
+    fontSize: "0.775rem",
+    lineHeight: 1.4,
+    mt: -0.5,
   },
-  modalBody: {
-    display: "flex",
-    justifyContent: "center",
-    mt: 4
+  divider: {
+    my: 0.5,
+    color: "#6B7280",
+    fontSize: "0.75rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
   },
-  unauthorized: {
-    pt: 3,
-    color: "red",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    lineHeight: 1.5,
-  }
+  alert: {
+    mt: 2.5,
+    borderRadius: 2,
+    textAlign: "left",
+    "& .MuiAlert-message": {
+      whiteSpace: "normal",
+      overflowWrap: "anywhere",
+      lineHeight: 1.5,
+    },
+  },
 };
 
 export const DocumentContainerStyles = {
