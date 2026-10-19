@@ -1,8 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import LoginPage, {
-  DEFAULT_CILOGON_IDP_OPTIONS,
-  parseCilogonIdpOptions,
-} from "../views/LoginPage/LoginPage";
+import LoginPage from "../views/LoginPage/LoginPage";
 import { authLogin, getAuthProviders } from "../services/app.service";
 
 let mockGoogleOnSuccess: ((res: { code: string }) => void) | null = null;
@@ -23,6 +20,19 @@ jest.mock("../services/app.service", () => ({
   getAuthProviders: jest.fn(),
 }));
 
+const MOCK_DEFAULT_IDP_OPTIONS = [
+  {
+    label: "Lawrence Berkeley National Laboratory",
+    entityId: "urn:mace:incommon:lbl.gov",
+    logo: "/img/idp/lbl.svg",
+  },
+  {
+    label: "ORCID",
+    entityId: "http://orcid.org/oauth/authorize",
+    logo: "/img/idp/orcid.svg",
+  },
+];
+
 const makeResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
   status,
@@ -31,15 +41,11 @@ const makeResponse = (body: unknown, status = 200) => ({
 
 describe("LoginPage", () => {
   const originalLocation = window.location;
-  const originalEnvIdpOptions = process.env.REACT_APP_CILOGON_IDP_OPTIONS;
-  const originalPlainEnvIdpOptions = process.env.CILOGON_IDP_OPTIONS;
 
   beforeEach(() => {
     jest.clearAllMocks();
     sessionStorage.clear();
     mockGoogleOnSuccess = null;
-    delete process.env.REACT_APP_CILOGON_IDP_OPTIONS;
-    delete process.env.CILOGON_IDP_OPTIONS;
 
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -68,8 +74,6 @@ describe("LoginPage", () => {
       configurable: true,
       value: originalLocation,
     });
-    process.env.REACT_APP_CILOGON_IDP_OPTIONS = originalEnvIdpOptions;
-    process.env.CILOGON_IDP_OPTIONS = originalPlainEnvIdpOptions;
   });
 
   test("renders Google login button by default and authenticates with Google code", async () => {
@@ -99,6 +103,7 @@ describe("LoginPage", () => {
           client_id: "cilogon-client-123",
           authorize_uri: "https://cilogon.org/authorize",
           scope: "openid email profile org.cilogon.userinfo",
+          idp_options: MOCK_DEFAULT_IDP_OPTIONS,
         },
       })
     );
@@ -139,6 +144,7 @@ describe("LoginPage", () => {
           client_id: "cilogon-client-123",
           authorize_uri: "https://cilogon.org/authorize",
           scope: "openid email profile org.cilogon.userinfo",
+          idp_options: MOCK_DEFAULT_IDP_OPTIONS,
         },
       })
     );
@@ -163,34 +169,7 @@ describe("LoginPage", () => {
     );
   });
 
-  test("supports CILOGON_IDP_OPTIONS override via env or backend /auth_providers and renders logos or fallback placeholders", async () => {
-    expect(parseCilogonIdpOptions("")).toEqual(DEFAULT_CILOGON_IDP_OPTIONS);
-    expect(
-      DEFAULT_CILOGON_IDP_OPTIONS.every((opt) => Boolean(opt.logo))
-    ).toBe(true);
-    expect(
-      parseCilogonIdpOptions(
-        "orcid,lbl,Custom Lab|https://idp.custom.org,Branded Lab|https://idp.branded.org|/img/custom.svg"
-      )
-    ).toEqual([
-      {
-        label: "ORCID",
-        entityId: "http://orcid.org/oauth/authorize",
-        logo: "/img/idp/orcid.svg",
-      },
-      {
-        label: "Lawrence Berkeley National Laboratory",
-        entityId: "urn:mace:incommon:lbl.gov",
-        logo: "/img/idp/lbl.svg",
-      },
-      { label: "Custom Lab", entityId: "https://idp.custom.org" },
-      {
-        label: "Branded Lab",
-        entityId: "https://idp.branded.org",
-        logo: "/img/custom.svg",
-      },
-    ]);
-
+  test("renders backend idp_options with logos or fallback placeholders", async () => {
     (getAuthProviders as jest.Mock).mockResolvedValue(
       makeResponse({
         google: { enabled: true },

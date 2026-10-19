@@ -27,168 +27,22 @@ interface LoginPageProps {
   handleSuccessfulAuthentication: () => void;
 }
 
-export type { CilogonIdpOption };
-
-export const DEFAULT_CILOGON_IDP_OPTIONS: CilogonIdpOption[] = [
-  {
-    label: "Lawrence Berkeley National Laboratory",
-    entityId: "urn:mace:incommon:lbl.gov",
-    logo: "/img/idp/lbl.svg",
-  },
-  {
-    label: "Pacific Northwest National Laboratory",
-    entityId: "https://sso.pnnl.gov/idp",
-    logo: "/img/idp/pnnl.svg",
-  },
-  {
-    label: "Lawrence Livermore National Laboratory",
-    entityId: "https://eidp.llnl.gov",
-    logo: "/img/idp/llnl.svg",
-  },
-  {
-    label: "Oak Ridge National Laboratory",
-    entityId: "https://idp.ornl.gov/idp",
-    logo: "/img/idp/ornl.svg",
-  },
-  {
-    label: "Argonne National Laboratory",
-    entityId: "https://identityprovider.anl.gov/idp/shibboleth",
-    logo: "/img/idp/anl.svg",
-  },
-  {
-    label: "ORCID",
-    entityId: "http://orcid.org/oauth/authorize",
-    logo: "/img/idp/orcid.svg",
-  },
-];
-
-export const CILOGON_IDP_OPTIONS = DEFAULT_CILOGON_IDP_OPTIONS;
-
-const DEFAULT_IDP_LOGOS_BY_ENTITY_ID: Record<string, string> =
-  DEFAULT_CILOGON_IDP_OPTIONS.reduce<Record<string, string>>((acc, item) => {
-    if (item.logo) {
-      acc[item.entityId] = item.logo;
-    }
-    return acc;
-  }, {});
-
-const CILOGON_IDP_PRESETS: Record<string, CilogonIdpOption> = {
-  lbl: DEFAULT_CILOGON_IDP_OPTIONS[0],
-  lbnl: DEFAULT_CILOGON_IDP_OPTIONS[0],
-  pnnl: DEFAULT_CILOGON_IDP_OPTIONS[1],
-  llnl: DEFAULT_CILOGON_IDP_OPTIONS[2],
-  ornl: DEFAULT_CILOGON_IDP_OPTIONS[3],
-  anl: DEFAULT_CILOGON_IDP_OPTIONS[4],
-  orcid: DEFAULT_CILOGON_IDP_OPTIONS[5],
-  uiuc: {
-    label: "University of Illinois Urbana-Champaign (UIUC)",
-    entityId: "urn:mace:incommon:uiuc.edu",
-  },
-  berkeley: {
-    label: "University of California, Berkeley",
-    entityId: "urn:mace:incommon:berkeley.edu",
-  },
-  ucb: {
-    label: "University of California, Berkeley",
-    entityId: "urn:mace:incommon:berkeley.edu",
-  },
-  bnl: {
-    label: "Brookhaven National Laboratory",
-    entityId: "https://federation.bnl.gov/adfs/services/trust",
-  },
-  fnal: {
-    label: "Fermi National Accelerator Laboratory (Fermilab)",
-    entityId: "https://idp.fnal.gov/idp/shibboleth",
-  },
-  ames: {
-    label: "Ames National Laboratory",
-    entityId: "https://federation.ameslab.gov/adfs/services/trust",
-  },
-  jlab: {
-    label: "Thomas Jefferson National Accelerator Facility",
-    entityId: "https://misportal.jlab.org/idp/shibboleth",
-  },
-};
-
-export const parseCilogonIdpOptions = (
-  raw?: string | CilogonIdpOption[] | null
+const normalizeIdpOptions = (
+  items?: CilogonIdpOption[] | null
 ): CilogonIdpOption[] => {
-  if (!raw) {
-    return DEFAULT_CILOGON_IDP_OPTIONS;
-  }
-
-  const dedupe = (items: CilogonIdpOption[]): CilogonIdpOption[] => {
-    const seen = new Set<string>();
-    const result: CilogonIdpOption[] = [];
-    for (const item of items) {
-      const label = (item?.label || "").trim();
-      const entityId = (
-        item?.entityId ||
-        (item as unknown as { entity_id?: string })?.entity_id ||
-        ""
-      ).trim();
-      const rawLogo = (
-        item?.logo ||
-        (item as unknown as { logo_url?: string })?.logo_url ||
-        ""
-      ).trim();
-      const resolvedLogo = rawLogo || DEFAULT_IDP_LOGOS_BY_ENTITY_ID[entityId];
-      if (label && entityId && !seen.has(entityId)) {
-        seen.add(entityId);
-        result.push(
-          resolvedLogo ? { label, entityId, logo: resolvedLogo } : { label, entityId }
-        );
-      }
-    }
-    return result.length > 0 ? result : DEFAULT_CILOGON_IDP_OPTIONS;
-  };
-
-  if (Array.isArray(raw)) {
-    return dedupe(raw);
-  }
-
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return DEFAULT_CILOGON_IDP_OPTIONS;
-  }
-
-  if (trimmed.startsWith("[")) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        return dedupe(parsed);
-      }
-    } catch {
-      // Fall through to delimiter parsing if JSON is invalid.
+  if (!Array.isArray(items)) return [];
+  const seen = new Set<string>();
+  const result: CilogonIdpOption[] = [];
+  for (const item of items) {
+    const label = (item?.label || "").trim();
+    const entityId = (item?.entityId || "").trim();
+    const logo = (item?.logo || "").trim();
+    if (label && entityId && !seen.has(entityId)) {
+      seen.add(entityId);
+      result.push(logo ? { label, entityId, logo } : { label, entityId });
     }
   }
-
-  const delimiter = trimmed.includes(";") ? ";" : ",";
-  const tokens = trimmed
-    .split(delimiter)
-    .map((token) => token.trim())
-    .filter(Boolean);
-
-  const parsedOptions: CilogonIdpOption[] = [];
-  for (const token of tokens) {
-    if (token.includes("|")) {
-      const parts = token.split("|").map((part) => part.trim());
-      const label = parts[0] || "";
-      const entityId = parts[1] || "";
-      const logo = parts[2] || "";
-      if (label && entityId) {
-        parsedOptions.push(logo ? { label, entityId, logo } : { label, entityId });
-      }
-      continue;
-    }
-
-    const preset = CILOGON_IDP_PRESETS[token.toLowerCase()];
-    if (preset) {
-      parsedOptions.push(preset);
-    }
-  }
-
-  return dedupe(parsedOptions);
+  return result;
 };
 
 const resolveIdpLogoSrc = (logo?: string): string | undefined => {
@@ -251,21 +105,14 @@ const DEFAULT_UNAUTHORIZED_MESSAGE =
 const LoginPage = (props: LoginPageProps) => {
   const { handleSuccessfulAuthentication } = props;
   const envCilogonClientId = process.env.REACT_APP_CILOGON_CLIENTID || "";
-  const envCilogonIdpOptionsRaw =
-    process.env.REACT_APP_CILOGON_IDP_OPTIONS ||
-    process.env.CILOGON_IDP_OPTIONS ||
-    "";
-  const initialIdpOptions = parseCilogonIdpOptions(envCilogonIdpOptionsRaw);
 
   const [googleEnabled, setGoogleEnabled] = useState(true);
   const [cilogonEnabled, setCilogonEnabled] = useState(Boolean(envCilogonClientId));
   const [cilogonClientId, setCilogonClientId] = useState(envCilogonClientId);
   const [cilogonAuthorizeUri, setCilogonAuthorizeUri] = useState(DEFAULT_CILOGON_AUTHORIZE_URI);
   const [cilogonScope, setCilogonScope] = useState(DEFAULT_CILOGON_SCOPE);
-  const [idpOptions, setIdpOptions] = useState<CilogonIdpOption[]>(initialIdpOptions);
-  const [selectedIdp, setSelectedIdp] = useState<string>(
-    initialIdpOptions[0]?.entityId || DEFAULT_CILOGON_IDP_OPTIONS[0].entityId
-  );
+  const [idpOptions, setIdpOptions] = useState<CilogonIdpOption[]>([]);
+  const [selectedIdp, setSelectedIdp] = useState<string>("");
   const [authenticatingProvider, setAuthenticatingProvider] = useState<AuthProviderType | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const handledCallbackRef = useRef(false);
@@ -340,13 +187,8 @@ const LoginPage = (props: LoginPageProps) => {
         if (data.cilogon?.scope) {
           setCilogonScope(data.cilogon.scope);
         }
-        const backendIdpOptions = data.cilogon?.idp_options;
-        if (
-          !envCilogonIdpOptionsRaw.trim() &&
-          Array.isArray(backendIdpOptions) &&
-          backendIdpOptions.length > 0
-        ) {
-          const nextOptions = parseCilogonIdpOptions(backendIdpOptions);
+        const nextOptions = normalizeIdpOptions(data.cilogon?.idp_options);
+        if (nextOptions.length > 0) {
           setIdpOptions(nextOptions);
           setSelectedIdp((prev) =>
             nextOptions.some((opt) => opt.entityId === prev)
@@ -361,7 +203,7 @@ const LoginPage = (props: LoginPageProps) => {
     return () => {
       active = false;
     };
-  }, [envCilogonClientId, envCilogonIdpOptionsRaw]);
+  }, [envCilogonClientId]);
 
   useEffect(() => {
     if (handledCallbackRef.current) return;
@@ -493,26 +335,28 @@ const LoginPage = (props: LoginPageProps) => {
 
           {cilogonEnabled && (
             <Box sx={styles.cilogonGroup}>
-              <FormControl fullWidth size="small" disabled={isBusy}>
-                <InputLabel id="cilogon-idp-select-label">
-                  Institution
-                </InputLabel>
-                <Select
-                  labelId="cilogon-idp-select-label"
-                  id="cilogon-idp-select"
-                  data-cy="cilogon-idp-select"
-                  value={selectedIdp}
-                  label="Institution"
-                  onChange={handleSelectedIdpChange}
-                  sx={styles.idpSelect}
-                >
-                  {idpOptions.map((option) => (
-                    <MenuItem key={option.entityId} value={option.entityId}>
-                      <IdpOptionContent option={option} />
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              {idpOptions.length > 0 && (
+                <FormControl fullWidth size="small" disabled={isBusy}>
+                  <InputLabel id="cilogon-idp-select-label">
+                    Institution
+                  </InputLabel>
+                  <Select
+                    labelId="cilogon-idp-select-label"
+                    id="cilogon-idp-select"
+                    data-cy="cilogon-idp-select"
+                    value={selectedIdp}
+                    label="Institution"
+                    onChange={handleSelectedIdpChange}
+                    sx={styles.idpSelect}
+                  >
+                    {idpOptions.map((option) => (
+                      <MenuItem key={option.entityId} value={option.entityId}>
+                        <IdpOptionContent option={option} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
               <Button
                 id="cilogon-login-button"
                 data-cy="cilogon-login-button"
