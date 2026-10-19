@@ -3,10 +3,15 @@ import LoginPage from "../views/LoginPage/LoginPage";
 import { authLogin, getAuthProviders } from "../services/app.service";
 
 let mockGoogleOnSuccess: ((res: { code: string }) => void) | null = null;
+let mockGoogleLoginOptions: Record<string, unknown> | null = null;
 
 jest.mock("@react-oauth/google", () => ({
-  useGoogleLogin: (options: { onSuccess: (res: { code: string }) => void }) => {
+  useGoogleLogin: (options: {
+    onSuccess: (res: { code: string }) => void;
+    [key: string]: unknown;
+  }) => {
     mockGoogleOnSuccess = options.onSuccess;
+    mockGoogleLoginOptions = options;
     return () => {
       if (mockGoogleOnSuccess) {
         mockGoogleOnSuccess({ code: "google-auth-code" });
@@ -46,6 +51,7 @@ describe("LoginPage", () => {
     jest.clearAllMocks();
     sessionStorage.clear();
     mockGoogleOnSuccess = null;
+    mockGoogleLoginOptions = null;
 
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -76,7 +82,7 @@ describe("LoginPage", () => {
     });
   });
 
-  test("renders Google login button by default and authenticates with Google code", async () => {
+  test("renders Google login button by default and configures same-tab redirect to /auth/google/callback", async () => {
     const onSuccess = jest.fn();
     render(<LoginPage handleSuccessfulAuthentication={onSuccess} />);
 
@@ -85,11 +91,39 @@ describe("LoginPage", () => {
     expect(
       screen.queryByRole("button", { name: /login with institutional account/i })
     ).not.toBeInTheDocument();
+    expect(mockGoogleLoginOptions).toMatchObject({
+      flow: "auth-code",
+      ux_mode: "redirect",
+      redirect_uri: "http://localhost:3000/auth/google/callback",
+    });
+    expect(String(mockGoogleLoginOptions?.state || "")).toMatch(/^google_/);
 
     fireEvent.click(googleButton);
 
     await waitFor(() => {
       expect(authLogin).toHaveBeenCalledWith("google-auth-code");
+      expect(onSuccess).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  test("completes Google callback code exchange when returning to /auth/google/callback with code and matching state", async () => {
+    sessionStorage.setItem("ogrre_google_oauth_state", "google_state_123");
+    sessionStorage.setItem(
+      "ogrre_google_redirect_uri",
+      "http://localhost:3000/auth/google/callback"
+    );
+    window.location.pathname = "/auth/google/callback";
+    window.location.search = "?code=google-code-xyz&state=google_state_123";
+
+    const onSuccess = jest.fn();
+    render(<LoginPage handleSuccessfulAuthentication={onSuccess} />);
+
+    await waitFor(() => {
+      expect(authLogin).toHaveBeenCalledWith(
+        "google-code-xyz",
+        "google",
+        "http://localhost:3000/auth/google/callback"
+      );
       expect(onSuccess).toHaveBeenCalledTimes(1);
     });
   });

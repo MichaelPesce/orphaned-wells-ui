@@ -94,6 +94,9 @@ const IdpOptionContent = ({ option }: { option: CilogonIdpOption }) => {
   );
 };
 
+const GOOGLE_STATE_STORAGE_KEY = "ogrre_google_oauth_state";
+const GOOGLE_REDIRECT_STORAGE_KEY = "ogrre_google_redirect_uri";
+const GOOGLE_CALLBACK_PATH = "/auth/google/callback";
 const CILOGON_STATE_STORAGE_KEY = "ogrre_cilogon_oauth_state";
 const CILOGON_REDIRECT_STORAGE_KEY = "ogrre_cilogon_redirect_uri";
 const CILOGON_CALLBACK_PATH = "/auth/cilogon/callback";
@@ -102,11 +105,20 @@ const DEFAULT_CILOGON_SCOPE = "openid email profile org.cilogon.userinfo";
 const DEFAULT_UNAUTHORIZED_MESSAGE =
   "You are not authorized to access this application. Please login with a different account or contact the development team to gain access.";
 
+const createOAuthState = (prefix: AuthProviderType): string => {
+  const randomPart =
+    typeof window.crypto?.randomUUID === "function"
+      ? window.crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+  return `${prefix}_${randomPart}`;
+};
+
 const LoginPage = (props: LoginPageProps) => {
   const { handleSuccessfulAuthentication } = props;
   const envCilogonClientId = process.env.REACT_APP_CILOGON_CLIENTID || "";
 
   const [googleEnabled, setGoogleEnabled] = useState(true);
+  const [googleOAuthState] = useState(() => createOAuthState("google"));
   const [cilogonEnabled, setCilogonEnabled] = useState(Boolean(envCilogonClientId));
   const [cilogonClientId, setCilogonClientId] = useState(envCilogonClientId);
   const [cilogonAuthorizeUri, setCilogonAuthorizeUri] = useState(DEFAULT_CILOGON_AUTHORIZE_URI);
@@ -244,20 +256,40 @@ const LoginPage = (props: LoginPageProps) => {
     if (!code && !oauthError) return;
     handledCallbackRef.current = true;
 
+    const pathname = window.location.pathname;
+    const isGoogleCallback =
+      pathname === GOOGLE_CALLBACK_PATH ||
+      Boolean(state && state.startsWith("google_")) ||
+      (!pathname.includes("cilogon") &&
+        !state?.startsWith("cilogon_") &&
+        Boolean(sessionStorage.getItem(GOOGLE_STATE_STORAGE_KEY)));
+
     if (window.history?.replaceState) {
       window.history.replaceState({}, document.title, "/login");
     }
 
-    const expectedState = sessionStorage.getItem(CILOGON_STATE_STORAGE_KEY);
+    const callbackProvider: AuthProviderType = isGoogleCallback ? "google" : "cilogon";
+    const stateStorageKey = isGoogleCallback
+      ? GOOGLE_STATE_STORAGE_KEY
+      : CILOGON_STATE_STORAGE_KEY;
+    const redirectStorageKey = isGoogleCallback
+      ? GOOGLE_REDIRECT_STORAGE_KEY
+      : CILOGON_REDIRECT_STORAGE_KEY;
+    const defaultCallbackPath = isGoogleCallback
+      ? GOOGLE_CALLBACK_PATH
+      : CILOGON_CALLBACK_PATH;
+
+    const expectedState = sessionStorage.getItem(stateStorageKey);
     const storedRedirectUri =
-      sessionStorage.getItem(CILOGON_REDIRECT_STORAGE_KEY) ||
-      `${window.location.origin}${CILOGON_CALLBACK_PATH}`;
-    sessionStorage.removeItem(CILOGON_STATE_STORAGE_KEY);
-    sessionStorage.removeItem(CILOGON_REDIRECT_STORAGE_KEY);
+      sessionStorage.getItem(redirectStorageKey) ||
+      `${window.location.origin}${defaultCallbackPath}`;
+    sessionStorage.removeItem(stateStorageKey);
+    sessionStorage.removeItem(redirectStorageKey);
 
     if (oauthError) {
+      const providerLabel = isGoogleCallback ? "Google" : "Institutional";
       setErrorMessage(
-        oauthErrorDescription || `Institutional sign-in failed (${oauthError}).`
+        oauthErrorDescription || `${providerLabel} sign-in failed (${oauthError}).`
       );
       return;
     }
@@ -268,16 +300,31 @@ const LoginPage = (props: LoginPageProps) => {
     }
 
     if (code) {
-      completeCodeExchange(code, "cilogon", storedRedirectUri);
+      completeCodeExchange(code, callbackProvider, storedRedirectUri);
     }
   }, [completeCodeExchange]);
 
+  const googleRedirectUri = `${window.location.origin}${GOOGLE_CALLBACK_PATH}`;
+
   const googleLogin = useGoogleLogin({
     onSuccess: async ({ code }: { code: string }) => {
+      sessionStorage.removeItem(GOOGLE_STATE_STORAGE_KEY);
+      sessionStorage.removeItem(GOOGLE_REDIRECT_STORAGE_KEY);
       await completeCodeExchange(code);
     },
     flow: "auth-code",
+    ux_mode: "redirect",
+    redirect_uri: googleRedirectUri,
+    state: googleOAuthState,
   });
+
+  const handleGoogleLogin = () => {
+    setErrorMessage(null);
+    setAuthenticatingProvider("google");
+    sessionStorage.setItem(GOOGLE_STATE_STORAGE_KEY, googleOAuthState);
+    sessionStorage.setItem(GOOGLE_REDIRECT_STORAGE_KEY, googleRedirectUri);
+    googleLogin();
+  };
 
   const handleSelectedIdpChange = (event: SelectChangeEvent<string>) => {
     setSelectedIdp(event.target.value);
@@ -292,11 +339,7 @@ const LoginPage = (props: LoginPageProps) => {
     setAuthenticatingProvider("cilogon");
 
     const redirectUri = `${window.location.origin}${CILOGON_CALLBACK_PATH}`;
-    const randomPart =
-      typeof window.crypto?.randomUUID === "function"
-        ? window.crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
-    const state = `cilogon_${randomPart}`;
+    const state = createOAuthState("cilogon");
 
     sessionStorage.setItem(CILOGON_STATE_STORAGE_KEY, state);
     sessionStorage.setItem(CILOGON_REDIRECT_STORAGE_KEY, redirectUri);
@@ -337,10 +380,7 @@ const LoginPage = (props: LoginPageProps) => {
             <Button
               id="login-button"
               data-cy="google-login-button"
-              onClick={() => {
-                setErrorMessage(null);
-                googleLogin();
-              }}
+              onClick={handleGoogleLogin}
               variant="contained"
               fullWidth
               disabled={isBusy}

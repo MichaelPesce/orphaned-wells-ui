@@ -51,6 +51,7 @@ function App() {
   const { authLoading, databaseEnvironment, isAuthenticated } = useUserContext();
   const isAuthRoute =
     location.pathname === "/login" ||
+    location.pathname === "/auth/google/callback" ||
     location.pathname === "/auth/cilogon/callback";
   const showAuthenticatedShell = (
     isAuthenticated &&
@@ -69,6 +70,10 @@ function App() {
         <Routes>
           <Route
             path="login"
+            element={<LoginRoute />}
+          />
+          <Route
+            path="auth/google/callback"
             element={<LoginRoute />}
           />
           <Route
