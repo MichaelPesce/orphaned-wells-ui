@@ -81,7 +81,7 @@ describe("LoginPage", () => {
     });
   });
 
-  test("renders both Google and CILogon login options when CILogon is enabled and redirects to CILogon authorize URL", async () => {
+  test("renders both Google and CILogon login options when CILogon is enabled and redirects to CILogon authorize URL with selected institution idphint", async () => {
     (getAuthProviders as jest.Mock).mockResolvedValue(
       makeResponse({
         google: { enabled: true },
@@ -101,6 +101,7 @@ describe("LoginPage", () => {
     });
     expect(cilogonButton).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /login with google/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/institution/i)).toBeInTheDocument();
 
     fireEvent.click(cilogonButton);
 
@@ -114,7 +115,43 @@ describe("LoginPage", () => {
     expect(assignedUrl.searchParams.get("scope")).toBe(
       "openid email profile org.cilogon.userinfo"
     );
+    expect(assignedUrl.searchParams.get("idphint")).toBe(
+      "urn:mace:incommon:lbl.gov"
+    );
     expect(assignedUrl.searchParams.get("state")).toMatch(/^cilogon_/);
+  });
+
+  test("allows selecting ORCID in the institution selector and passes ORCID idphint to CILogon", async () => {
+    (getAuthProviders as jest.Mock).mockResolvedValue(
+      makeResponse({
+        google: { enabled: true },
+        cilogon: {
+          enabled: true,
+          client_id: "cilogon-client-123",
+          authorize_uri: "https://cilogon.org/authorize",
+          scope: "openid email profile org.cilogon.userinfo",
+        },
+      })
+    );
+
+    render(<LoginPage handleSuccessfulAuthentication={jest.fn()} />);
+
+    const institutionSelect = await screen.findByLabelText(/institution/i);
+    fireEvent.mouseDown(institutionSelect);
+
+    const orcidOption = await screen.findByRole("option", { name: /orcid/i });
+    fireEvent.click(orcidOption);
+
+    const cilogonButton = screen.getByRole("button", {
+      name: /login with institutional account/i,
+    });
+    fireEvent.click(cilogonButton);
+
+    expect(window.location.assign).toHaveBeenCalledTimes(1);
+    const assignedUrl = new URL((window.location.assign as jest.Mock).mock.calls[0][0]);
+    expect(assignedUrl.searchParams.get("idphint")).toBe(
+      "http://orcid.org/oauth/authorize"
+    );
   });
 
   test("completes CILogon callback code exchange when returning with code and matching state", async () => {

@@ -5,6 +5,11 @@ import {
   Button,
   CircularProgress,
   Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
   Typography,
 } from "@mui/material";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -17,6 +22,22 @@ import { LoginPageStyles as styles } from "../../styles";
 interface LoginPageProps {
   handleSuccessfulAuthentication: () => void;
 }
+
+export interface CilogonIdpOption {
+  label: string;
+  entityId: string;
+}
+
+export const CILOGON_IDP_OPTIONS: CilogonIdpOption[] = [
+  {
+    label: "Lawrence Berkeley National Laboratory (LBL)",
+    entityId: "urn:mace:incommon:lbl.gov",
+  },
+  {
+    label: "ORCID",
+    entityId: "http://orcid.org/oauth/authorize",
+  },
+];
 
 const CILOGON_STATE_STORAGE_KEY = "ogrre_cilogon_oauth_state";
 const CILOGON_REDIRECT_STORAGE_KEY = "ogrre_cilogon_redirect_uri";
@@ -35,6 +56,9 @@ const LoginPage = (props: LoginPageProps) => {
   const [cilogonClientId, setCilogonClientId] = useState(envCilogonClientId);
   const [cilogonAuthorizeUri, setCilogonAuthorizeUri] = useState(DEFAULT_CILOGON_AUTHORIZE_URI);
   const [cilogonScope, setCilogonScope] = useState(DEFAULT_CILOGON_SCOPE);
+  const [selectedIdp, setSelectedIdp] = useState<string>(
+    CILOGON_IDP_OPTIONS[0].entityId
+  );
   const [authenticatingProvider, setAuthenticatingProvider] = useState<AuthProviderType | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const handledCallbackRef = useRef(false);
@@ -164,6 +188,10 @@ const LoginPage = (props: LoginPageProps) => {
     flow: "auth-code",
   });
 
+  const handleSelectedIdpChange = (event: SelectChangeEvent<string>) => {
+    setSelectedIdp(event.target.value);
+  };
+
   const handleCilogonLogin = () => {
     if (!cilogonClientId) {
       setErrorMessage("CILogon client ID is not configured.");
@@ -188,6 +216,9 @@ const LoginPage = (props: LoginPageProps) => {
     authorizeUrl.searchParams.set("redirect_uri", redirectUri);
     authorizeUrl.searchParams.set("scope", cilogonScope);
     authorizeUrl.searchParams.set("state", state);
+    if (selectedIdp) {
+      authorizeUrl.searchParams.set("idphint", selectedIdp);
+    }
 
     window.location.assign(authorizeUrl.toString());
   };
@@ -241,7 +272,27 @@ const LoginPage = (props: LoginPageProps) => {
           )}
 
           {cilogonEnabled && (
-            <>
+            <Box sx={styles.cilogonGroup}>
+              <FormControl fullWidth size="small" disabled={isBusy}>
+                <InputLabel id="cilogon-idp-select-label">
+                  Institution
+                </InputLabel>
+                <Select
+                  labelId="cilogon-idp-select-label"
+                  id="cilogon-idp-select"
+                  data-cy="cilogon-idp-select"
+                  value={selectedIdp}
+                  label="Institution"
+                  onChange={handleSelectedIdpChange}
+                  sx={styles.idpSelect}
+                >
+                  {CILOGON_IDP_OPTIONS.map((option) => (
+                    <MenuItem key={option.entityId} value={option.entityId}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <Button
                 id="cilogon-login-button"
                 data-cy="cilogon-login-button"
@@ -262,10 +313,7 @@ const LoginPage = (props: LoginPageProps) => {
                   ? "Signing in with CILogon..."
                   : "Login with Institutional Account"}
               </Button>
-              <Typography sx={styles.providerHint}>
-                Sign in with your university, national lab (e.g., LBL), or research institution credentials.
-              </Typography>
-            </>
+            </Box>
           )}
         </Box>
 

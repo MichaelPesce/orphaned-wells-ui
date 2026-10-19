@@ -322,12 +322,29 @@ export const LoginPageStyles = {
       backgroundColor: "#F9FAFB",
     },
   },
+  cilogonGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 1.25,
+  },
+  idpSelect: {
+    borderRadius: 2,
+    backgroundColor: "#FFFFFF",
+    textAlign: "left",
+    fontSize: "0.9rem",
+    "& .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#D0D5DD",
+    },
+    "&:hover .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#98A2B3",
+    },
+  },
   providerHint: {
     textAlign: "center",
     color: "#6B7280",
     fontSize: "0.775rem",
     lineHeight: 1.4,
-    mt: -0.5,
+    mt: -0.25,
   },
   divider: {
     my: 0.5,
