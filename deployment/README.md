@@ -132,8 +132,8 @@ retirement definitions that have not been applied, use the optional bounded
 maintenance command in the updated backend container:
 
 ```sh
-docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.reconcile_schema_records RECORD_GROUP_ID
-docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec backend python -m ogrre.reconcile_schema_records RECORD_GROUP_ID --batch-size 100 --apply
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.scripts.reconcile_schema_records RECORD_GROUP_ID
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec backend python -m ogrre.scripts.reconcile_schema_records RECORD_GROUP_ID --batch-size 100 --apply
 ```
 
 The commands use the running backend's database configuration, including cloud
@@ -157,9 +157,9 @@ those roles while preserving the database's data, run the migration using an
 updated backend:
 
 ```sh
-docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions
-docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec backend python -m ogrre.migrate_schema_permissions --apply
-docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.migrate_schema_permissions
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.scripts.migrate_schema_permissions
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec backend python -m ogrre.scripts.migrate_schema_permissions --apply
+docker compose --env-file deployment/.env -f deployment/docker-compose.dev.yml exec -T backend python -m ogrre.scripts.migrate_schema_permissions
 ```
 
 Run these from the frontend repository. The commands use the running backend's
