@@ -16,19 +16,20 @@ import { useGoogleLogin } from "@react-oauth/google";
 import GoogleIcon from "@mui/icons-material/Google";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import { authLogin, getAuthProviders } from "../../services/app.service";
-import { AuthProvidersResponse, AuthProviderType } from "../../types";
+import {
+  AuthProvidersResponse,
+  AuthProviderType,
+  CilogonIdpOption,
+} from "../../types";
 import { LoginPageStyles as styles } from "../../styles";
 
 interface LoginPageProps {
   handleSuccessfulAuthentication: () => void;
 }
 
-export interface CilogonIdpOption {
-  label: string;
-  entityId: string;
-}
+export type { CilogonIdpOption };
 
-export const CILOGON_IDP_OPTIONS: CilogonIdpOption[] = [
+export const DEFAULT_CILOGON_IDP_OPTIONS: CilogonIdpOption[] = [
   {
     label: "Lawrence Berkeley National Laboratory (LBL)",
     entityId: "urn:mace:incommon:lbl.gov",
@@ -55,6 +56,118 @@ export const CILOGON_IDP_OPTIONS: CilogonIdpOption[] = [
   },
 ];
 
+export const CILOGON_IDP_OPTIONS = DEFAULT_CILOGON_IDP_OPTIONS;
+
+const CILOGON_IDP_PRESETS: Record<string, CilogonIdpOption> = {
+  lbl: DEFAULT_CILOGON_IDP_OPTIONS[0],
+  lbnl: DEFAULT_CILOGON_IDP_OPTIONS[0],
+  pnnl: DEFAULT_CILOGON_IDP_OPTIONS[1],
+  llnl: DEFAULT_CILOGON_IDP_OPTIONS[2],
+  ornl: DEFAULT_CILOGON_IDP_OPTIONS[3],
+  anl: DEFAULT_CILOGON_IDP_OPTIONS[4],
+  orcid: DEFAULT_CILOGON_IDP_OPTIONS[5],
+  uiuc: {
+    label: "University of Illinois Urbana-Champaign (UIUC)",
+    entityId: "urn:mace:incommon:uiuc.edu",
+  },
+  berkeley: {
+    label: "University of California, Berkeley",
+    entityId: "urn:mace:incommon:berkeley.edu",
+  },
+  ucb: {
+    label: "University of California, Berkeley",
+    entityId: "urn:mace:incommon:berkeley.edu",
+  },
+  bnl: {
+    label: "Brookhaven National Laboratory (BNL)",
+    entityId: "https://federation.bnl.gov/adfs/services/trust",
+  },
+  fnal: {
+    label: "Fermi National Accelerator Laboratory (Fermilab)",
+    entityId: "https://idp.fnal.gov/idp/shibboleth",
+  },
+  ames: {
+    label: "Ames National Laboratory",
+    entityId: "https://federation.ameslab.gov/adfs/services/trust",
+  },
+  jlab: {
+    label: "Thomas Jefferson National Accelerator Facility (JLab)",
+    entityId: "https://misportal.jlab.org/idp/shibboleth",
+  },
+};
+
+export const parseCilogonIdpOptions = (
+  raw?: string | CilogonIdpOption[] | null
+): CilogonIdpOption[] => {
+  if (!raw) {
+    return DEFAULT_CILOGON_IDP_OPTIONS;
+  }
+
+  const dedupe = (items: CilogonIdpOption[]): CilogonIdpOption[] => {
+    const seen = new Set<string>();
+    const result: CilogonIdpOption[] = [];
+    for (const item of items) {
+      const label = (item?.label || "").trim();
+      const entityId = (
+        item?.entityId ||
+        (item as unknown as { entity_id?: string })?.entity_id ||
+        ""
+      ).trim();
+      if (label && entityId && !seen.has(entityId)) {
+        seen.add(entityId);
+        result.push({ label, entityId });
+      }
+    }
+    return result.length > 0 ? result : DEFAULT_CILOGON_IDP_OPTIONS;
+  };
+
+  if (Array.isArray(raw)) {
+    return dedupe(raw);
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return DEFAULT_CILOGON_IDP_OPTIONS;
+  }
+
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return dedupe(parsed);
+      }
+    } catch {
+      // Fall through to delimiter parsing if JSON is invalid.
+    }
+  }
+
+  const delimiter = trimmed.includes(";") ? ";" : ",";
+  const tokens = trimmed
+    .split(delimiter)
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  const parsedOptions: CilogonIdpOption[] = [];
+  for (const token of tokens) {
+    if (token.includes("|")) {
+      const pipeIndex = token.indexOf("|");
+      const label = token.slice(0, pipeIndex).trim();
+      const entityId = token.slice(pipeIndex + 1).trim();
+      if (label && entityId) {
+        parsedOptions.push({ label, entityId });
+      }
+      continue;
+    }
+
+    const preset = CILOGON_IDP_PRESETS[token.toLowerCase()];
+    if (preset) {
+      parsedOptions.push(preset);
+    }
+  }
+
+  return dedupe(parsedOptions);
+};
+
 const CILOGON_STATE_STORAGE_KEY = "ogrre_cilogon_oauth_state";
 const CILOGON_REDIRECT_STORAGE_KEY = "ogrre_cilogon_redirect_uri";
 const CILOGON_CALLBACK_PATH = "/auth/cilogon/callback";
@@ -66,14 +179,20 @@ const DEFAULT_UNAUTHORIZED_MESSAGE =
 const LoginPage = (props: LoginPageProps) => {
   const { handleSuccessfulAuthentication } = props;
   const envCilogonClientId = process.env.REACT_APP_CILOGON_CLIENTID || "";
+  const envCilogonIdpOptionsRaw =
+    process.env.REACT_APP_CILOGON_IDP_OPTIONS ||
+    process.env.CILOGON_IDP_OPTIONS ||
+    "";
+  const initialIdpOptions = parseCilogonIdpOptions(envCilogonIdpOptionsRaw);
 
   const [googleEnabled, setGoogleEnabled] = useState(true);
   const [cilogonEnabled, setCilogonEnabled] = useState(Boolean(envCilogonClientId));
   const [cilogonClientId, setCilogonClientId] = useState(envCilogonClientId);
   const [cilogonAuthorizeUri, setCilogonAuthorizeUri] = useState(DEFAULT_CILOGON_AUTHORIZE_URI);
   const [cilogonScope, setCilogonScope] = useState(DEFAULT_CILOGON_SCOPE);
+  const [idpOptions, setIdpOptions] = useState<CilogonIdpOption[]>(initialIdpOptions);
   const [selectedIdp, setSelectedIdp] = useState<string>(
-    CILOGON_IDP_OPTIONS[0].entityId
+    initialIdpOptions[0]?.entityId || DEFAULT_CILOGON_IDP_OPTIONS[0].entityId
   );
   const [authenticatingProvider, setAuthenticatingProvider] = useState<AuthProviderType | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -149,6 +268,20 @@ const LoginPage = (props: LoginPageProps) => {
         if (data.cilogon?.scope) {
           setCilogonScope(data.cilogon.scope);
         }
+        const backendIdpOptions = data.cilogon?.idp_options;
+        if (
+          !envCilogonIdpOptionsRaw.trim() &&
+          Array.isArray(backendIdpOptions) &&
+          backendIdpOptions.length > 0
+        ) {
+          const nextOptions = parseCilogonIdpOptions(backendIdpOptions);
+          setIdpOptions(nextOptions);
+          setSelectedIdp((prev) =>
+            nextOptions.some((opt) => opt.entityId === prev)
+              ? prev
+              : nextOptions[0]?.entityId || ""
+          );
+        }
       })
       .catch(() => {
         // Keep default provider state when backend provider discovery is unavailable.
@@ -156,7 +289,7 @@ const LoginPage = (props: LoginPageProps) => {
     return () => {
       active = false;
     };
-  }, [envCilogonClientId]);
+  }, [envCilogonClientId, envCilogonIdpOptionsRaw]);
 
   useEffect(() => {
     if (handledCallbackRef.current) return;
@@ -301,7 +434,7 @@ const LoginPage = (props: LoginPageProps) => {
                   onChange={handleSelectedIdpChange}
                   sx={styles.idpSelect}
                 >
-                  {CILOGON_IDP_OPTIONS.map((option) => (
+                  {idpOptions.map((option) => (
                     <MenuItem key={option.entityId} value={option.entityId}>
                       {option.label}
                     </MenuItem>

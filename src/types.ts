@@ -356,11 +356,17 @@ export interface UpdateRolePermissionsRequest {
 
 export type AuthProviderType = "google" | "cilogon";
 
+export interface CilogonIdpOption {
+    label: string;
+    entityId: string;
+}
+
 export interface AuthProviderInfo {
     enabled: boolean;
     client_id: string;
     authorize_uri?: string;
     scope?: string;
+    idp_options?: CilogonIdpOption[];
 }
 
 export interface AuthProvidersResponse {

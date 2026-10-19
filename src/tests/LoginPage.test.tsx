@@ -1,5 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import LoginPage from "../views/LoginPage/LoginPage";
+import LoginPage, {
+  DEFAULT_CILOGON_IDP_OPTIONS,
+  parseCilogonIdpOptions,
+} from "../views/LoginPage/LoginPage";
 import { authLogin, getAuthProviders } from "../services/app.service";
 
 let mockGoogleOnSuccess: ((res: { code: string }) => void) | null = null;
@@ -28,11 +31,15 @@ const makeResponse = (body: unknown, status = 200) => ({
 
 describe("LoginPage", () => {
   const originalLocation = window.location;
+  const originalEnvIdpOptions = process.env.REACT_APP_CILOGON_IDP_OPTIONS;
+  const originalPlainEnvIdpOptions = process.env.CILOGON_IDP_OPTIONS;
 
   beforeEach(() => {
     jest.clearAllMocks();
     sessionStorage.clear();
     mockGoogleOnSuccess = null;
+    delete process.env.REACT_APP_CILOGON_IDP_OPTIONS;
+    delete process.env.CILOGON_IDP_OPTIONS;
 
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -61,6 +68,8 @@ describe("LoginPage", () => {
       configurable: true,
       value: originalLocation,
     });
+    process.env.REACT_APP_CILOGON_IDP_OPTIONS = originalEnvIdpOptions;
+    process.env.CILOGON_IDP_OPTIONS = originalPlainEnvIdpOptions;
   });
 
   test("renders Google login button by default and authenticates with Google code", async () => {
@@ -148,6 +157,53 @@ describe("LoginPage", () => {
     fireEvent.click(cilogonButton);
 
     expect(window.location.assign).toHaveBeenCalledTimes(1);
+    const assignedUrl = new URL((window.location.assign as jest.Mock).mock.calls[0][0]);
+    expect(assignedUrl.searchParams.get("idphint")).toBe(
+      "http://orcid.org/oauth/authorize"
+    );
+  });
+
+  test("supports CILOGON_IDP_OPTIONS override via env or backend /auth_providers while defaulting to the 6 standard options", async () => {
+    expect(parseCilogonIdpOptions("")).toEqual(DEFAULT_CILOGON_IDP_OPTIONS);
+    expect(parseCilogonIdpOptions("orcid,lbl,Custom Lab|https://idp.custom.org")).toEqual([
+      { label: "ORCID", entityId: "http://orcid.org/oauth/authorize" },
+      {
+        label: "Lawrence Berkeley National Laboratory (LBL)",
+        entityId: "urn:mace:incommon:lbl.gov",
+      },
+      { label: "Custom Lab", entityId: "https://idp.custom.org" },
+    ]);
+
+    (getAuthProviders as jest.Mock).mockResolvedValue(
+      makeResponse({
+        google: { enabled: true },
+        cilogon: {
+          enabled: true,
+          client_id: "cilogon-client-123",
+          authorize_uri: "https://cilogon.org/authorize",
+          scope: "openid email profile org.cilogon.userinfo",
+          idp_options: [
+            { label: "ORCID", entityId: "http://orcid.org/oauth/authorize" },
+            {
+              label: "Oak Ridge National Laboratory (ORNL)",
+              entityId: "https://idp.ornl.gov/idp",
+            },
+          ],
+        },
+      })
+    );
+
+    render(<LoginPage handleSuccessfulAuthentication={jest.fn()} />);
+
+    const cilogonButton = await screen.findByRole("button", {
+      name: /login with institutional account/i,
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText(/institution/i)).toHaveTextContent(/orcid/i);
+    });
+
+    fireEvent.click(cilogonButton);
+
     const assignedUrl = new URL((window.location.assign as jest.Mock).mock.calls[0][0]);
     expect(assignedUrl.searchParams.get("idphint")).toBe(
       "http://orcid.org/oauth/authorize"
