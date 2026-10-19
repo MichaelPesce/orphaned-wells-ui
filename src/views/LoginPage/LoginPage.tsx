@@ -31,32 +31,46 @@ export type { CilogonIdpOption };
 
 export const DEFAULT_CILOGON_IDP_OPTIONS: CilogonIdpOption[] = [
   {
-    label: "Lawrence Berkeley National Laboratory (LBL)",
+    label: "Lawrence Berkeley National Laboratory",
     entityId: "urn:mace:incommon:lbl.gov",
+    logo: "/img/idp/lbl.svg",
   },
   {
-    label: "Pacific Northwest National Laboratory (PNNL)",
+    label: "Pacific Northwest National Laboratory",
     entityId: "https://sso.pnnl.gov/idp",
+    logo: "/img/idp/pnnl.svg",
   },
   {
-    label: "Lawrence Livermore National Laboratory (LLNL)",
+    label: "Lawrence Livermore National Laboratory",
     entityId: "https://eidp.llnl.gov",
+    logo: "/img/idp/llnl.svg",
   },
   {
-    label: "Oak Ridge National Laboratory (ORNL)",
+    label: "Oak Ridge National Laboratory",
     entityId: "https://idp.ornl.gov/idp",
+    logo: "/img/idp/ornl.svg",
   },
   {
-    label: "Argonne National Laboratory (ANL)",
+    label: "Argonne National Laboratory",
     entityId: "https://identityprovider.anl.gov/idp/shibboleth",
+    logo: "/img/idp/anl.svg",
   },
   {
     label: "ORCID",
     entityId: "http://orcid.org/oauth/authorize",
+    logo: "/img/idp/orcid.svg",
   },
 ];
 
 export const CILOGON_IDP_OPTIONS = DEFAULT_CILOGON_IDP_OPTIONS;
+
+const DEFAULT_IDP_LOGOS_BY_ENTITY_ID: Record<string, string> =
+  DEFAULT_CILOGON_IDP_OPTIONS.reduce<Record<string, string>>((acc, item) => {
+    if (item.logo) {
+      acc[item.entityId] = item.logo;
+    }
+    return acc;
+  }, {});
 
 const CILOGON_IDP_PRESETS: Record<string, CilogonIdpOption> = {
   lbl: DEFAULT_CILOGON_IDP_OPTIONS[0],
@@ -79,7 +93,7 @@ const CILOGON_IDP_PRESETS: Record<string, CilogonIdpOption> = {
     entityId: "urn:mace:incommon:berkeley.edu",
   },
   bnl: {
-    label: "Brookhaven National Laboratory (BNL)",
+    label: "Brookhaven National Laboratory",
     entityId: "https://federation.bnl.gov/adfs/services/trust",
   },
   fnal: {
@@ -91,7 +105,7 @@ const CILOGON_IDP_PRESETS: Record<string, CilogonIdpOption> = {
     entityId: "https://federation.ameslab.gov/adfs/services/trust",
   },
   jlab: {
-    label: "Thomas Jefferson National Accelerator Facility (JLab)",
+    label: "Thomas Jefferson National Accelerator Facility",
     entityId: "https://misportal.jlab.org/idp/shibboleth",
   },
 };
@@ -113,9 +127,17 @@ export const parseCilogonIdpOptions = (
         (item as unknown as { entity_id?: string })?.entity_id ||
         ""
       ).trim();
+      const rawLogo = (
+        item?.logo ||
+        (item as unknown as { logo_url?: string })?.logo_url ||
+        ""
+      ).trim();
+      const resolvedLogo = rawLogo || DEFAULT_IDP_LOGOS_BY_ENTITY_ID[entityId];
       if (label && entityId && !seen.has(entityId)) {
         seen.add(entityId);
-        result.push({ label, entityId });
+        result.push(
+          resolvedLogo ? { label, entityId, logo: resolvedLogo } : { label, entityId }
+        );
       }
     }
     return result.length > 0 ? result : DEFAULT_CILOGON_IDP_OPTIONS;
@@ -150,11 +172,12 @@ export const parseCilogonIdpOptions = (
   const parsedOptions: CilogonIdpOption[] = [];
   for (const token of tokens) {
     if (token.includes("|")) {
-      const pipeIndex = token.indexOf("|");
-      const label = token.slice(0, pipeIndex).trim();
-      const entityId = token.slice(pipeIndex + 1).trim();
+      const parts = token.split("|").map((part) => part.trim());
+      const label = parts[0] || "";
+      const entityId = parts[1] || "";
+      const logo = parts[2] || "";
       if (label && entityId) {
-        parsedOptions.push({ label, entityId });
+        parsedOptions.push(logo ? { label, entityId, logo } : { label, entityId });
       }
       continue;
     }
@@ -166,6 +189,55 @@ export const parseCilogonIdpOptions = (
   }
 
   return dedupe(parsedOptions);
+};
+
+const resolveIdpLogoSrc = (logo?: string): string | undefined => {
+  if (!logo) return undefined;
+  const publicUrl = process.env.PUBLIC_URL || "";
+  if (logo.startsWith("/") && publicUrl && !logo.startsWith(publicUrl)) {
+    return `${publicUrl}${logo}`;
+  }
+  return logo;
+};
+
+const IdpOptionContent = ({ option }: { option: CilogonIdpOption }) => {
+  const [logoFailed, setLogoFailed] = useState(false);
+  const logoSrc = resolveIdpLogoSrc(option.logo);
+
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [option.logo]);
+
+  return (
+    <Box sx={styles.idpOptionRow}>
+      {logoSrc && !logoFailed ? (
+        <Box sx={styles.idpLogoBox}>
+          <Box
+            component="img"
+            src={logoSrc}
+            alt=""
+            aria-hidden="true"
+            data-testid="idp-option-logo"
+            data-idp-entity-id={option.entityId}
+            onError={() => setLogoFailed(true)}
+            sx={styles.idpLogoImg}
+          />
+        </Box>
+      ) : (
+        <Box
+          sx={styles.idpLogoPlaceholder}
+          aria-hidden="true"
+          data-testid="idp-option-placeholder"
+          data-idp-entity-id={option.entityId}
+        >
+          <AccountBalanceIcon sx={styles.idpPlaceholderIcon} />
+        </Box>
+      )}
+      <Box component="span" sx={styles.idpOptionLabel}>
+        {option.label}
+      </Box>
+    </Box>
+  );
 };
 
 const CILOGON_STATE_STORAGE_KEY = "ogrre_cilogon_oauth_state";
@@ -436,7 +508,7 @@ const LoginPage = (props: LoginPageProps) => {
                 >
                   {idpOptions.map((option) => (
                     <MenuItem key={option.entityId} value={option.entityId}>
-                      {option.label}
+                      <IdpOptionContent option={option} />
                     </MenuItem>
                   ))}
                 </Select>

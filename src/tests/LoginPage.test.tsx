@@ -163,15 +163,32 @@ describe("LoginPage", () => {
     );
   });
 
-  test("supports CILOGON_IDP_OPTIONS override via env or backend /auth_providers while defaulting to the 6 standard options", async () => {
+  test("supports CILOGON_IDP_OPTIONS override via env or backend /auth_providers and renders logos or fallback placeholders", async () => {
     expect(parseCilogonIdpOptions("")).toEqual(DEFAULT_CILOGON_IDP_OPTIONS);
-    expect(parseCilogonIdpOptions("orcid,lbl,Custom Lab|https://idp.custom.org")).toEqual([
-      { label: "ORCID", entityId: "http://orcid.org/oauth/authorize" },
+    expect(
+      DEFAULT_CILOGON_IDP_OPTIONS.every((opt) => Boolean(opt.logo))
+    ).toBe(true);
+    expect(
+      parseCilogonIdpOptions(
+        "orcid,lbl,Custom Lab|https://idp.custom.org,Branded Lab|https://idp.branded.org|/img/custom.svg"
+      )
+    ).toEqual([
       {
-        label: "Lawrence Berkeley National Laboratory (LBL)",
+        label: "ORCID",
+        entityId: "http://orcid.org/oauth/authorize",
+        logo: "/img/idp/orcid.svg",
+      },
+      {
+        label: "Lawrence Berkeley National Laboratory",
         entityId: "urn:mace:incommon:lbl.gov",
+        logo: "/img/idp/lbl.svg",
       },
       { label: "Custom Lab", entityId: "https://idp.custom.org" },
+      {
+        label: "Branded Lab",
+        entityId: "https://idp.branded.org",
+        logo: "/img/custom.svg",
+      },
     ]);
 
     (getAuthProviders as jest.Mock).mockResolvedValue(
@@ -183,10 +200,14 @@ describe("LoginPage", () => {
           authorize_uri: "https://cilogon.org/authorize",
           scope: "openid email profile org.cilogon.userinfo",
           idp_options: [
-            { label: "ORCID", entityId: "http://orcid.org/oauth/authorize" },
             {
-              label: "Oak Ridge National Laboratory (ORNL)",
-              entityId: "https://idp.ornl.gov/idp",
+              label: "ORCID",
+              entityId: "http://orcid.org/oauth/authorize",
+              logo: "/img/idp/orcid.svg",
+            },
+            {
+              label: "Custom Lab Without Logo",
+              entityId: "https://idp.custom.org",
             },
           ],
         },
@@ -201,6 +222,12 @@ describe("LoginPage", () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/institution/i)).toHaveTextContent(/orcid/i);
     });
+    expect(screen.getAllByTestId("idp-option-logo").length).toBeGreaterThan(0);
+
+    const institutionSelect = screen.getByLabelText(/institution/i);
+    fireEvent.mouseDown(institutionSelect);
+
+    expect(await screen.findByTestId("idp-option-placeholder")).toBeInTheDocument();
 
     fireEvent.click(cilogonButton);
 

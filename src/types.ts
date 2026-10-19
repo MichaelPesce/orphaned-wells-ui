@@ -359,6 +359,7 @@ export type AuthProviderType = "google" | "cilogon";
 export interface CilogonIdpOption {
     label: string;
     entityId: string;
+    logo?: string;
 }
 
 export interface AuthProviderInfo {
