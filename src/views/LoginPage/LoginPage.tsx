@@ -219,7 +219,7 @@ const LoginPage = (props: LoginPageProps) => {
           }
           setErrorMessage(
             detailMessage
-              ? `${detailMessage} ${DEFAULT_UNAUTHORIZED_MESSAGE}`
+              ? `${detailMessage}`
               : DEFAULT_UNAUTHORIZED_MESSAGE
           );
         } else {
