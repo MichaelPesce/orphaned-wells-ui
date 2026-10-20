@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Box,
   Button,
   CircularProgress,
-  Divider,
   FormControl,
-  InputLabel,
   Link,
   MenuItem,
   Select,
@@ -14,8 +11,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useGoogleLogin } from "@react-oauth/google";
-import GoogleIcon from "@mui/icons-material/Google";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { authLogin, getAuthProviders } from "../../services/app.service";
 import {
   AuthProvidersResponse,
@@ -23,6 +20,27 @@ import {
   CilogonIdpOption,
 } from "../../types";
 import { LoginPageStyles as styles } from "../../styles";
+
+const GoogleBrandIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+    <path
+      fill="#EA4335"
+      d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"
+    />
+    <path
+      fill="#4285F4"
+      d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.2z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"
+    />
+    <path
+      fill="#34A853"
+      d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"
+    />
+  </svg>
+);
 
 interface LoginPageProps {
   handleSuccessfulAuthentication: () => void;
@@ -441,22 +459,62 @@ const LoginPage = (props: LoginPageProps) => {
   };
 
   const isBusy = authenticatingProvider !== null;
+  const subtitleText =
+    googleEnabled && cilogonEnabled
+      ? "Use your Google account or your institution's login to access OGRRE."
+      : cilogonEnabled
+        ? "Choose your institution and sign in with your institutional account."
+        : "Sign in with your Google account to access OGRRE.";
 
   return (
-    <Box sx={styles.outerBox}>
+    <Box component="main" sx={styles.outerBox}>
       <Box sx={styles.cardBox} role="region" aria-label="Sign in to OGRRE">
-        <Box sx={styles.logoContainer}>
-          <img
+        <Box sx={styles.brandHeader}>
+          <Box
+            component="img"
             src={`${process.env.PUBLIC_URL}/img/OGRRE_logo.svg`}
-            width="88"
             alt="OGRRE logo"
+            sx={styles.brandLogo}
           />
+          <Box component="span" sx={styles.brandName}>
+            OGRRE
+          </Box>
         </Box>
-        <Typography sx={styles.title} variant="h5" component="h1">
-          OGRRE
-        </Typography>
-        <Typography sx={styles.subtitle} variant="body2">
-        </Typography>
+
+        <Box component="section" sx={styles.headerSection}>
+          <Typography sx={styles.title} component="h1">
+            Sign in
+          </Typography>
+          <Box sx={styles.messageSlot}>
+            {errorMessage ? (
+              <Box
+                role="alert"
+                data-cy="login-error-alert"
+                sx={styles.alertRow}
+              >
+                <ErrorOutlineIcon sx={styles.alertIcon} aria-hidden="true" />
+                <Box>
+                  <Typography sx={styles.alertText}>{errorMessage}</Typography>
+                  {errorHelpLink && (
+                    <Box sx={{ mt: 0.75 }}>
+                      <Link
+                        href={errorHelpLink.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        underline="always"
+                        sx={styles.alertLink}
+                      >
+                        {errorHelpLink.label}
+                      </Link>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            ) : (
+              <Typography sx={styles.subtitle}>{subtitleText}</Typography>
+            )}
+          </Box>
+        </Box>
 
         <Box sx={styles.buttonStack}>
           {googleEnabled && (
@@ -464,7 +522,7 @@ const LoginPage = (props: LoginPageProps) => {
               id="login-button"
               data-cy="google-login-button"
               onClick={handleGoogleLogin}
-              variant="contained"
+              variant="outlined"
               fullWidth
               disabled={isBusy}
               sx={styles.primaryButton}
@@ -472,7 +530,7 @@ const LoginPage = (props: LoginPageProps) => {
                 authenticatingProvider === "google" ? (
                   <CircularProgress size={18} color="inherit" />
                 ) : (
-                  <GoogleIcon />
+                  <GoogleBrandIcon />
                 )
               }
             >
@@ -481,22 +539,32 @@ const LoginPage = (props: LoginPageProps) => {
           )}
 
           {googleEnabled && cilogonEnabled && (
-            <Divider sx={styles.divider}>or</Divider>
+            <Box sx={styles.divider}>OR USE YOUR INSTITUTION</Box>
           )}
 
           {cilogonEnabled && (
-            <Box sx={styles.cilogonGroup}>
+            <Box
+              sx={
+                googleEnabled
+                  ? styles.cilogonGroupWithDivider
+                  : styles.cilogonGroup
+              }
+            >
               {idpOptions.length > 0 && (
-                <FormControl fullWidth size="small" disabled={isBusy}>
-                  <InputLabel id="cilogon-idp-select-label">
+                <FormControl fullWidth disabled={isBusy}>
+                  <Typography
+                    component="label"
+                    id="cilogon-idp-select-label"
+                    htmlFor="cilogon-idp-select"
+                    sx={styles.idpLabel}
+                  >
                     Institution
-                  </InputLabel>
+                  </Typography>
                   <Select
                     labelId="cilogon-idp-select-label"
                     id="cilogon-idp-select"
                     data-cy="cilogon-idp-select"
                     value={selectedIdp}
-                    label="Institution"
                     onChange={handleSelectedIdpChange}
                     sx={styles.idpSelect}
                   >
@@ -512,16 +580,14 @@ const LoginPage = (props: LoginPageProps) => {
                 id="cilogon-login-button"
                 data-cy="cilogon-login-button"
                 onClick={handleCilogonLogin}
-                variant={googleEnabled ? "outlined" : "contained"}
+                variant="outlined"
                 fullWidth
                 disabled={isBusy}
                 sx={googleEnabled ? styles.secondaryButton : styles.primaryButton}
                 startIcon={
                   authenticatingProvider === "cilogon" ? (
                     <CircularProgress size={18} color="inherit" />
-                  ) : (
-                    <AccountBalanceIcon />
-                  )
+                  ) : undefined
                 }
               >
                 {authenticatingProvider === "cilogon"
@@ -531,31 +597,6 @@ const LoginPage = (props: LoginPageProps) => {
             </Box>
           )}
         </Box>
-
-        {errorMessage && (
-          <Alert
-            severity="error"
-            variant="outlined"
-            sx={styles.alert}
-            data-cy="login-error-alert"
-          >
-            {errorMessage}
-            {errorHelpLink && (
-              <Box sx={{ mt: 1 }}>
-                <Link
-                  href={errorHelpLink.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  underline="always"
-                  color="inherit"
-                  sx={{ fontWeight: 600 }}
-                >
-                  {errorHelpLink.label}
-                </Link>
-              </Box>
-            )}
-          </Alert>
-        )}
       </Box>
     </Box>
   );

@@ -169,6 +169,40 @@ describe("LoginPage", () => {
     expect(assignedUrl.searchParams.get("state")).toMatch(/^cilogon_/);
   });
 
+  test("renders only CILogon login option without Google button or divider when Google is disabled", async () => {
+    (getAuthProviders as jest.Mock).mockResolvedValue(
+      makeResponse({
+        google: { enabled: false },
+        cilogon: {
+          enabled: true,
+          client_id: "cilogon-client-123",
+          authorize_uri: "https://cilogon.org/authorize",
+          scope: "openid email profile org.cilogon.userinfo",
+          idp_options: MOCK_DEFAULT_IDP_OPTIONS,
+        },
+      })
+    );
+
+    render(<LoginPage handleSuccessfulAuthentication={jest.fn()} />);
+
+    const cilogonButton = await screen.findByRole("button", {
+      name: /login with institutional account/i,
+    });
+    expect(cilogonButton).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /login with google/i })
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      screen.queryByText(/or use your institution/i)
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/institution/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/choose your institution and sign in with your institutional account\./i)
+    ).toBeInTheDocument();
+  });
+
   test("allows selecting ORCID in the institution selector and passes ORCID idphint to CILogon", async () => {
     (getAuthProviders as jest.Mock).mockResolvedValue(
       makeResponse({
