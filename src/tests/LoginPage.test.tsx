@@ -299,7 +299,16 @@ describe("LoginPage", () => {
 
   test("displays unauthorized error alert when backend returns 403", async () => {
     (authLogin as jest.Mock).mockResolvedValue(
-      makeResponse({ detail: { message: "User scientist@lbl.gov is not registered." } }, 403)
+      makeResponse(
+        {
+          detail: {
+            detail_key: "account_not_registered",
+            message:
+              "This account is not registered for this application. Please login with a different account or contact the development team to gain access.",
+          },
+        },
+        403
+      )
     );
 
     const onSuccess = jest.fn();
@@ -309,8 +318,10 @@ describe("LoginPage", () => {
     fireEvent.click(googleButton);
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent(/User scientist@lbl.gov is not registered\./i);
-    expect(alert).toHaveTextContent(/not authorized to access this application/i);
+    expect(alert).toHaveTextContent(
+      /This account is not registered for this application\. Please login with a different account or contact the development team to gain access\./i
+    );
+    expect(alert).not.toHaveTextContent(/not authorized to access this application/i);
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
