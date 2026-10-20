@@ -7,6 +7,7 @@ import {
   Divider,
   FormControl,
   InputLabel,
+  Link,
   MenuItem,
   Select,
   SelectChangeEvent,
@@ -99,11 +100,36 @@ const GOOGLE_REDIRECT_STORAGE_KEY = "ogrre_google_redirect_uri";
 const GOOGLE_CALLBACK_PATH = "/auth/google/callback";
 const CILOGON_STATE_STORAGE_KEY = "ogrre_cilogon_oauth_state";
 const CILOGON_REDIRECT_STORAGE_KEY = "ogrre_cilogon_redirect_uri";
+const CILOGON_SELECTED_IDP_STORAGE_KEY = "ogrre_cilogon_selected_idp";
+const CILOGON_IDP_OPTIONS_STORAGE_KEY = "ogrre_cilogon_idp_options";
 const CILOGON_CALLBACK_PATH = "/auth/cilogon/callback";
 const DEFAULT_CILOGON_AUTHORIZE_URI = "https://cilogon.org/authorize";
 const DEFAULT_CILOGON_SCOPE = "openid email profile org.cilogon.userinfo";
 const DEFAULT_UNAUTHORIZED_MESSAGE =
   "You are not authorized to access this application. Please login with a different account or contact the development team to gain access.";
+
+const ORCID_EMAIL_VISIBILITY_DOCS_URL =
+  "https://support.orcid.org/hc/en-us/articles/360006897614-Visibility-settings";
+const ORCID_EMAIL_VISIBILITY_DOCS_LABEL =
+  "View ORCID visibility settings documentation";
+
+const readStoredIdpOptions = (): CilogonIdpOption[] => {
+  try {
+    const raw = sessionStorage.getItem(CILOGON_IDP_OPTIONS_STORAGE_KEY);
+    if (!raw) return [];
+    return normalizeIdpOptions(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+};
+
+const readStoredSelectedIdp = (): string => {
+  try {
+    return sessionStorage.getItem(CILOGON_SELECTED_IDP_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+};
 
 const createOAuthState = (prefix: AuthProviderType): string => {
   const randomPart =
@@ -119,27 +145,48 @@ const LoginPage = (props: LoginPageProps) => {
 
   const [googleEnabled, setGoogleEnabled] = useState(true);
   const [googleOAuthState] = useState(() => createOAuthState("google"));
-  const [cilogonEnabled, setCilogonEnabled] = useState(Boolean(envCilogonClientId));
+  const [cilogonEnabled, setCilogonEnabled] = useState(() =>
+    Boolean(
+      envCilogonClientId ||
+        readStoredIdpOptions().length > 0 ||
+        sessionStorage.getItem(CILOGON_STATE_STORAGE_KEY)
+    )
+  );
   const [cilogonClientId, setCilogonClientId] = useState(envCilogonClientId);
   const [cilogonAuthorizeUri, setCilogonAuthorizeUri] = useState(DEFAULT_CILOGON_AUTHORIZE_URI);
   const [cilogonScope, setCilogonScope] = useState(DEFAULT_CILOGON_SCOPE);
-  const [idpOptions, setIdpOptions] = useState<CilogonIdpOption[]>([]);
-  const [selectedIdp, setSelectedIdp] = useState<string>("");
+  const [idpOptions, setIdpOptions] = useState<CilogonIdpOption[]>(readStoredIdpOptions);
+  const [selectedIdp, setSelectedIdp] = useState<string>(readStoredSelectedIdp);
   const [authenticatingProvider, setAuthenticatingProvider] = useState<AuthProviderType | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorHelpLink, setErrorHelpLink] = useState<{
+    url: string;
+    label: string;
+  } | null>(null);
   const handledCallbackRef = useRef(false);
   const isExchangingCodeRef = useRef(false);
 
   const completeCodeExchange = useCallback(
     async (code: string, provider?: AuthProviderType, redirectUri?: string) => {
       setErrorMessage(null);
+      setErrorHelpLink(null);
       isExchangingCodeRef.current = true;
       setAuthenticatingProvider(provider || "google");
+      let succeeded = false;
       try {
         const response = provider
           ? await authLogin(code, provider, redirectUri)
           : await authLogin(code);
-        let data: { detail?: { message?: string } | string } = {};
+        let data: {
+          detail?:
+            | {
+                detail_key?: string;
+                message?: string;
+                help_url?: string;
+                help_label?: string;
+              }
+            | string;
+        } = {};
         try {
           data = await response.json();
         } catch {
@@ -147,13 +194,29 @@ const LoginPage = (props: LoginPageProps) => {
         }
 
         if (response.status === 200) {
+          succeeded = true;
           handleSuccessfulAuthentication();
           return;
         }
 
         if (response.status === 403) {
-          const detailMessage =
-            typeof data?.detail === "object" ? data?.detail?.message : undefined;
+          const detailObj =
+            typeof data?.detail === "object" && data?.detail !== null
+              ? data.detail
+              : undefined;
+          const detailMessage = detailObj?.message;
+          const isMissingEmail =
+            detailObj?.detail_key === "missing_email" ||
+            Boolean(detailMessage?.includes("not associated with an email"));
+          const helpUrl =
+            detailObj?.help_url ||
+            (isMissingEmail ? ORCID_EMAIL_VISIBILITY_DOCS_URL : undefined);
+          const helpLabel =
+            detailObj?.help_label ||
+            (isMissingEmail ? ORCID_EMAIL_VISIBILITY_DOCS_LABEL : undefined);
+          if (helpUrl && helpLabel) {
+            setErrorHelpLink({ url: helpUrl, label: helpLabel });
+          }
           setErrorMessage(
             detailMessage
               ? `${detailMessage} ${DEFAULT_UNAUTHORIZED_MESSAGE}`
@@ -173,7 +236,9 @@ const LoginPage = (props: LoginPageProps) => {
         setErrorMessage("Unable to connect to authentication service. Please try again.");
       } finally {
         isExchangingCodeRef.current = false;
-        setAuthenticatingProvider(null);
+        if (!succeeded) {
+          setAuthenticatingProvider(null);
+        }
       }
     },
     [handleSuccessfulAuthentication]
@@ -230,11 +295,21 @@ const LoginPage = (props: LoginPageProps) => {
         const nextOptions = normalizeIdpOptions(data.cilogon?.idp_options);
         if (nextOptions.length > 0) {
           setIdpOptions(nextOptions);
-          setSelectedIdp((prev) =>
-            nextOptions.some((opt) => opt.entityId === prev)
-              ? prev
-              : nextOptions[0]?.entityId || ""
+          sessionStorage.setItem(
+            CILOGON_IDP_OPTIONS_STORAGE_KEY,
+            JSON.stringify(nextOptions)
           );
+          setSelectedIdp((prev) => {
+            const storedIdp = readStoredSelectedIdp();
+            const candidate = prev || storedIdp;
+            const resolved = nextOptions.some((opt) => opt.entityId === candidate)
+              ? candidate
+              : nextOptions[0]?.entityId || "";
+            if (resolved) {
+              sessionStorage.setItem(CILOGON_SELECTED_IDP_STORAGE_KEY, resolved);
+            }
+            return resolved;
+          });
         }
       })
       .catch(() => {
@@ -320,6 +395,7 @@ const LoginPage = (props: LoginPageProps) => {
 
   const handleGoogleLogin = () => {
     setErrorMessage(null);
+    setErrorHelpLink(null);
     setAuthenticatingProvider("google");
     sessionStorage.setItem(GOOGLE_STATE_STORAGE_KEY, googleOAuthState);
     sessionStorage.setItem(GOOGLE_REDIRECT_STORAGE_KEY, googleRedirectUri);
@@ -327,15 +403,19 @@ const LoginPage = (props: LoginPageProps) => {
   };
 
   const handleSelectedIdpChange = (event: SelectChangeEvent<string>) => {
-    setSelectedIdp(event.target.value);
+    const nextIdp = event.target.value;
+    setSelectedIdp(nextIdp);
+    sessionStorage.setItem(CILOGON_SELECTED_IDP_STORAGE_KEY, nextIdp);
   };
 
   const handleCilogonLogin = () => {
     if (!cilogonClientId) {
+      setErrorHelpLink(null);
       setErrorMessage("CILogon client ID is not configured.");
       return;
     }
     setErrorMessage(null);
+    setErrorHelpLink(null);
     setAuthenticatingProvider("cilogon");
 
     const redirectUri = `${window.location.origin}${CILOGON_CALLBACK_PATH}`;
@@ -343,6 +423,9 @@ const LoginPage = (props: LoginPageProps) => {
 
     sessionStorage.setItem(CILOGON_STATE_STORAGE_KEY, state);
     sessionStorage.setItem(CILOGON_REDIRECT_STORAGE_KEY, redirectUri);
+    if (selectedIdp) {
+      sessionStorage.setItem(CILOGON_SELECTED_IDP_STORAGE_KEY, selectedIdp);
+    }
 
     const authorizeUrl = new URL(cilogonAuthorizeUri);
     authorizeUrl.searchParams.set("response_type", "code");
@@ -457,6 +540,20 @@ const LoginPage = (props: LoginPageProps) => {
             data-cy="login-error-alert"
           >
             {errorMessage}
+            {errorHelpLink && (
+              <Box sx={{ mt: 1 }}>
+                <Link
+                  href={errorHelpLink.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="always"
+                  color="inherit"
+                  sx={{ fontWeight: 600 }}
+                >
+                  {errorHelpLink.label}
+                </Link>
+              </Box>
+            )}
           </Alert>
         )}
       </Box>

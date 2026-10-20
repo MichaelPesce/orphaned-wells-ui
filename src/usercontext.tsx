@@ -87,6 +87,16 @@ export const UserContextProvider = ({ children }: any) => {
   }, [handlePassedAuthentication, handleFailedAuthentication]);
 
   useEffect(() => {
+    const pathname = window.location?.pathname || "";
+    const isAuthCallbackRoute =
+      pathname === "/login" ||
+      pathname === "/auth/google/callback" ||
+      pathname === "/auth/cilogon/callback";
+    const params = new URLSearchParams(window.location?.search || "");
+    if (isAuthCallbackRoute && (params.has("code") || params.has("error"))) {
+      setLoading(false);
+      return;
+    }
     checkCurrentAuthentication();
   }, [checkCurrentAuthentication]);
 

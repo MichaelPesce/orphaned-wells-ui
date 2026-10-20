@@ -250,17 +250,41 @@ describe("LoginPage", () => {
     );
   });
 
-  test("completes CILogon callback code exchange when returning with code and matching state", async () => {
+  test("completes CILogon callback code exchange and preserves selected institution across redirect", async () => {
+    (getAuthProviders as jest.Mock).mockResolvedValue(
+      makeResponse({
+        google: { enabled: true },
+        cilogon: {
+          enabled: true,
+          client_id: "cilogon-client-123",
+          authorize_uri: "https://cilogon.org/authorize",
+          scope: "openid email profile org.cilogon.userinfo",
+          idp_options: MOCK_DEFAULT_IDP_OPTIONS,
+        },
+      })
+    );
+
     sessionStorage.setItem("ogrre_cilogon_oauth_state", "cilogon_state_abc");
     sessionStorage.setItem(
       "ogrre_cilogon_redirect_uri",
       "http://localhost:3000/auth/cilogon/callback"
+    );
+    sessionStorage.setItem(
+      "ogrre_cilogon_selected_idp",
+      "http://orcid.org/oauth/authorize"
+    );
+    sessionStorage.setItem(
+      "ogrre_cilogon_idp_options",
+      JSON.stringify(MOCK_DEFAULT_IDP_OPTIONS)
     );
     window.location.pathname = "/auth/cilogon/callback";
     window.location.search = "?code=cilogon-code-xyz&state=cilogon_state_abc";
 
     const onSuccess = jest.fn();
     render(<LoginPage handleSuccessfulAuthentication={onSuccess} />);
+
+    // Immediately displays ORCID rather than resetting to Lawrence Berkeley National Laboratory
+    expect(screen.getByLabelText(/institution/i)).toHaveTextContent(/orcid/i);
 
     await waitFor(() => {
       expect(authLogin).toHaveBeenCalledWith(
@@ -270,6 +294,7 @@ describe("LoginPage", () => {
       );
       expect(onSuccess).toHaveBeenCalledTimes(1);
     });
+    expect(screen.getByLabelText(/institution/i)).toHaveTextContent(/orcid/i);
   });
 
   test("displays unauthorized error alert when backend returns 403", async () => {
@@ -286,6 +311,41 @@ describe("LoginPage", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/User scientist@lbl.gov is not registered\./i);
     expect(alert).toHaveTextContent(/not authorized to access this application/i);
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  test("displays ORCID visibility guidance and documentation link when backend returns missing_email 403", async () => {
+    (authLogin as jest.Mock).mockResolvedValue(
+      makeResponse(
+        {
+          detail: {
+            detail_key: "missing_email",
+            message:
+              "Your identity is not associated with an email. If signing in with ORCID, open 'View my ORCID record' (orcid.org/my-orcid), click the edit pencil icon in the 'Emails & domains' section on the left sidebar, and set your verified email visibility to 'Everyone' (Public).",
+            help_url:
+              "https://support.orcid.org/hc/en-us/articles/360006897614-Visibility-settings",
+            help_label: "View ORCID visibility settings documentation",
+          },
+        },
+        403
+      )
+    );
+
+    const onSuccess = jest.fn();
+    render(<LoginPage handleSuccessfulAuthentication={onSuccess} />);
+
+    const googleButton = await screen.findByRole("button", { name: /login with google/i });
+    fireEvent.click(googleButton);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/Emails & domains/i);
+    const docsLink = screen.getByRole("link", {
+      name: /view orcid visibility settings documentation/i,
+    });
+    expect(docsLink).toHaveAttribute(
+      "href",
+      "https://support.orcid.org/hc/en-us/articles/360006897614-Visibility-settings"
+    );
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
