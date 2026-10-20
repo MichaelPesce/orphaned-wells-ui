@@ -125,7 +125,44 @@ export const HeaderStyles = {
   },
   avatar: {
     width: 24,
-    height: 24
+    height: 24,
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    bgcolor: "#0B65C6",
+  },
+  menuUserSection: {
+    display: "flex",
+    alignItems: "center",
+    gap: 1.5,
+    px: 2,
+    py: 1.5,
+    minWidth: 220,
+  },
+  menuUserAvatar: {
+    width: 36,
+    height: 36,
+    fontSize: "0.95rem",
+    fontWeight: 600,
+    bgcolor: "#0B65C6",
+    flexShrink: 0,
+  },
+  menuUserDetails: {
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0,
+  },
+  menuUserName: {
+    fontWeight: 700,
+    fontSize: "0.95rem",
+    color: "#262626",
+    lineHeight: 1.25,
+    overflowWrap: "anywhere",
+  },
+  menuUserEmail: {
+    fontSize: "0.8rem",
+    color: "#595959",
+    lineHeight: 1.3,
+    overflowWrap: "anywhere",
   },
   tabPanel: {
     marginLeft: 10,
@@ -147,12 +184,6 @@ export const HeaderStyles = {
         overflow: "visible",
         filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
         mt: 1.5,
-        "& .MuiAvatar-root": {
-          width: 32,
-          height: 32,
-          ml: -0.5,
-          mr: 1,
-        },
         "&::before": {
           content: "\"\"",
           display: "block",

@@ -10,6 +10,7 @@ import ChangeTeamDialog from "./ChangeTeamDialog";
 import OgrreVersionDialog, { OgrreVersionInfo } from "./OgrreVersionDialog";
 import {
   Avatar,
+  Box,
   Button,
   Divider,
   IconButton,
@@ -18,6 +19,7 @@ import {
   MenuItem,
   Tab,
   Tabs,
+  Typography,
 } from "@mui/material";
 import { logout, callAPI } from "../../util";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -31,10 +33,29 @@ const getApiErrorMessage = (error: any, fallback: string) => {
   return error?.message || error?.detail || fallback;
 };
 
+const getUserInitials = (name: string, email: string): string => {
+  const trimmedName = name.trim();
+  if (trimmedName) {
+    const parts = trimmedName.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }
+  const trimmedEmail = email.trim();
+  if (trimmedEmail) {
+    return trimmedEmail[0].toUpperCase();
+  }
+  return "";
+};
+
 const Header = (props: any) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, userName, userPhoto, hasPermission, handleSuccessfulAuthentication } = useUserContext();
+  const { user, userEmail, userName, userPhoto, hasPermission, handleSuccessfulAuthentication } = useUserContext();
+  const displayName = (userName || user?.name || "").trim();
+  const displayEmail = (userEmail || user?.email || "").trim();
+  const userInitials = getUserInitials(displayName, displayEmail);
   const [anchorAr, setAnchorAr] = useState<null | HTMLElement>(null);
   const [profileActions, setProfileActions] = useState(false);
   const [tabValue, setTabValue] = useState("projects");
@@ -226,8 +247,9 @@ const Header = (props: any) => {
           </Button>
             
           <IconButton data-cy="profile-menu-button" sx={styles.icon} onClick={handleShowProfileActions}>
-            <Avatar sx={styles.avatar} alt={userName} src={userPhoto}/>
-            
+            <Avatar sx={styles.avatar} alt={displayName || displayEmail} src={userPhoto || undefined}>
+              {userInitials}
+            </Avatar>
           </IconButton>
           <Menu
             id="actions-list"
@@ -238,6 +260,33 @@ const Header = (props: any) => {
               styles.menuSlotProps
             }
           >
+            {(displayName || displayEmail) && (
+              <Box data-cy="profile-menu-user-info" sx={styles.menuUserSection}>
+                <Avatar
+                  sx={styles.menuUserAvatar}
+                  alt={displayName || displayEmail}
+                  src={userPhoto || undefined}
+                >
+                  {userInitials}
+                </Avatar>
+                <Box sx={styles.menuUserDetails}>
+                  {displayName && (
+                    <Typography data-cy="profile-menu-user-name" sx={styles.menuUserName}>
+                      {displayName}
+                    </Typography>
+                  )}
+                  {displayEmail && (
+                    <Typography
+                      data-cy="profile-menu-user-email"
+                      sx={{ ...styles.menuUserEmail, mt: displayName ? 0.25 : 0 }}
+                    >
+                      {displayEmail}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            )}
+            {(displayName || displayEmail) && <Divider />}
             {(hasPermission("manage_system") || hasPermission("system_administration")) && (
               <span>
                 {hasPermission("manage_system") && (
