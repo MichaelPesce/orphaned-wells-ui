@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24.2 24.2" role="img" aria-label="Argonne National Laboratory logo">
+  <g transform="translate(-86.7, 1.6)">
+    <path fill="#0076C0" d="M94.8 14h-8.1l4 7z"/>
+    <path fill="#0082CA" d="M102.8 14h-8.1l-4 7H106.9l-4.1-7z"/>
+    <path fill="#003366" d="M110.9 14h-8.1l4.1 7z"/>
+    <path fill="#FFFFFF" d="M102.8 14h-8l4-7z"/>
+    <path fill="#004990" d="M102.8 0h-8l4 7z"/>
+    <path fill="#0067AC" d="M102.8 0l-4 7 4 7h8.1z"/>
+    <path fill="#00A3E0" d="M94.8 14l4-7-4-7-8.1 14h8.1z"/>
+  </g>
+</svg>
+
