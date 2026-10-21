@@ -10,7 +10,7 @@ handlers:
     expiration: "7d"
 
   # SPA routes: serve index.html for known client-side application routes
-  - url: /((index\.html|login|project|projects|record|records|record_group|schema|admin|users)(/.*)?)?$
+  - url: /((index\.html|login|auth|project|projects|record|records|record_group|schema|admin|users)(/.*)?)?$
     static_files: build/index.html
     upload: build/index.html
     secure: always
